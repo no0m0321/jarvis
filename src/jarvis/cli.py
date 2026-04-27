@@ -127,6 +127,8 @@ def wake(
     console.print("[bold cyan]자비스 wake 모드 대기.[/bold cyan]")
     console.print(f"[dim]호출어: {', '.join(wake_words[:4])}... | Ctrl+C 종료[/dim]")
 
+    rms_cb = hud.set_voice_level  # 매 chunk마다 RMS를 voice file에 dump → particle reactive
+
     try:
         while True:
             hud.set_state("idle")
@@ -134,6 +136,7 @@ def wake(
                 wake_words=wake_words,
                 detection_model=detect_model,
                 language=lang,
+                on_chunk_rms=rms_cb,
             )
             console.print(f"\n[bold magenta]wake → {heard}[/bold magenta]")
             hud.set_state("listening", "command")
@@ -143,10 +146,14 @@ def wake(
             if not command_text:
                 if chime and not no_speak:
                     hud.set_state("speaking", "ack")
-                    _say("네", voice="Yuna")
+                    _say("네")
                 console.print("[dim]말씀하시오...[/dim]")
                 hud.set_state("listening", "command")
-                audio = capture_phrase(silence_duration=1.5, max_speech_duration=15.0)
+                audio = capture_phrase(
+                    silence_duration=1.5,
+                    max_speech_duration=15.0,
+                    on_chunk_rms=rms_cb,
+                )
                 if audio.size == 0:
                     console.print("[yellow](명령 없음)[/yellow]")
                     continue
@@ -167,8 +174,7 @@ def wake(
             console.print(f"[bold]자비스:[/bold] {response}")
             if response and not no_speak:
                 hud.set_state("speaking", "answer")
-                # TTS는 도구 결과 dump가 너무 길면 짧게 자름
-                _say(response[:500], voice="Yuna")
+                _say(response[:500])
                 hud.set_state("idle")
     except KeyboardInterrupt:
         console.print("\n[dim]세션 종료.[/dim]")

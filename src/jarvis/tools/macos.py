@@ -24,9 +24,20 @@ def _notify(title: str, message: str, subtitle: str = "") -> str:
     return "OK"
 
 
-def _say(text: str, voice: str = "Yuna") -> str:
+import os as _os
+
+
+def _say(text: str, voice: str = "", rate: int = 175) -> str:
+    """macOS TTS. JARVIS_VOICE 환경변수로 default override 가능.
+
+    추천 한국어 voice: Reed(남성, 자비스 톤), Yuna(여성), Eddy(중성).
+    """
+    voice = voice or _os.environ.get("JARVIS_VOICE", "Reed")
     try:
-        subprocess.run(["say", "-v", voice, text], timeout=120, check=True)
+        subprocess.run(
+            ["say", "-v", voice, "-r", str(rate), text],
+            timeout=180, check=True,
+        )
     except subprocess.CalledProcessError as e:
         return f"ERROR: {e}"
     return "OK"
@@ -57,12 +68,13 @@ REGISTRY.register(Tool(
 
 REGISTRY.register(Tool(
     name="say",
-    description="macOS TTS로 텍스트 음성 출력. 한국어 음성 'Yuna' 기본.",
+    description="macOS TTS로 텍스트 음성 출력. 한국어 voice (Reed/Yuna/Eddy/Reed/Sandy 등). 기본 Reed.",
     input_schema={
         "type": "object",
         "properties": {
             "text": {"type": "string"},
-            "voice": {"type": "string", "description": "voice 이름, 기본 Yuna"},
+            "voice": {"type": "string", "description": "voice 이름, 기본 Reed"},
+            "rate": {"type": "integer", "description": "WPM, 기본 175"},
         },
         "required": ["text"],
     },

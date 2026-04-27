@@ -58,6 +58,7 @@ def listen_for_wake(
     chunk_silence_duration: float = 0.5,
     chunk_max_duration: float = 2.0,
     silence_threshold: float = 0.015,
+    on_chunk_rms: "Any" = None,
 ) -> str:
     """발화 무한 대기 → 짧은 캡처 → 전사 → wake word 검사. 매칭될 때까지 반복.
 
@@ -73,6 +74,7 @@ def listen_for_wake(
             silence_duration=chunk_silence_duration,
             max_speech_duration=chunk_max_duration,
             silence_threshold=silence_threshold,
+            on_chunk_rms=on_chunk_rms,
         )
         if audio.size == 0:
             if _DEBUG:

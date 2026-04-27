@@ -68,6 +68,7 @@ def capture_phrase(
     silence_threshold: float = 0.012,
     max_speech_duration: float = 10.0,
     max_wait_for_speech: float = 300.0,
+    on_chunk_rms: "Any" = None,
 ) -> "np.ndarray":
     """발화가 시작될 때까지 대기 → 발화 캡처 → 침묵 시 종료.
 
@@ -94,6 +95,11 @@ def capture_phrase(
         while True:
             data, _overflowed = stream.read(chunk_samples)
             rms = float(np.sqrt(np.mean(data ** 2)))
+            if on_chunk_rms is not None:
+                try:
+                    on_chunk_rms(rms)
+                except Exception:
+                    pass
 
             if rms > silence_threshold:
                 speech_started = True
