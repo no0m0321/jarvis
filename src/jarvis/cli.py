@@ -347,6 +347,109 @@ def timer(
     console.print(f"[bold green]⏰ {message}[/bold green]")
 
 
+plugin_app = typer.Typer(
+    name="plugin",
+    help="플러그인 관리 (~/.jarvis/plugins/*.py)",
+    no_args_is_help=True,
+)
+app.add_typer(plugin_app, name="plugin")
+
+
+@plugin_app.command("list")
+def plugin_list() -> None:
+    """등록된 플러그인 list."""
+    from jarvis import plugins
+
+    discovered = plugins.discover()
+    if not discovered:
+        console.print(f"[dim](no plugins at ~/.jarvis/plugins/)[/dim]")
+        return
+    console.print(f"[bold]{len(discovered)} plugin(s):[/bold]")
+    for p in discovered:
+        console.print(f"  • {p.stem} ({p})")
+
+
+@plugin_app.command("reload")
+def plugin_reload() -> None:
+    """플러그인 강제 재로드."""
+    from jarvis import plugins
+
+    loaded = plugins.load_all()
+    console.print(f"loaded: {loaded or '(none)'}")
+
+
+@plugin_app.command("init")
+def plugin_init() -> None:
+    """~/.jarvis/plugins/example.py 템플릿 생성."""
+    from pathlib import Path
+
+    plugin_dir = Path.home() / ".jarvis" / "plugins"
+    plugin_dir.mkdir(parents=True, exist_ok=True)
+    example = plugin_dir / "example.py"
+    if example.exists():
+        console.print(f"[yellow]이미 존재: {example}[/yellow]")
+        return
+    example.write_text('''"""예시 plugin — ~/.jarvis/plugins/example.py."""
+from jarvis.tools.registry import REGISTRY, Tool
+
+
+def _hello(name: str = "world") -> str:
+    return f"Hello, {name}!"
+
+
+REGISTRY.register(Tool(
+    name="hello",
+    description="간단한 인사 도구.",
+    input_schema={
+        "type": "object",
+        "properties": {"name": {"type": "string"}},
+        "required": [],
+    },
+    handler=_hello,
+))
+''')
+    console.print(f"OK: {example}")
+    console.print("[dim]daemon 또는 jarvis 명령 재시작 시 자동 로드됨[/dim]")
+
+
+@app.command("config")
+def config_cmd(
+    show: bool = typer.Option(False, "--show", "-s"),
+    edit: bool = typer.Option(False, "--edit", "-e"),
+    init: bool = typer.Option(False, "--init", help="기본 config.toml 생성"),
+) -> None:
+    """~/.jarvis/config.toml 설정 파일 관리."""
+    import os as _os
+
+    from jarvis import user_config
+
+    path = user_config.path()
+    if init:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if path.exists():
+            console.print(f"[yellow]이미 존재: {path}[/yellow]")
+            return
+        path.write_text('''# 자비스 사용자 설정 (~/.jarvis/config.toml)
+
+# voice = "Reed"        # TTS voice (Reed/Yuna/Eddy/Sandy 등)
+# persona = "jarvis"    # jarvis|casual|formal|creative
+# hud_sounds = true     # sci-fi 사운드 효과
+# wake_debug = false    # wake 이벤트 stderr 출력
+# health_port = 41418   # health server 포트
+''', encoding="utf-8")
+        console.print(f"OK: {path}")
+        return
+    if edit:
+        editor = _os.environ.get("EDITOR", "vi")
+        _os.system(f"{editor} {path}")
+        return
+    if show or True:  # default: show
+        if path.exists():
+            console.print(path.read_text(encoding="utf-8") or "(empty)")
+        else:
+            console.print(f"(no config at {path}) — `jarvis config --init` 으로 생성")
+
+
 @app.command()
 def stats() -> None:
     """자비스 자체 상태 + 등록 도구 list + 최근 history."""
