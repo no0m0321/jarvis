@@ -15,6 +15,14 @@ if _PROJECT_ENV.exists():
         if _v and not os.environ.get(_k):
             os.environ[_k] = _v
 
+# ~/.jarvis/config.toml 로드 → JARVIS_* env vars로 export
+try:
+    from jarvis import user_config as _user_config
+
+    _user_config.apply_to_env()
+except Exception:
+    pass
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(

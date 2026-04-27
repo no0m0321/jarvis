@@ -5,7 +5,7 @@ import json
 import os
 import time
 from pathlib import Path
-from typing import Any, Dict, Iterable
+from typing import Any, Dict
 
 _HISTORY_PATH = Path(os.environ.get(
     "JARVIS_HISTORY_PATH",
@@ -17,7 +17,7 @@ def _ensure_dir() -> None:
     _HISTORY_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 
-def append(role: str, content: str, metadata: "Dict[str, Any]" = None) -> None:
+def append(role: str, content: str, metadata: Dict[str, Any] = None) -> None:
     """한 turn 추가. role: user|assistant. content: 평문 텍스트."""
     try:
         _ensure_dir()
@@ -34,7 +34,7 @@ def append(role: str, content: str, metadata: "Dict[str, Any]" = None) -> None:
         pass  # best-effort
 
 
-def tail(n: int = 20) -> "list[Dict[str, Any]]":
+def tail(n: int = 20) -> list[Dict[str, Any]]:
     """마지막 n개 turn."""
     if not _HISTORY_PATH.exists():
         return []

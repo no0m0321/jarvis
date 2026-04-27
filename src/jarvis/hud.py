@@ -53,7 +53,7 @@ def set_state(state: str, message: str = "") -> None:
         _last_state = state
 
 
-_voice_history: "list[float]" = []  # 최근 RMS 32개 (waveform strip)
+_voice_history: list[float] = []  # 최근 RMS 32개 (waveform strip)
 
 
 def set_voice_level(rms: float, peak: float = 0.0) -> None:
@@ -85,7 +85,7 @@ class _StateScope:
         self._state = state
         self._message = message
 
-    def __enter__(self) -> "_StateScope":
+    def __enter__(self) -> _StateScope:
         set_state(self._state, self._message)
         return self
 

@@ -72,5 +72,5 @@ def get_active() -> str:
     return PERSONAS.get(name, PERSONAS["jarvis"])
 
 
-def list_personas() -> "list[str]":
+def list_personas() -> list[str]:
     return list(PERSONAS.keys())

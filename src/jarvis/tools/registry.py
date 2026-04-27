@@ -23,7 +23,7 @@ class ToolRegistry:
     """Tool 등록 + Anthropic tool spec 생성 + 디스패치."""
 
     def __init__(self) -> None:
-        self._tools: "Dict[str, Tool]" = {}
+        self._tools: Dict[str, Tool] = {}
 
     def register(self, tool: Tool) -> None:
         self._tools[tool.name] = tool
@@ -31,13 +31,13 @@ class ToolRegistry:
     def get(self, name: str) -> Optional[Tool]:
         return self._tools.get(name)
 
-    def names(self) -> "List[str]":
+    def names(self) -> List[str]:
         return list(self._tools.keys())
 
-    def specs(self) -> "List[Dict[str, Any]]":
+    def specs(self) -> List[Dict[str, Any]]:
         return [t.to_spec() for t in self._tools.values()]
 
-    def dispatch(self, name: str, args: "Dict[str, Any]") -> str:
+    def dispatch(self, name: str, args: Dict[str, Any]) -> str:
         tool = self._tools.get(name)
         if tool is None:
             return f"[unknown tool: {name}]"

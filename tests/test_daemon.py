@@ -1,4 +1,3 @@
-from pathlib import Path
 
 from jarvis.daemon import (
     LABEL,

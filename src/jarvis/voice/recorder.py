@@ -12,7 +12,7 @@ def record_until_silence(
     silence_threshold: float = 0.012,
     max_duration: float = 60.0,
     pre_speech_timeout: float = 8.0,
-) -> "np.ndarray":
+) -> np.ndarray:
     """마이크에서 음성을 받아 침묵 감지 시 자동 종료.
 
     Args:
@@ -31,7 +31,7 @@ def record_until_silence(
     pre_speech_chunks = int(pre_speech_timeout * 1000 / chunk_ms)
     max_chunks = int(max_duration * 1000 / chunk_ms)
 
-    chunks: "list[Any]" = []
+    chunks: list[Any] = []
     silence_count = 0
     pre_silence_count = 0
     speech_started = False
@@ -68,8 +68,8 @@ def capture_phrase(
     silence_threshold: float = 0.012,
     max_speech_duration: float = 10.0,
     max_wait_for_speech: float = 300.0,
-    on_chunk_rms: "Any" = None,
-) -> "np.ndarray":
+    on_chunk_rms: Any = None,
+) -> np.ndarray:
     """발화가 시작될 때까지 대기 → 발화 캡처 → 침묵 시 종료.
 
     record_until_silence와 다른 점: 발화 시작 전에는 무한 대기(최대 max_wait_for_speech),
@@ -81,7 +81,7 @@ def capture_phrase(
     max_speech_chunks = int(max_speech_duration * 1000 / chunk_ms)
     max_wait_chunks = int(max_wait_for_speech * 1000 / chunk_ms)
 
-    chunks: "list[Any]" = []
+    chunks: list[Any] = []
     silence_count = 0
     speech_started = False
     wait_count = 0

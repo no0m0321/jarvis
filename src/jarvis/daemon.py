@@ -24,15 +24,15 @@ def venv_jarvis() -> Path:
 
 
 def render_plist(
-    args: "Optional[List[str]]" = None,
-    env_vars: "Optional[Dict[str, str]]" = None,
+    args: Optional[List[str]] = None,
+    env_vars: Optional[Dict[str, str]] = None,
 ) -> str:
     """plist XML 생성. args는 jarvis 뒤에 붙는 인자 (기본: ['wake'])."""
     args = list(args or ["wake"])
     program_args = [str(venv_jarvis()), *args]
     args_xml = "\n".join(f"        <string>{a}</string>" for a in program_args)
 
-    base_env: "Dict[str, str]" = {"PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"}
+    base_env: Dict[str, str] = {"PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"}
     if env_vars:
         base_env.update(env_vars)
     env_xml = "\n".join(
@@ -89,8 +89,8 @@ def _bootout() -> None:
 
 
 def install(
-    args: "Optional[List[str]]" = None,
-    env_vars: "Optional[Dict[str, str]]" = None,
+    args: Optional[List[str]] = None,
+    env_vars: Optional[Dict[str, str]] = None,
 ) -> str:
     LAUNCH_AGENTS_DIR.mkdir(parents=True, exist_ok=True)
     LOG_DIR.mkdir(parents=True, exist_ok=True)

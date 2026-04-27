@@ -1,7 +1,6 @@
 """추가 macOS 도구 — Mail compose, Spotlight, App activate, sound effect."""
 from __future__ import annotations
 
-import shlex
 import subprocess
 
 from jarvis.tools.registry import REGISTRY, Tool

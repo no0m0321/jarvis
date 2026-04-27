@@ -3,7 +3,8 @@ from __future__ import annotations
 import os
 import re
 import sys
-from typing import Any, Sequence, Tuple
+from collections.abc import Sequence
+from typing import Any, Tuple
 
 from jarvis.voice.recorder import capture_phrase
 from jarvis.voice.transcribe import transcribe
@@ -11,7 +12,7 @@ from jarvis.voice.transcribe import transcribe
 _DEBUG = os.environ.get("JARVIS_WAKE_DEBUG", "0") == "1"
 
 # 한국어 small/base 모델은 "자비스"를 다양하게 전사 — 변종 폭넓게 허용
-DEFAULT_WAKE_WORDS: "Tuple[str, ...]" = (
+DEFAULT_WAKE_WORDS: Tuple[str, ...] = (
     "자비스",
     "쟈비스",
     "재비스",
@@ -26,11 +27,11 @@ _WAKE_PROMPT = "자비스."
 
 
 def detect_wake_word(
-    audio: "Any",
-    wake_words: "Sequence[str]" = DEFAULT_WAKE_WORDS,
+    audio: Any,
+    wake_words: Sequence[str] = DEFAULT_WAKE_WORDS,
     detection_model: str = "base",
     language: str = "ko",
-) -> "Tuple[bool, str]":
+) -> Tuple[bool, str]:
     """오디오 → 전사 (약한 initial_prompt) → 매칭. (matched, text).
 
     너무 짧은(≤2자) 또는 빈 전사는 false positive 우려로 reject.
@@ -52,13 +53,13 @@ def detect_wake_word(
 
 
 def listen_for_wake(
-    wake_words: "Sequence[str]" = DEFAULT_WAKE_WORDS,
+    wake_words: Sequence[str] = DEFAULT_WAKE_WORDS,
     detection_model: str = "base",
     language: str = "ko",
     chunk_silence_duration: float = 0.5,
     chunk_max_duration: float = 2.0,
     silence_threshold: float = 0.015,
-    on_chunk_rms: "Any" = None,
+    on_chunk_rms: Any = None,
 ) -> str:
     """발화 무한 대기 → 짧은 캡처 → 전사 → wake word 검사. 매칭될 때까지 반복.
 
@@ -91,7 +92,7 @@ def listen_for_wake(
             return text
 
 
-def strip_wake(text: str, wake_words: "Sequence[str]" = DEFAULT_WAKE_WORDS) -> str:
+def strip_wake(text: str, wake_words: Sequence[str] = DEFAULT_WAKE_WORDS) -> str:
     """전사 텍스트에서 **모든** wake word 등장을 제거 → 순수 명령만 반환.
 
     반복 호출 ("자비스 자비스 자비스") 시에도 빈 문자열 반환 → 단독 호출 분기 진입.

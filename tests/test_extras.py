@@ -53,9 +53,10 @@ def test_hud_voice_history() -> None:
 
 
 def test_hud_state_writer() -> None:
-    from jarvis import hud
     import json
     from pathlib import Path
+
+    from jarvis import hud
 
     hud.set_state("listening", "test")
     p = Path.home() / "Library" / "Caches" / "jarvis-hud.json"

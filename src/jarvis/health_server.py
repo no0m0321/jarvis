@@ -19,9 +19,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Optional
 from urllib.parse import parse_qs, urlparse
 
-
 _started_at = time.time()
-_server: "Optional[ThreadingHTTPServer]" = None
+_server: Optional[ThreadingHTTPServer] = None
 
 
 class _Handler(BaseHTTPRequestHandler):
@@ -38,7 +37,7 @@ class _Handler(BaseHTTPRequestHandler):
         self.wfile.write(data)
 
     def do_GET(self) -> None:  # noqa: N802
-        from jarvis import history, hud
+        from jarvis import history
         from jarvis.tools import REGISTRY
 
         parsed = urlparse(self.path)

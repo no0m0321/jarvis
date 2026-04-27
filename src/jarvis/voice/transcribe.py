@@ -19,7 +19,7 @@ def _get_model(name: str) -> Any:
 
 
 def transcribe(
-    audio: "np.ndarray",
+    audio: np.ndarray,
     language: Optional[str] = "ko",
     model_name: str = "small",
     beam_size: int = 5,

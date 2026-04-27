@@ -20,7 +20,7 @@ def _block_to_dict(block: Any) -> Dict[str, Any]:
 
 
 def _final_text(content: Any) -> str:
-    parts: "List[str]" = []
+    parts: List[str] = []
     for block in content:
         if getattr(block, "type", None) == "text":
             parts.append(getattr(block, "text", "") or "")
@@ -49,7 +49,7 @@ def run_agent(
     client = Anthropic(api_key=settings.anthropic_api_key)
     out = console or Console()
 
-    tool_specs: "List[Dict[str, Any]]" = REGISTRY.specs()
+    tool_specs: List[Dict[str, Any]] = REGISTRY.specs()
     if tool_specs:
         tool_specs = [{**spec} for spec in tool_specs]
         tool_specs[-1]["cache_control"] = {"type": "ephemeral"}
@@ -69,7 +69,7 @@ def run_agent(
         }
     ]
 
-    messages: "List[Dict[str, Any]]" = [{"role": "user", "content": user_input}]
+    messages: List[Dict[str, Any]] = [{"role": "user", "content": user_input}]
     history.append("user", user_input)
     hud.set_state("analyzing", "agent loop")
 

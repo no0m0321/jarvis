@@ -41,7 +41,7 @@ def ask(
 
     assistant = JarvisAssistant(model=settings.fast_model if fast else None)
     console.print("[dim]자비스:[/dim] ", end="")
-    buffer: "list[str]" = []
+    buffer: list[str] = []
     for chunk in assistant.stream([{"role": "user", "content": prompt}]):
         console.print(chunk, end="")
         buffer.append(chunk)
@@ -85,7 +85,7 @@ def listen(
     console.print(f"[green]> {text}[/green]")
 
     assistant = JarvisAssistant()
-    buffer: "list[str]" = []
+    buffer: list[str] = []
     console.print("[dim]자비스:[/dim] ", end="")
     for chunk in assistant.stream([{"role": "user", "content": text}]):
         console.print(chunk, end="")
@@ -203,7 +203,7 @@ def voice(
     from jarvis.voice import record_until_silence, transcribe
 
     assistant = JarvisAssistant()
-    history: "list[dict]" = []
+    history: list[dict] = []
     console.print("[bold cyan]자비스 음성 모드 온라인.[/bold cyan] [dim]Ctrl+C로 종료[/dim]")
     try:
         while True:
@@ -221,7 +221,7 @@ def voice(
                 break
 
             history.append({"role": "user", "content": text})
-            buffer: "list[str]" = []
+            buffer: list[str] = []
             console.print("[dim]자비스:[/dim] ", end="")
             for chunk in assistant.stream(history):
                 console.print(chunk, end="")
@@ -239,7 +239,7 @@ def voice(
 def chat() -> None:
     """인터랙티브 대화. /exit 또는 Ctrl+C로 종료."""
     assistant = JarvisAssistant()
-    history: "list[dict]" = []
+    history: list[dict] = []
     console.print("[bold cyan]자비스 온라인.[/bold cyan] [dim]종료: /exit[/dim]")
     while True:
         try:
@@ -253,7 +253,7 @@ def chat() -> None:
             continue
         history.append({"role": "user", "content": user_input})
         console.print("[dim]자비스:[/dim] ", end="")
-        buffer: "list[str]" = []
+        buffer: list[str] = []
         for chunk in assistant.stream(history):
             console.print(chunk, end="")
             buffer.append(chunk)
@@ -365,8 +365,8 @@ def stats() -> None:
     except Exception:
         pass
 
-    from pathlib import Path
     import json
+    from pathlib import Path
     hud_p = Path.home() / "Library" / "Caches" / "jarvis-hud.json"
     if hud_p.exists():
         st = json.loads(hud_p.read_text())
