@@ -2,7 +2,7 @@
 
 > Voice-first personal AI assistant — Claude-powered, autonomous, holographic HUD
 
-승우의 개인 AI 비서. macOS 네이티브, 한국어 우선, "자비스" wake word 음성 대화 + 30개 도구를 통한 실제 시스템 동작 + 시네마틱 데스크톱 HUD.
+승우의 개인 AI 비서. macOS 네이티브, 한국어 우선, "자비스" wake word 음성 대화 + **49개 도구**를 통한 실제 시스템 동작 + 시네마틱 데스크톱 HUD + plugin/config 시스템.
 
 ## 시연
 
@@ -126,11 +126,44 @@ jarvis daemon {install|uninstall|status|restart|logs}
 jarvis hud {start|stop|state|history}
 ```
 
-## 도구 (30종)
+## 도구 (49종)
 
-shell · fs(4) · web · macOS basic(3) · calendar(2) · screen · clipboard(2) ·
-mail · spotlight · activate_app · play_sound · music_control · volume(2) ·
-brightness · reminder · note(2) · battery · wifi · bookmark · top_processes · system_action
+**파일/시스템**: shell · read_file · write_file · list_dir · search_files · file_info · hash_file
+**Web/네트워크**: fetch_url · web_search (server) · network_test · ip_info · port_check · wifi_info
+**macOS UI**: notify · say · open_url · activate_app · play_sound · screen_capture · system_action
+**클립보드/메모**: clipboard_read · clipboard_write · note_search · note_list · bookmark_add
+**Apps**: calendar_add · calendar_list_today · reminder_add · mail_compose · spotlight_search · music_control
+**디바이스**: set_volume · get_volume · set_brightness · battery_info · top_processes
+**유틸**: now · whoami · jarvis_status · env_get · calc · json_format · json_extract · base64_encode/decode · url_encode/decode
+**Git**: git_status · git_log · git_diff
+
+## 플러그인 시스템
+
+`~/.jarvis/plugins/*.py` 자동 import. 각 plugin은 `register()` 콜백 또는 module-level에서 `REGISTRY.register(Tool(...))`.
+
+```bash
+jarvis plugin init       # ~/.jarvis/plugins/example.py 템플릿 생성
+jarvis plugin list       # 등록된 plugin 목록
+jarvis plugin reload     # 강제 재로드
+```
+
+## 사용자 설정
+
+`~/.jarvis/config.toml` — JARVIS_* env vars로 export (env가 우선):
+
+```toml
+voice = "Reed"        # TTS voice
+persona = "jarvis"    # jarvis|casual|formal|creative
+hud_sounds = true     # sci-fi 사운드
+wake_debug = false    # wake 이벤트 stderr 로그
+health_port = 41418
+```
+
+```bash
+jarvis config --init     # 기본 config 생성
+jarvis config --show     # 현재 설정 조회
+jarvis config --edit     # $EDITOR로 편집
+```
 
 ## 환경 변수
 
