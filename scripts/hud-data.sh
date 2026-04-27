@@ -75,6 +75,10 @@ else
   VOICE='{"rms":0,"peak":0,"ts":0}'
 fi
 
+# ── Last log line (daemon stdout) ─────────────────────────────────────
+LAST_LOG=$(tail -n 1 "$HOME/Library/Logs/jarvis-wake.out.log" 2>/dev/null | tr -d '"\\' | head -c 80)
+LAST_LOG_ESC=$(printf "%s" "${LAST_LOG:-}" | sed 's/[^[:print:]]//g')
+
 # ── Compose ──────────────────────────────────────────────────────────
-printf '{"cpu":%.1f,"mem":%s,"net_in":%d,"net_out":%d,"disk":%s,"top_proc":"%s","jarvis":%s,"voice":%s,"ts":%d}\n' \
-  "$CPU" "$MEM_PCT" "$NET_IN" "$NET_OUT" "$DISK" "$TOP_PROC_ESC" "$STATE" "$VOICE" "$NOW_TS"
+printf '{"cpu":%.1f,"mem":%s,"net_in":%d,"net_out":%d,"disk":%s,"top_proc":"%s","last_log":"%s","jarvis":%s,"voice":%s,"ts":%d}\n' \
+  "$CPU" "$MEM_PCT" "$NET_IN" "$NET_OUT" "$DISK" "$TOP_PROC_ESC" "$LAST_LOG_ESC" "$STATE" "$VOICE" "$NOW_TS"

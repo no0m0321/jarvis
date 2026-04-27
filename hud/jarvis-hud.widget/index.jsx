@@ -35,6 +35,24 @@ for (let i = 0; i < 30; i++) {
   )
 }
 
+// Glitch — 5% 확률로 char swap (sci-fi feel)
+const GLITCH_GLYPHS = "▓░╳▣▦▩▤"
+const glitch = (text, prob = 0.05) =>
+  Array.from(text).map((c) =>
+    Math.random() < prob && c !== " "
+      ? GLITCH_GLYPHS[Math.floor(Math.random() * GLITCH_GLYPHS.length)]
+      : c
+  ).join("")
+
+// Day/night palette — 시간대별 accent 미세 변경
+const dayNightTint = () => {
+  const h = new Date().getHours()
+  if (h < 6) return { tint: "#7fffd4", soft: "rgba(127,255,212,0.5)" }   // 새벽 mint
+  if (h < 12) return { tint: "#00ffe5", soft: "rgba(0,255,229,0.5)" }    // 아침 cyan
+  if (h < 18) return { tint: "#5fdfd0", soft: "rgba(95,223,208,0.45)" }  // 오후 standard
+  return { tint: "#ff7bff", soft: "rgba(255,123,255,0.45)" }              // 저녁 magenta
+}
+
 const fmtBytes = (n) => {
   if (n < 1024) return `${n}B`
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)}K`
@@ -70,13 +88,13 @@ const Sparkline = ({ data, color, width = 60, height = 8 }) => {
 export const render = ({ output }) => {
   let data = {
     cpu: 0, mem: 0, net_in: 0, net_out: 0,
-    disk: 0, top_proc: "?:0",
+    disk: 0, top_proc: "?:0", last_log: "",
     jarvis: { state: "idle", message: "", ts: 0 },
-    voice: { rms: 0, peak: 0, ts: 0 },
+    voice: { rms: 0, peak: 0, history: [], ts: 0 },
     ts: 0,
   }
   try { data = JSON.parse(output) } catch (e) {}
-  const { cpu, mem, net_in, net_out, disk, jarvis, voice } = data
+  const { cpu, mem, net_in, net_out, disk, jarvis, voice, last_log } = data
   const state = (jarvis && jarvis.state) || "idle"
   const message = (jarvis && jarvis.message) || ""
   const ts = (jarvis && jarvis.ts) || 0
@@ -97,17 +115,21 @@ export const render = ({ output }) => {
   // particle 외향 push (voice 폭발 시 멀리 퍼짐)
   const voicePush = rms * 60
 
-  // 상태별 accent 색
+  // 상태별 accent (idle은 day/night palette에 따라 변동)
+  const dn = dayNightTint()
   const accent =
     effectiveState === "analyzing" ? "#ff7b00"
     : effectiveState === "speaking" ? "#ffd700"
     : effectiveState === "listening" ? "#00ffe5"
-    : "#5fdfd0"
+    : dn.tint
   const accentSoft =
     effectiveState === "analyzing" ? "rgba(255, 123, 0, 0.55)"
     : effectiveState === "speaking" ? "rgba(255, 215, 0, 0.55)"
     : effectiveState === "listening" ? "rgba(0, 255, 229, 0.6)"
-    : "rgba(95, 223, 208, 0.45)"
+    : dn.soft
+
+  // Voice waveform — voice.history (32 samples)
+  const waveform = (voice && voice.history) || []
 
   // 외곽 ring color
   const outerStyle = {
@@ -130,7 +152,9 @@ export const render = ({ output }) => {
       <span className="corner corner-br" style={{ borderColor: accent }} />
 
       <div className="header">
-        <span className="brand" style={{ textShadow: `0 0 14px ${accent}` }}>▣ JARVIS</span>
+        <span className="brand" style={{ textShadow: `0 0 14px ${accent}` }}>
+          ▣ {effectiveState === "analyzing" ? glitch("JARVIS", 0.18) : "JARVIS"}
+        </span>
         <span className={`state state-${effectiveState}`} style={{ color: accent, textShadow: `0 0 10px ${accent}` }}>
           ● {effectiveState.toUpperCase()}
         </span>
@@ -166,6 +190,23 @@ export const render = ({ output }) => {
         )}
       </div>
 
+      {waveform.length > 0 && (
+        <div className="waveform">
+          {waveform.map((r, i) => (
+            <div
+              key={i}
+              className="wf-bar"
+              style={{
+                height: `${Math.max(1, Math.min(20, r * 250))}px`,
+                background: accent,
+                boxShadow: `0 0 4px ${accent}`,
+                opacity: 0.5 + Math.min(0.5, r * 12),
+              }}
+            />
+          ))}
+        </div>
+      )}
+
       <div className="mini">
         <div className="mini-row">
           <span className="mini-label">CPU</span>
@@ -185,6 +226,12 @@ export const render = ({ output }) => {
           <span className="mini-label">DISK</span>
           <span className="mini-val flex">{disk}% used</span>
         </div>
+        {last_log && (
+          <div className="mini-row">
+            <span className="mini-label">LOG</span>
+            <span className="mini-val flex tiny">{last_log}</span>
+          </div>
+        )}
       </div>
 
       <div className="footer">
@@ -364,6 +411,25 @@ export const className = `
     flex: 1;
     height: 8px;
     opacity: 0.85;
+  }
+
+  .waveform {
+    position: relative;
+    z-index: 5;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 2px;
+    height: 22px;
+    margin-bottom: 8px;
+    padding: 1px 4px;
+    border-bottom: 1px solid rgba(0, 255, 229, 0.18);
+  }
+  .wf-bar {
+    flex: 1;
+    min-height: 1px;
+    border-radius: 1px;
+    transition: height 0.18s ease, opacity 0.2s, box-shadow 0.18s;
   }
 
   .footer {

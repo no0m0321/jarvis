@@ -20,17 +20,20 @@ def _get_model(name: str) -> Any:
 
 def transcribe(
     audio: "np.ndarray",
-    language: str = "ko",
+    language: Optional[str] = "ko",
     model_name: str = "small",
     beam_size: int = 5,
     initial_prompt: Optional[str] = None,
 ) -> str:
     """numpy float32 오디오를 텍스트로 전사. 빈 오디오는 빈 문자열 반환.
 
-    initial_prompt: Whisper에 어휘 hint. 짧은 wake word 인식률 크게 향상.
+    language: "ko"|"en"|"ja"|... 또는 "auto"/None → Whisper 자동 감지.
+    initial_prompt: 어휘 hint, 짧은 wake word 인식률 크게 향상.
     """
     if audio.size == 0:
         return ""
+    if language == "auto":
+        language = None
     model = _get_model(model_name)
     segments, _info = model.transcribe(
         audio,

@@ -297,6 +297,100 @@ def hud_state(
     console.print(f"OK: state={state} message={message!r}")
 
 
+@app.command()
+def note(
+    text: str = typer.Argument(..., help="메모 내용"),
+) -> None:
+    """~/.jarvis/notes.md 에 메모 한 줄 append (timestamp 포함)."""
+    from datetime import datetime as _dt
+    from pathlib import Path
+
+    path = Path.home() / ".jarvis" / "notes.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    ts = _dt.now().strftime("%Y-%m-%d %H:%M")
+    with path.open("a", encoding="utf-8") as f:
+        f.write(f"- [{ts}] {text}\n")
+    console.print(f"OK: {path}")
+
+
+@app.command()
+def timer(
+    minutes: float = typer.Argument(..., help="분"),
+    message: str = typer.Option("타이머 종료", "--message", "-m"),
+) -> None:
+    """N분 타이머 — 종료 시 사운드 + macOS 알림."""
+    import subprocess
+    import time as _t
+
+    secs = int(minutes * 60)
+    console.print(f"[cyan]⏱ {minutes}분 타이머 시작 — {message}[/cyan]")
+    try:
+        _t.sleep(secs)
+    except KeyboardInterrupt:
+        console.print("\n[yellow]타이머 취소[/yellow]")
+        return
+    subprocess.run(["afplay", "/System/Library/Sounds/Glass.aiff"], check=False)
+    subprocess.run(
+        ["osascript", "-e", f'display notification "{message}" with title "자비스 타이머"'],
+        check=False,
+    )
+    console.print(f"[bold green]⏰ {message}[/bold green]")
+
+
+@app.command()
+def update() -> None:
+    """git pull + pip install — 자비스 self-update."""
+    import subprocess
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[2]
+    console.print(f"[cyan]자비스 업데이트 시작 — {root}[/cyan]")
+    pull = subprocess.run(["git", "-C", str(root), "pull"], capture_output=True, text=True)
+    console.print(pull.stdout or pull.stderr)
+    if pull.returncode == 0:
+        venv_pip = root / ".venv" / "bin" / "pip"
+        if venv_pip.exists():
+            inst = subprocess.run(
+                [str(venv_pip), "install", "-q", "-e", f"{root}[dev]"],
+                capture_output=True, text=True,
+            )
+            console.print(inst.stdout[-500:] if inst.stdout else "(deps OK)")
+    console.print("[green]업데이트 완료. daemon은 `jarvis daemon restart`로 반영.[/green]")
+
+
+@app.command()
+def memory(
+    show: bool = typer.Option(False, "--show", help="현재 메모 출력"),
+    edit: bool = typer.Option(False, "--edit", help="$EDITOR로 메모 편집"),
+    add: str = typer.Option("", "--add", help="메모 끝에 한 줄 추가"),
+    clear: bool = typer.Option(False, "--clear", help="메모 비우기"),
+) -> None:
+    """~/.jarvis/memory.md — 시스템 프롬프트에 자동 첨부되는 cross-session 기억."""
+    import os as _os
+    from pathlib import Path
+
+    path = Path.home() / ".jarvis" / "memory.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if clear:
+        path.write_text("", encoding="utf-8")
+        console.print("OK: 메모 비웠음")
+        return
+    if add:
+        with path.open("a", encoding="utf-8") as f:
+            f.write(f"- {add}\n")
+        console.print(f"OK: 메모 추가됨 ({path})")
+        return
+    if edit:
+        editor = _os.environ.get("EDITOR", "vi")
+        _os.system(f"{editor} {path}")
+        return
+    if show or not (add or edit or clear):
+        if path.exists():
+            console.print(path.read_text(encoding="utf-8") or "(empty)")
+        else:
+            console.print(f"(no memory file at {path})")
+
+
 @hud_app.command("history")
 def hud_history(
     n: int = typer.Option(10, "--n", "-n", help="마지막 n개 turn"),

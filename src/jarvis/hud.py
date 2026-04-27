@@ -53,13 +53,23 @@ def set_state(state: str, message: str = "") -> None:
         _last_state = state
 
 
+_voice_history: "list[float]" = []  # 최근 RMS 32개 (waveform strip)
+
+
 def set_voice_level(rms: float, peak: float = 0.0) -> None:
-    """마이크 RMS를 voice file에 dump. HUD widget이 polling해서 particle reactive."""
+    """마이크 RMS를 voice file에 dump + 32-sample history."""
+    global _voice_history
+    _voice_history.append(rms)
+    if len(_voice_history) > 32:
+        _voice_history = _voice_history[-32:]
     try:
         _VOICE_LEVEL_PATH.parent.mkdir(parents=True, exist_ok=True)
-        _VOICE_LEVEL_PATH.write_text(
-            json.dumps({"rms": rms, "peak": peak, "ts": time.time()})
-        )
+        _VOICE_LEVEL_PATH.write_text(json.dumps({
+            "rms": rms,
+            "peak": peak,
+            "history": _voice_history,
+            "ts": time.time(),
+        }))
     except Exception:
         pass
 
