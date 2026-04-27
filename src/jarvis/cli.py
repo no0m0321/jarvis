@@ -108,9 +108,19 @@ def wake(
 
     명령은 run_agent(tool use)로 처리 — '메모 적어줘', '파일 찾아줘', '셸 명령 실행해줘'
     같은 실제 동작이 가능. 도구 사용 후 자연어 답변 + TTS.
+
+    부수: 시작 시 health HTTP 서버도 :41417에서 띄움.
     """
-    from jarvis import hud
+    from jarvis import health_server, hud
     from jarvis.agent import run_agent
+
+    # health server (best-effort — 포트 사용 중이면 skip)
+    try:
+        port = health_server.start()
+        if port > 0:
+            console.print(f"[dim]health: http://127.0.0.1:{port}/healthz[/dim]")
+    except Exception:
+        pass
     from jarvis.tools.macos import _say
     from jarvis.voice import (
         DEFAULT_WAKE_WORDS,
