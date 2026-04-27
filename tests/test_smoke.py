@@ -3,7 +3,7 @@ from jarvis.assistant import SYSTEM_PROMPT
 
 
 def test_version() -> None:
-    assert __version__ == "0.1.0"
+    assert __version__ == "0.2.0"
 
 
 def test_system_prompt_korean() -> None:
