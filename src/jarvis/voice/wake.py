@@ -14,16 +14,15 @@ _DEBUG = os.environ.get("JARVIS_WAKE_DEBUG", "0") == "1"
 DEFAULT_WAKE_WORDS: "Tuple[str, ...]" = (
     "자비스",
     "쟈비스",
-    "지비스",
     "재비스",
     "자뷔스",
-    "자비슨",
-    "서비스",  # base Whisper가 "자비스"를 자주 "서비스"로 오인식 (ㅈ↔ㅅ)
     "jarvis",
 )
+# 주의: "서비스/지비스/자비슨" 등 흔한 false positive 단어는 제거.
+# 일상 발화에 자주 등장 + initial_prompt hint 때문에 모델이 hallucinate.
 
 
-_WAKE_PROMPT = "자비스. 자비스. jarvis."
+_WAKE_PROMPT = "자비스."
 
 
 def detect_wake_word(
@@ -32,13 +31,19 @@ def detect_wake_word(
     detection_model: str = "base",
     language: str = "ko",
 ) -> "Tuple[bool, str]":
-    """오디오 → 전사 (wake word를 initial_prompt로 hint) → 매칭. (matched, text)."""
+    """오디오 → 전사 (약한 initial_prompt) → 매칭. (matched, text).
+
+    너무 짧은(≤2자) 또는 빈 전사는 false positive 우려로 reject.
+    """
     text = transcribe(
         audio,
         language=language,
         model_name=detection_model,
         initial_prompt=_WAKE_PROMPT,
     )
+    stripped = text.strip().rstrip(".!?,·")
+    if len(stripped) < 3:
+        return False, text
     lower = text.lower()
     for w in wake_words:
         if w.lower() in lower:
@@ -85,14 +90,18 @@ def listen_for_wake(
 
 
 def strip_wake(text: str, wake_words: "Sequence[str]" = DEFAULT_WAKE_WORDS) -> str:
-    """전사 텍스트에서 첫 wake word 등장 위치 이후를 명령으로 반환.
+    """전사 텍스트에서 **모든** wake word 등장을 제거 → 순수 명령만 반환.
+
+    반복 호출 ("자비스 자비스 자비스") 시에도 빈 문자열 반환 → 단독 호출 분기 진입.
 
     "자비스 시계 알려줘" → "시계 알려줘"
-    "자비스" → ""
+    "자비스. 자비스. 자비스." → ""
+    "자비스 메모 자비스 적어줘" → "메모 적어줘"
     "hello world" (wake word 없음) → "hello world"
     """
-    for w in wake_words:
-        m = re.search(re.escape(w), text, re.IGNORECASE)
-        if m:
-            return text[m.end():].lstrip(" ,.!?·")
-    return text
+    pattern = "|".join(re.escape(w) for w in wake_words)
+    if not pattern:
+        return text.strip()
+    cleaned = re.sub(pattern, " ", text, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\s+", " ", cleaned)
+    return cleaned.strip(" ,.!?·")

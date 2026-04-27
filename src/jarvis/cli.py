@@ -104,8 +104,13 @@ def wake(
     lang: str = typer.Option("ko", "--lang"),
     chime: bool = typer.Option(True, "--chime/--no-chime", help="wake 응답 음성"),
 ) -> None:
-    """Wake word 대기 모드. '자비스'라고 부르면 명령 받을 준비."""
+    """Wake word 대기 모드. '자비스'라고 부르면 명령 받을 준비.
+
+    명령은 run_agent(tool use)로 처리 — '메모 적어줘', '파일 찾아줘', '셸 명령 실행해줘'
+    같은 실제 동작이 가능. 도구 사용 후 자연어 답변 + TTS.
+    """
     from jarvis import hud
+    from jarvis.agent import run_agent
     from jarvis.tools.macos import _say
     from jarvis.voice import (
         DEFAULT_WAKE_WORDS,
@@ -118,9 +123,6 @@ def wake(
     wake_words = list(DEFAULT_WAKE_WORDS)
     if word:
         wake_words.insert(0, word)
-
-    assistant = JarvisAssistant()
-    history: "list[dict]" = []
 
     console.print("[bold cyan]자비스 wake 모드 대기.[/bold cyan]")
     console.print(f"[dim]호출어: {', '.join(wake_words[:4])}... | Ctrl+C 종료[/dim]")
@@ -156,18 +158,17 @@ def wake(
                 continue
             console.print(f"[green]> {command_text}[/green]")
 
-            history.append({"role": "user", "content": command_text})
-            buffer: "list[str]" = []
-            console.print("[dim]자비스:[/dim] ", end="")
-            for chunk in assistant.stream(history):
-                console.print(chunk, end="")
-                buffer.append(chunk)
-            console.print()
-            response = "".join(buffer)
-            history.append({"role": "assistant", "content": response})
-            if not no_speak:
+            response = run_agent(
+                command_text,
+                max_turns=8,
+                verbose=False,
+                console=console,
+            )
+            console.print(f"[bold]자비스:[/bold] {response}")
+            if response and not no_speak:
                 hud.set_state("speaking", "answer")
-                _say(response, voice="Yuna")
+                # TTS는 도구 결과 dump가 너무 길면 짧게 자름
+                _say(response[:500], voice="Yuna")
                 hud.set_state("idle")
     except KeyboardInterrupt:
         console.print("\n[dim]세션 종료.[/dim]")

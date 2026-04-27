@@ -15,13 +15,26 @@ def test_strip_wake_korean_only() -> None:
     assert strip_wake("자비스!") == ""
 
 
+def test_strip_wake_repeated_calls() -> None:
+    """반복 호출은 모두 제거 → 단독 호출 분기로."""
+    assert strip_wake("자비스 자비스 자비스") == ""
+    assert strip_wake("자비스. 자비스. 자비스. 자비스.") == ""
+
+
+def test_strip_wake_interleaved() -> None:
+    """명령 사이에 wake word 끼어있어도 모두 제거."""
+    assert strip_wake("자비스 메모 자비스 적어줘") == "메모 적어줘"
+
+
 def test_strip_wake_no_wake_word() -> None:
     assert strip_wake("hello world") == "hello world"
 
 
 def test_strip_wake_variant() -> None:
-    # small/base 모델이 "자비스"를 "지비스"로 전사하는 경우
-    assert strip_wake("지비스 메모 적어줘") == "메모 적어줘"
+    # 안전한 변종만 유지 (자비스/쟈비스/재비스/자뷔스/jarvis).
+    # "지비스/서비스/자비슨"은 false positive 우려로 제거됨.
+    assert strip_wake("쟈비스 메모 적어줘") == "메모 적어줘"
+    assert strip_wake("재비스 메모 적어줘") == "메모 적어줘"
 
 
 def test_strip_wake_with_punctuation() -> None:
