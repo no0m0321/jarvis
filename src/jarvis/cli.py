@@ -251,6 +251,72 @@ def chat() -> None:
         history.append({"role": "assistant", "content": "".join(buffer)})
 
 
+hud_app = typer.Typer(
+    name="hud",
+    help="HUD 위젯 직접 제어 (start/stop/state)",
+    no_args_is_help=True,
+)
+app.add_typer(hud_app, name="hud")
+
+
+@hud_app.command("start")
+def hud_start() -> None:
+    """Übersicht 앱 시작 (위젯 자동 로드)."""
+    import os as _os
+
+    apps = _os.popen("ls /Applications/ 2>/dev/null").read()
+    if "bersicht" not in apps:
+        console.print("[red]Übersicht 미설치 — `brew install --cask ubersicht`[/red]")
+        return
+    _os.system("open /Applications/*bersicht*.app")
+    console.print("OK: Übersicht 시작")
+
+
+@hud_app.command("stop")
+def hud_stop() -> None:
+    """Übersicht 종료."""
+    import os as _os
+
+    _os.system("osascript -e 'tell application \"Übersicht\" to quit' 2>/dev/null || pkill -f bersicht")
+    console.print("OK: Übersicht 종료")
+
+
+@hud_app.command("state")
+def hud_state(
+    state: str = typer.Argument(..., help="idle|listening|analyzing|speaking"),
+    message: str = typer.Option("", "--message", "-m"),
+) -> None:
+    """수동으로 HUD 상태 토글 (디버깅용)."""
+    from jarvis import hud as _hud
+
+    valid = {"idle", "listening", "analyzing", "speaking"}
+    if state not in valid:
+        console.print(f"[red]invalid state. choose: {valid}[/red]")
+        return
+    _hud.set_state(state, message)
+    console.print(f"OK: state={state} message={message!r}")
+
+
+@hud_app.command("history")
+def hud_history(
+    n: int = typer.Option(10, "--n", "-n", help="마지막 n개 turn"),
+) -> None:
+    """대화 히스토리 tail."""
+    from jarvis import history as _hist
+
+    entries = _hist.tail(n)
+    if not entries:
+        console.print(f"(history empty — {_hist.path()})")
+        return
+    for e in entries:
+        from datetime import datetime as _dt
+        ts = _dt.fromtimestamp(e["ts"]).strftime("%Y-%m-%d %H:%M:%S")
+        role = e["role"]
+        content = e["content"][:200]
+        color = "green" if role == "user" else "cyan"
+        console.print(f"[dim]{ts}[/dim] [{color}]{role}[/{color}] {content}")
+
+
 @daemon_app.command("install")
 def daemon_install(
     no_chime: bool = typer.Option(False, "--no-chime"),

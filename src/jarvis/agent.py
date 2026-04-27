@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional
 from anthropic import Anthropic
 from rich.console import Console
 
-from jarvis import hud
+from jarvis import history, hud
 from jarvis.assistant import SYSTEM_PROMPT
 from jarvis.config import settings
 from jarvis.tools import REGISTRY
@@ -54,6 +54,13 @@ def run_agent(
         tool_specs = [{**spec} for spec in tool_specs]
         tool_specs[-1]["cache_control"] = {"type": "ephemeral"}
 
+    # Anthropic server-side web search tool (Claude가 직접 실행)
+    tool_specs.append({
+        "type": "web_search_20260209",
+        "name": "web_search",
+        "max_uses": 3,
+    })
+
     system_blocks = [
         {
             "type": "text",
@@ -63,6 +70,7 @@ def run_agent(
     ]
 
     messages: "List[Dict[str, Any]]" = [{"role": "user", "content": user_input}]
+    history.append("user", user_input)
     hud.set_state("analyzing", "agent loop")
 
     try:
@@ -91,10 +99,18 @@ def run_agent(
                     tool_uses.append(block)
 
             if response.stop_reason == "end_turn":
-                return _final_text(response.content)
+                final = _final_text(response.content)
+                history.append("assistant", final, {"stop_reason": "end_turn"})
+                return final
+
+            if response.stop_reason == "pause_turn":
+                # server-side tool (web_search) 진행 중 — 그대로 다시 보내 resume
+                continue
 
             if response.stop_reason != "tool_use" or not tool_uses:
-                return _final_text(response.content) or f"[stop_reason={response.stop_reason}]"
+                final = _final_text(response.content) or f"[stop_reason={response.stop_reason}]"
+                history.append("assistant", final, {"stop_reason": response.stop_reason})
+                return final
 
             tool_results = []
             for tool_use in tool_uses:
