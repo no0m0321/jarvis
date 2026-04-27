@@ -105,6 +105,7 @@ def wake(
     chime: bool = typer.Option(True, "--chime/--no-chime", help="wake 응답 음성"),
 ) -> None:
     """Wake word 대기 모드. '자비스'라고 부르면 명령 받을 준비."""
+    from jarvis import hud
     from jarvis.tools.macos import _say
     from jarvis.voice import (
         DEFAULT_WAKE_WORDS,
@@ -126,23 +127,28 @@ def wake(
 
     try:
         while True:
+            hud.set_state("idle")
             heard = listen_for_wake(
                 wake_words=wake_words,
                 detection_model=detect_model,
                 language=lang,
             )
             console.print(f"\n[bold magenta]wake → {heard}[/bold magenta]")
+            hud.set_state("listening", "command")
 
             command_text = strip_wake(heard, wake_words).strip()
 
             if not command_text:
                 if chime and not no_speak:
+                    hud.set_state("speaking", "ack")
                     _say("네", voice="Yuna")
                 console.print("[dim]말씀하시오...[/dim]")
+                hud.set_state("listening", "command")
                 audio = capture_phrase(silence_duration=1.5, max_speech_duration=15.0)
                 if audio.size == 0:
                     console.print("[yellow](명령 없음)[/yellow]")
                     continue
+                hud.set_state("analyzing", "transcribe")
                 command_text = transcribe(audio, language=lang, model_name=main_model).strip()
 
             if not command_text:
@@ -160,9 +166,13 @@ def wake(
             response = "".join(buffer)
             history.append({"role": "assistant", "content": response})
             if not no_speak:
+                hud.set_state("speaking", "answer")
                 _say(response, voice="Yuna")
+                hud.set_state("idle")
     except KeyboardInterrupt:
         console.print("\n[dim]세션 종료.[/dim]")
+    finally:
+        hud.set_state("idle")
 
 
 @app.command()

@@ -4,6 +4,7 @@ from typing import Iterable, Optional
 
 from anthropic import Anthropic
 
+from jarvis import hud
 from jarvis.config import settings
 
 SYSTEM_PROMPT = """\
@@ -53,32 +54,40 @@ class JarvisAssistant:
 
     def reply(self, messages: Iterable[dict]) -> str:
         """단발 응답. messages는 [{role, content}, ...] 형식."""
-        msg = self.client.messages.create(
-            model=self.model,
-            max_tokens=self.max_tokens,
-            system=[
-                {
-                    "type": "text",
-                    "text": SYSTEM_PROMPT,
-                    "cache_control": {"type": "ephemeral"},
-                }
-            ],
-            messages=list(messages),
-        )
-        return "".join(block.text for block in msg.content if block.type == "text")
+        hud.set_state("analyzing", "LLM reply")
+        try:
+            msg = self.client.messages.create(
+                model=self.model,
+                max_tokens=self.max_tokens,
+                system=[
+                    {
+                        "type": "text",
+                        "text": SYSTEM_PROMPT,
+                        "cache_control": {"type": "ephemeral"},
+                    }
+                ],
+                messages=list(messages),
+            )
+            return "".join(block.text for block in msg.content if block.type == "text")
+        finally:
+            hud.set_state("idle")
 
     def stream(self, messages: Iterable[dict]):
         """스트리밍 응답. 토큰 단위 yield."""
-        with self.client.messages.stream(
-            model=self.model,
-            max_tokens=self.max_tokens,
-            system=[
-                {
-                    "type": "text",
-                    "text": SYSTEM_PROMPT,
-                    "cache_control": {"type": "ephemeral"},
-                }
-            ],
-            messages=list(messages),
-        ) as stream:
-            yield from stream.text_stream
+        hud.set_state("analyzing", "LLM stream")
+        try:
+            with self.client.messages.stream(
+                model=self.model,
+                max_tokens=self.max_tokens,
+                system=[
+                    {
+                        "type": "text",
+                        "text": SYSTEM_PROMPT,
+                        "cache_control": {"type": "ephemeral"},
+                    }
+                ],
+                messages=list(messages),
+            ) as stream:
+                yield from stream.text_stream
+        finally:
+            hud.set_state("idle")

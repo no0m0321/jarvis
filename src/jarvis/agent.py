@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional
 from anthropic import Anthropic
 from rich.console import Console
 
+from jarvis import hud
 from jarvis.assistant import SYSTEM_PROMPT
 from jarvis.config import settings
 from jarvis.tools import REGISTRY
@@ -38,6 +39,7 @@ def run_agent(
     Prompt caching: tools 배열 마지막 + system block에 ephemeral 캐시.
     Render 순서가 tools → system → messages이므로 system block 캐시는
     tools+system 전체를 커버하고, tools 자체 캐시는 tier 분리로 안전.
+    HUD: 진입 시 'analyzing' 상태 set, 종료 시 'idle' 복귀.
     """
     if not settings.anthropic_api_key:
         raise RuntimeError(
@@ -61,52 +63,56 @@ def run_agent(
     ]
 
     messages: "List[Dict[str, Any]]" = [{"role": "user", "content": user_input}]
+    hud.set_state("analyzing", "agent loop")
 
-    for _ in range(max_turns):
-        response = client.messages.create(
-            model=settings.model,
-            max_tokens=max_tokens_per_turn,
-            system=system_blocks,
-            tools=tool_specs,
-            messages=messages,
-        )
+    try:
+        for _ in range(max_turns):
+            response = client.messages.create(
+                model=settings.model,
+                max_tokens=max_tokens_per_turn,
+                system=system_blocks,
+                tools=tool_specs,
+                messages=messages,
+            )
 
-        # Append assistant turn (직렬화)
-        messages.append({
-            "role": "assistant",
-            "content": [_block_to_dict(b) for b in response.content],
-        })
-
-        tool_uses = []
-        for block in response.content:
-            btype = getattr(block, "type", None)
-            if btype == "text":
-                text = getattr(block, "text", "") or ""
-                if text and verbose:
-                    out.print(text)
-            elif btype == "tool_use":
-                tool_uses.append(block)
-
-        if response.stop_reason == "end_turn":
-            return _final_text(response.content)
-
-        if response.stop_reason != "tool_use" or not tool_uses:
-            return _final_text(response.content) or f"[stop_reason={response.stop_reason}]"
-
-        tool_results = []
-        for tool_use in tool_uses:
-            name = getattr(tool_use, "name", "")
-            tool_input = getattr(tool_use, "input", {}) or {}
-            tool_id = getattr(tool_use, "id", "")
-            if verbose:
-                out.print(f"[dim cyan]→ {name}({tool_input})[/dim cyan]")
-            result = REGISTRY.dispatch(name, tool_input)
-            tool_results.append({
-                "type": "tool_result",
-                "tool_use_id": tool_id,
-                "content": result,
+            messages.append({
+                "role": "assistant",
+                "content": [_block_to_dict(b) for b in response.content],
             })
 
-        messages.append({"role": "user", "content": tool_results})
+            tool_uses = []
+            for block in response.content:
+                btype = getattr(block, "type", None)
+                if btype == "text":
+                    text = getattr(block, "text", "") or ""
+                    if text and verbose:
+                        out.print(text)
+                elif btype == "tool_use":
+                    tool_uses.append(block)
 
-    return "[자비스: 최대 턴 수 초과]"
+            if response.stop_reason == "end_turn":
+                return _final_text(response.content)
+
+            if response.stop_reason != "tool_use" or not tool_uses:
+                return _final_text(response.content) or f"[stop_reason={response.stop_reason}]"
+
+            tool_results = []
+            for tool_use in tool_uses:
+                name = getattr(tool_use, "name", "")
+                tool_input = getattr(tool_use, "input", {}) or {}
+                tool_id = getattr(tool_use, "id", "")
+                if verbose:
+                    out.print(f"[dim cyan]→ {name}({tool_input})[/dim cyan]")
+                hud.set_state("analyzing", f"tool: {name}")
+                result = REGISTRY.dispatch(name, tool_input)
+                tool_results.append({
+                    "type": "tool_result",
+                    "tool_use_id": tool_id,
+                    "content": result,
+                })
+
+            messages.append({"role": "user", "content": tool_results})
+
+        return "[자비스: 최대 턴 수 초과]"
+    finally:
+        hud.set_state("idle")
