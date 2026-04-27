@@ -6,6 +6,7 @@ from jarvis.tools import (  # noqa: F401  (sideeffect imports)
     macos_extras2,
     macos_more,
     shell,
+    utils,
     web,
 )
 from jarvis.tools.registry import REGISTRY, Tool

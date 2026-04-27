@@ -95,26 +95,27 @@ class _Handler(BaseHTTPRequestHandler):
 
 
 def start(port: Optional[int] = None) -> int:
-    """HTTP server 시작 (별도 thread). 같은 포트 이미 사용 중이면 silently skip."""
+    """HTTP server 시작 (별도 thread). 포트 사용 중이면 41418-41430 자동 폴백."""
     global _server
     if _server is not None:
         return _server.server_address[1]
-    port = port or int(os.environ.get("JARVIS_HEALTH_PORT", "41417"))
 
-    # port 사용 중인지 체크
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    try:
-        sock.bind(("127.0.0.1", port))
-    except OSError:
-        sock.close()
-        return -1  # port busy
-    finally:
-        sock.close()
+    base_port = port or int(os.environ.get("JARVIS_HEALTH_PORT", "41418"))
+    candidates = [base_port] + [p for p in range(41418, 41431) if p != base_port]
 
-    _server = ThreadingHTTPServer(("127.0.0.1", port), _Handler)
-    t = threading.Thread(target=_server.serve_forever, daemon=True)
-    t.start()
-    return port
+    for p in candidates:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            sock.bind(("127.0.0.1", p))
+        except OSError:
+            sock.close()
+            continue
+        sock.close()
+        _server = ThreadingHTTPServer(("127.0.0.1", p), _Handler)
+        t = threading.Thread(target=_server.serve_forever, daemon=True)
+        t.start()
+        return p
+    return -1  # 모든 candidate 사용 중
 
 
 def stop() -> None:

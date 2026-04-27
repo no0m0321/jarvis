@@ -1,7 +1,7 @@
 [project]
 name = "jarvis"
-version = "0.1.0"
-description = "Personal AI assistant — autonomous, voice-of-Iron-Man, Claude-powered"
+version = "0.2.0"
+description = "Personal AI assistant — autonomous, voice-of-Iron-Man, Claude-powered, holographic HUD"
 readme = "README.md"
 requires-python = ">=3.9"
 authors = [{ name = "swxvno", email = "swxvno0m@gmail.com" }]

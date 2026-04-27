@@ -348,6 +348,51 @@ def timer(
 
 
 @app.command()
+def stats() -> None:
+    """자비스 자체 상태 + 등록 도구 list + 최근 history."""
+    from jarvis import history as _hist
+    from jarvis.tools import REGISTRY
+
+    console.print("[bold cyan]▣ JARVIS STATS[/bold cyan]")
+    console.print(f"[dim]tools registered:[/dim] {len(REGISTRY.names())}")
+    console.print(f"[dim]history file:[/dim] {_hist.path()}")
+    console.print(f"[dim]history entries:[/dim] {len(_hist.tail(99999))}")
+
+    import subprocess
+    try:
+        pgrep = subprocess.run(["pgrep", "-f", "jarvis wake"], capture_output=True, text=True, timeout=3)
+        console.print(f"[dim]daemon PIDs:[/dim] {pgrep.stdout.strip() or '(not running)'}")
+    except Exception:
+        pass
+
+    from pathlib import Path
+    import json
+    hud_p = Path.home() / "Library" / "Caches" / "jarvis-hud.json"
+    if hud_p.exists():
+        st = json.loads(hud_p.read_text())
+        console.print(f"[dim]hud state:[/dim] {st.get('state', '?')}")
+
+
+@app.command()
+def tools_list(
+    detail: bool = typer.Option(False, "--detail", "-d"),
+) -> None:
+    """등록된 모든 도구 list."""
+    from jarvis.tools import REGISTRY
+
+    for name in sorted(REGISTRY.names()):
+        tool = REGISTRY.get(name)
+        if detail and tool:
+            console.print(f"[bold cyan]{name}[/bold cyan]")
+            console.print(f"  [dim]{tool.description}[/dim]")
+            req = tool.input_schema.get("required", [])
+            if req:
+                console.print(f"  [dim]required: {req}[/dim]")
+        else:
+            console.print(f"  {name}")
+
+
+@app.command()
 def update() -> None:
     """git pull + pip install — 자비스 self-update."""
     import subprocess
