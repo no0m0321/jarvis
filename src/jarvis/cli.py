@@ -145,47 +145,64 @@ def wake(
         pass
 
     console.print("[bold cyan]자비스 wake 모드.[/bold cyan]")
-    console.print("[dim]노치(카메라) 영역에 마우스 hover → 명령 발화 (wake word 불필요)[/dim]")
-    console.print("[dim]Ctrl+C 종료 | 명령은 한국어/영어 둘 다 가능[/dim]")
+    console.print("[dim]노치 hover → 마이크 ON | '자비스/Jarvis' 부르면 응답[/dim]")
+    console.print("[dim]Ctrl+C 종료 | 명령은 한국어 (auto는 짧은 발화에 부정확)[/dim]")
+
+    wake_words = list(DEFAULT_WAKE_WORDS)
+    if word:
+        wake_words.insert(0, word)
 
     rms_cb = hud.set_voice_level
 
     try:
         while True:
             hud.set_state("idle")
+            _write_lock(False)
 
             # 1. Hover ON 대기 (block)
             while not _is_hover_active():
                 _time.sleep(0.2)
 
-            console.print("\n[bold magenta]🎙 hover detected — 명령 받겠습니다[/bold magenta]")
-            # 세션 시작 — lock ON (마우스 떠나도 panel 유지)
-            _write_lock(True)
+            # 2. wake word listening (hover 동안만 — _HOVER_GATE)
+            console.print("\n[bold magenta]🎙 hover — '자비스' 호출 대기[/bold magenta]")
+            hud.set_state("listening", "wake")
+            heard = listen_for_wake(
+                wake_words=wake_words,
+                detection_model=detect_model,
+                language=None,  # auto-detect 한/영
+                on_chunk_rms=rms_cb,
+            )
+            console.print(f"[bold magenta]wake matched → {heard}[/bold magenta]")
 
-            # 2. "네" chime
+            # 3. wake matched — 정중한 응답 + lock 시작
+            _write_lock(True)
             if chime and not no_speak:
                 hud.set_state("speaking", "ack")
-                _say("네")
+                _say("예, 주인님. 무엇을 도와드릴까요.")
 
-            # 3. 명령 capture (긴 silence — 사용자 발화 충분히 받음)
+            # 4. 명령 capture (긴 silence)
             hud.set_state("listening", "command")
-            console.print("[dim]말씀하시오...[/dim]")
+            console.print("[dim]명령 발화 대기...[/dim]")
             audio = capture_phrase(
                 silence_duration=1.8,
                 max_speech_duration=20.0,
                 on_chunk_rms=rms_cb,
             )
             if audio.size == 0:
-                console.print("[yellow](명령 없음 — hover OFF 후 다시)[/yellow]")
+                console.print("[yellow](명령 없음)[/yellow]")
+                if not no_speak:
+                    _say("주인님, 명령을 듣지 못했습니다.")
+                _write_lock(False)
                 while _is_hover_active():
                     _time.sleep(0.3)
                 continue
 
-            # 4. Transcribe (auto-detect 한/영)
+            # 5. Transcribe — 한국어 강제 (lang 옵션이 'auto'이거나 'ko'이면 한국어로)
             hud.set_state("analyzing", "transcribe")
+            tx_lang = "ko" if lang in ("auto", "ko") else lang
             command_text = transcribe(
                 audio,
-                language="auto" if lang == "auto" else lang,
+                language=tx_lang,
                 model_name=main_model,
             ).strip()
 
