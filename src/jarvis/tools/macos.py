@@ -27,12 +27,16 @@ def _notify(title: str, message: str, subtitle: str = "") -> str:
 import os as _os
 
 
-def _say(text: str, voice: str = "", rate: int = 175) -> str:
+def _say(text: str, voice: str = "", rate: int = 180) -> str:
     """macOS TTS. JARVIS_VOICE 환경변수로 default override 가능.
 
-    추천 한국어 voice: Reed(남성, 자비스 톤), Yuna(여성), Eddy(중성).
+    한국어 native voice (자연스러운 발음):
+    - Yuna (여성, 기본) — 가장 자연스러운 한국어 native
+    - Sandy (여성) / Shelley (여성) — Premium 다운로드 시 신경망 voice
+    - Eddy (중성, 톤 살짝 낮음)
+    - Reed (남성) — 한국어 발음 어색
     """
-    voice = voice or _os.environ.get("JARVIS_VOICE", "Reed")
+    voice = voice or _os.environ.get("JARVIS_VOICE", "Eddy")
     try:
         subprocess.run(
             ["say", "-v", voice, "-r", str(rate), text],

@@ -104,13 +104,14 @@ def wake(
     lang: str = typer.Option("auto", "--lang", help="명령 언어. 'auto' = 한/영 자동 감지"),
     chime: bool = typer.Option(True, "--chime/--no-chime", help="wake 응답 음성"),
 ) -> None:
-    """Wake mode — 노치(카메라) hover = 자비스 호출. wake word 발화 불필요.
+    """Wake mode — hover로 마이크 활성, '자비스/Jarvis' 발화 → '예 주인님' 응답.
 
     흐름:
-      1. JarvisHUD.app이 노치 hover 감지 → ~/Library/Caches/jarvis-hover.json 에 active=true
-      2. daemon이 hover 신호 감지 → '네' chime → 명령 capture
-      3. transcribe (한/영 auto-detect) → run_agent(tool use) → TTS 답변
-      4. hover OFF까지 대기 → loop
+      1. JarvisHUD.app이 노치 hover → hover.json active=true → 마이크 ON
+      2. daemon이 wake word ('자비스' 또는 'Jarvis') listening
+      3. wake matched → '예 주인님 무엇을 도와드릴까요' TTS + lock 시작
+      4. 명령 발화 (한/영) → transcribe → run_agent → 짧은 답변 + TTS
+      5. 답변 완료 → lock 해제 → hover OFF 후 collapse
     """
     import json as _json
     import time as _time
@@ -119,7 +120,12 @@ def wake(
     from jarvis import health_server, hud
     from jarvis.agent import run_agent
     from jarvis.tools.macos import _say
-    from jarvis.voice import capture_phrase, transcribe
+    from jarvis.voice import (
+        DEFAULT_WAKE_WORDS,
+        capture_phrase,
+        listen_for_wake,
+        transcribe,
+    )
     from jarvis.voice.wake import _is_hover_active
 
     _lock_path = _Path.home() / "Library" / "Caches" / "jarvis-lock.json"
@@ -192,7 +198,7 @@ def wake(
 
             console.print(f"[green]> {command_text}[/green]")
 
-            # 5. run_agent로 명령 실행 (도구 사용 가능)
+            # 6. run_agent로 명령 실행 (도구 사용)
             response = run_agent(
                 command_text,
                 max_turns=8,
@@ -201,16 +207,15 @@ def wake(
             )
             console.print(f"[bold]자비스:[/bold] {response}")
 
-            # 6. TTS 답변 (lock 유지 — panel 강제 표시)
+            # 7. TTS 답변
             if response and not no_speak:
                 hud.set_state("speaking", "answer")
                 _say(response[:500])
 
             hud.set_state("idle")
-            # 답변 완료 — lock OFF → JarvisHUD가 hover 안 되어 있으면 collapse
             _write_lock(False)
 
-            # 7. hover OFF까지 대기 (double-trigger 방지)
+            # 8. hover OFF까지 대기 (double-trigger 방지)
             while _is_hover_active():
                 _time.sleep(0.3)
     except KeyboardInterrupt:
