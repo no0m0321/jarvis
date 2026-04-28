@@ -174,43 +174,66 @@ def wake(
             )
             console.print(f"[bold magenta]wake matched → {heard}[/bold magenta]")
 
-            # 3. wake matched — 정중한 응답 + lock 시작
+            # 3. wake matched — 빠른 응답 + lock 시작
             _write_lock(True)
             if chime and not no_speak:
                 hud.set_state("speaking", "ack")
-                _say("예, 주인님. 무엇을 도와드릴까요.")
+                _say("네 주인님")
 
-            # 4. 명령 capture (긴 silence)
-            hud.set_state("listening", "command")
-            console.print("[dim]명령 발화 대기...[/dim]")
-            audio = capture_phrase(
-                silence_duration=1.8,
-                max_speech_duration=20.0,
-                on_chunk_rms=rms_cb,
-            )
-            if audio.size == 0:
-                console.print("[yellow](명령 없음)[/yellow]")
-                if not no_speak:
-                    _say("주인님, 명령을 듣지 못했습니다.")
-                _write_lock(False)
-                while _is_hover_active():
-                    _time.sleep(0.3)
-                continue
-
-            # 5. Transcribe — 한국어 강제 (lang 옵션이 'auto'이거나 'ko'이면 한국어로)
-            hud.set_state("analyzing", "transcribe")
+            # 4. Multi-turn 대화 loop — '사라져' 등 종료어까지 계속
+            EXIT_KEYWORDS = {
+                "사라져", "사라지다", "그만", "종료", "끝", "잘자",
+                "bye", "goodbye", "stop", "quit",
+            }
+            empty_streak = 0
             tx_lang = "ko" if lang in ("auto", "ko") else lang
-            command_text = transcribe(
-                audio,
-                language=tx_lang,
-                model_name=main_model,
-            ).strip()
 
-            # multi-turn 종료 — lock 해제 + idle
+            while True:
+                hud.set_state("listening", "command")
+                console.print("[dim]말씀하세요...[/dim]")
+                audio = capture_phrase(
+                    silence_duration=1.0,
+                    max_speech_duration=15.0,
+                    on_chunk_rms=rms_cb,
+                )
+                if audio.size == 0:
+                    empty_streak += 1
+                    if empty_streak >= 3:
+                        if not no_speak:
+                            _say("쉬겠습니다 주인님")
+                        break
+                    continue
+                empty_streak = 0
+
+                hud.set_state("analyzing", "transcribe")
+                command_text = transcribe(
+                    audio, language=tx_lang, model_name=main_model
+                ).strip()
+                if not command_text:
+                    continue
+                console.print(f"[green]> {command_text}[/green]")
+
+                # 종료어 체크
+                low = command_text.lower().strip(" .!?,")
+                if any(kw in low for kw in EXIT_KEYWORDS):
+                    if not no_speak:
+                        _say("알겠습니다 주인님")
+                    break
+
+                # run_agent → 답변
+                response = run_agent(
+                    command_text, max_turns=8, verbose=False, console=console
+                )
+                console.print(f"[bold]자비스:[/bold] {response}")
+                if response and not no_speak:
+                    hud.set_state("speaking", "answer")
+                    _say(response[:400])
+
+            # multi-turn 종료 — lock OFF + idle
             hud.set_state("idle")
             _write_lock(False)
 
-            # hover OFF까지 대기 (다음 wake 호출 전)
+            # hover OFF까지 대기 (다음 wake 전)
             while _is_hover_active():
                 _time.sleep(0.3)
     except KeyboardInterrupt:
