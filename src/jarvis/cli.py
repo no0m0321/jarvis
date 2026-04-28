@@ -101,80 +101,84 @@ def wake(
     detect_model: str = typer.Option("base", "--detect-model", help="wake 감지용 (빠른 게 좋음)"),
     main_model: str = typer.Option("small", "--model", help="명령 전사용"),
     no_speak: bool = typer.Option(False, "--no-speak", help="TTS 출력 끔"),
-    lang: str = typer.Option("ko", "--lang"),
+    lang: str = typer.Option("auto", "--lang", help="명령 언어. 'auto' = 한/영 자동 감지"),
     chime: bool = typer.Option(True, "--chime/--no-chime", help="wake 응답 음성"),
 ) -> None:
-    """Wake word 대기 모드. '자비스'라고 부르면 명령 받을 준비.
+    """Wake mode — 노치(카메라) hover = 자비스 호출. wake word 발화 불필요.
 
-    명령은 run_agent(tool use)로 처리 — '메모 적어줘', '파일 찾아줘', '셸 명령 실행해줘'
-    같은 실제 동작이 가능. 도구 사용 후 자연어 답변 + TTS.
-
-    부수: 시작 시 health HTTP 서버도 :41417에서 띄움.
+    흐름:
+      1. JarvisHUD.app이 노치 hover 감지 → ~/Library/Caches/jarvis-hover.json 에 active=true
+      2. daemon이 hover 신호 감지 → '네' chime → 명령 capture
+      3. transcribe (한/영 auto-detect) → run_agent(tool use) → TTS 답변
+      4. hover OFF까지 대기 → loop
     """
+    import time as _time
+
     from jarvis import health_server, hud
     from jarvis.agent import run_agent
+    from jarvis.tools.macos import _say
+    from jarvis.voice import capture_phrase, transcribe
+    from jarvis.voice.wake import _is_hover_active
 
-    # health server (best-effort — 포트 사용 중이면 skip)
     try:
         port = health_server.start()
         if port > 0:
             console.print(f"[dim]health: http://127.0.0.1:{port}/healthz[/dim]")
     except Exception:
         pass
-    from jarvis.tools.macos import _say
-    from jarvis.voice import (
-        DEFAULT_WAKE_WORDS,
-        capture_phrase,
-        listen_for_wake,
-        strip_wake,
-        transcribe,
-    )
 
-    wake_words = list(DEFAULT_WAKE_WORDS)
-    if word:
-        wake_words.insert(0, word)
+    console.print("[bold cyan]자비스 wake 모드.[/bold cyan]")
+    console.print("[dim]노치(카메라) 영역에 마우스 hover → 명령 발화 (wake word 불필요)[/dim]")
+    console.print("[dim]Ctrl+C 종료 | 명령은 한국어/영어 둘 다 가능[/dim]")
 
-    console.print("[bold cyan]자비스 wake 모드 대기.[/bold cyan]")
-    console.print(f"[dim]호출어: {', '.join(wake_words[:4])}... | Ctrl+C 종료[/dim]")
-
-    rms_cb = hud.set_voice_level  # 매 chunk마다 RMS를 voice file에 dump → particle reactive
+    rms_cb = hud.set_voice_level
 
     try:
         while True:
             hud.set_state("idle")
-            heard = listen_for_wake(
-                wake_words=wake_words,
-                detection_model=detect_model,
-                language=lang,
+
+            # 1. Hover ON 대기 (block)
+            while not _is_hover_active():
+                _time.sleep(0.2)
+
+            console.print("\n[bold magenta]🎙 hover detected — 명령 받겠습니다[/bold magenta]")
+
+            # 2. "네" chime
+            if chime and not no_speak:
+                hud.set_state("speaking", "ack")
+                _say("네")
+
+            # 3. 명령 capture (긴 silence — 사용자 발화 충분히 받음)
+            hud.set_state("listening", "command")
+            console.print("[dim]말씀하시오...[/dim]")
+            audio = capture_phrase(
+                silence_duration=1.8,
+                max_speech_duration=20.0,
                 on_chunk_rms=rms_cb,
             )
-            console.print(f"\n[bold magenta]wake → {heard}[/bold magenta]")
-            hud.set_state("listening", "command")
+            if audio.size == 0:
+                console.print("[yellow](명령 없음 — hover OFF 후 다시)[/yellow]")
+                while _is_hover_active():
+                    _time.sleep(0.3)
+                continue
 
-            command_text = strip_wake(heard, wake_words).strip()
-
-            if not command_text:
-                if chime and not no_speak:
-                    hud.set_state("speaking", "ack")
-                    _say("네")
-                console.print("[dim]말씀하시오...[/dim]")
-                hud.set_state("listening", "command")
-                audio = capture_phrase(
-                    silence_duration=1.5,
-                    max_speech_duration=15.0,
-                    on_chunk_rms=rms_cb,
-                )
-                if audio.size == 0:
-                    console.print("[yellow](명령 없음)[/yellow]")
-                    continue
-                hud.set_state("analyzing", "transcribe")
-                command_text = transcribe(audio, language=lang, model_name=main_model).strip()
+            # 4. Transcribe (auto-detect 한/영)
+            hud.set_state("analyzing", "transcribe")
+            command_text = transcribe(
+                audio,
+                language="auto" if lang == "auto" else lang,
+                model_name=main_model,
+            ).strip()
 
             if not command_text:
                 console.print("[yellow](전사 결과 없음)[/yellow]")
+                while _is_hover_active():
+                    _time.sleep(0.3)
                 continue
+
             console.print(f"[green]> {command_text}[/green]")
 
+            # 5. run_agent로 명령 실행 (도구 사용 가능)
             response = run_agent(
                 command_text,
                 max_turns=8,
@@ -182,10 +186,17 @@ def wake(
                 console=console,
             )
             console.print(f"[bold]자비스:[/bold] {response}")
+
+            # 6. TTS 답변
             if response and not no_speak:
                 hud.set_state("speaking", "answer")
                 _say(response[:500])
-                hud.set_state("idle")
+
+            hud.set_state("idle")
+
+            # 7. hover OFF까지 대기 (double-trigger 방지)
+            while _is_hover_active():
+                _time.sleep(0.3)
     except KeyboardInterrupt:
         console.print("\n[dim]세션 종료.[/dim]")
     finally:

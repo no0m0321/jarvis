@@ -1,15 +1,33 @@
 from __future__ import annotations
 
+import json
 import os
 import re
 import sys
+import time
 from collections.abc import Sequence
+from pathlib import Path
 from typing import Any, Optional, Tuple
 
 from jarvis.voice.recorder import capture_phrase
 from jarvis.voice.transcribe import transcribe
 
 _DEBUG = os.environ.get("JARVIS_WAKE_DEBUG", "0") == "1"
+# JARVIS_HOVER_GATE=0 으로 끄면 항상 마이크 listening (이전 동작)
+# 기본은 hover gate ON — 카메라 영역 마우스 호버 시에만 마이크 사용
+_HOVER_GATE = os.environ.get("JARVIS_HOVER_GATE", "1") == "1"
+_HOVER_FILE = Path.home() / "Library" / "Caches" / "jarvis-hover.json"
+
+
+def _is_hover_active() -> bool:
+    """JarvisHUD.app이 카메라 hover 신호를 file에 쓴 경우만 True."""
+    try:
+        if not _HOVER_FILE.exists():
+            return False
+        data = json.loads(_HOVER_FILE.read_text())
+        return bool(data.get("hover", False)) and (time.time() - data.get("ts", 0) < 5)
+    except Exception:
+        return False
 
 # 한국어 small/base 모델은 "자비스"를 다양하게 전사 — 변종 폭넓게 허용
 DEFAULT_WAKE_WORDS: Tuple[str, ...] = (
@@ -74,6 +92,10 @@ def listen_for_wake(
         wake word를 포함한 전사 텍스트. 호출자가 strip_wake로 명령 부분 추출 가능.
     """
     while True:
+        # Hover gate — JarvisHUD.app이 카메라 hover 신호 안 보내면 마이크 안 씀
+        if _HOVER_GATE and not _is_hover_active():
+            time.sleep(0.4)
+            continue
         audio = capture_phrase(
             silence_duration=chunk_silence_duration,
             max_speech_duration=chunk_max_duration,
