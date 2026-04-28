@@ -20,8 +20,8 @@ async function setupVisualizer(canvas) {
   const dpr = Math.min(window.devicePixelRatio || 1, 2)
   const resize = () => {
     const rect = canvas.parentElement.getBoundingClientRect()
-    const w = Math.max(800, rect.width)
-    const h = Math.max(120, rect.height)
+    const w = Math.max(220, rect.width)
+    const h = Math.max(220, rect.height)
     canvas.width = w * dpr
     canvas.height = h * dpr
     canvas.style.width = w + "px"
@@ -41,11 +41,17 @@ async function setupVisualizer(canvas) {
   const ppy = new Float32Array(N)
   const ppz = new Float32Array(N)
 
+  // 3D SPHERE distribution — particles on/near a sphere surface
+  // theta: 0~2π, phi: -π/2~π/2  →  xyz on sphere of radius R + slight noise
+  const R = 95
   for (let i = 0; i < N; i++) {
-    px[i] = (Math.random() - 0.5) * 800
-    py[i] = (Math.random() - 0.5) * 60
-    pz[i] = (Math.random() - 0.5) * 180
-    psize[i] = 1.2 + Math.random() * 1.6
+    const theta = Math.random() * 6.2832
+    const phi = Math.acos(2 * Math.random() - 1) - Math.PI / 2  // uniform over sphere
+    const r = R + (Math.random() - 0.5) * 12  // shell thickness
+    px[i] = r * Math.cos(phi) * Math.cos(theta)
+    py[i] = r * Math.sin(phi)
+    pz[i] = r * Math.cos(phi) * Math.sin(theta)
+    psize[i] = 1.3 + Math.random() * 1.5
   }
 
   // Audio analyser
@@ -312,25 +318,26 @@ export const render = ({ output }) => {
   )
 }
 
+// Top-center 3D sphere (260×260 원형 영역, 데스크톱 상단 중앙)
 export const className = `
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 150px;
+  position: fixed;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 260px;
+  height: 260px;
   background: transparent !important;
   pointer-events: none;
-  z-index: 1;
+  z-index: 999;
 
   .vis-root {
     position: relative;
     width: 100%;
     height: 100%;
     background: transparent;
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 25%, black 75%, transparent 100%), linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
-    -webkit-mask-composite: source-in;
-    mask-image: linear-gradient(to bottom, transparent 0%, black 25%, black 75%, transparent 100%), linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
-    mask-composite: intersect;
+    border-radius: 50%;
+    -webkit-mask-image: radial-gradient(circle at center, black 55%, rgba(0,0,0,0.6) 75%, transparent 100%);
+    mask-image: radial-gradient(circle at center, black 55%, rgba(0,0,0,0.6) 75%, transparent 100%);
   }
 
   .particle-canvas {
@@ -338,5 +345,6 @@ export const className = `
     width: 100%;
     height: 100%;
     background: transparent;
+    border-radius: 50%;
   }
 `
