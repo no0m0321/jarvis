@@ -191,9 +191,12 @@ def wake(
             while True:
                 hud.set_state("listening", "command")
                 console.print("[dim]말씀하세요...[/dim]")
+                # 사용자 hesitation 흡수 — 2.5초 침묵 후에야 발화 종료로 간주
+                # max 25초까지 한 발화 캡처 가능 (긴 명령/생각 흐름 OK)
                 audio = capture_phrase(
-                    silence_duration=1.0,
-                    max_speech_duration=15.0,
+                    silence_duration=2.5,
+                    max_speech_duration=25.0,
+                    silence_threshold=0.012,  # 작은 hesitation ('음', '어')도 발화로
                     on_chunk_rms=rms_cb,
                 )
                 if audio.size == 0:
