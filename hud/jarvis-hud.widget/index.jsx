@@ -236,6 +236,49 @@ async function setupVisualizer(canvas) {
     ctx.globalAlpha = 1
     ctx.shadowBlur = 0
 
+    // ── Concentric pulse rings (voice burst) ──────────────────
+    if (smoothPeak > 0.18) {
+      const rings = 3
+      for (let r = 0; r < rings; r++) {
+        const phase = ((frame + r * 18) % 90) / 90
+        const radius = 30 + phase * 250
+        ctx.beginPath()
+        ctx.arc(cx, cy, radius * (1 + smoothPeak * 0.4), 0, 6.2832)
+        ctx.strokeStyle = baseColor
+        ctx.globalAlpha = (1 - phase) * smoothPeak * 0.55
+        ctx.lineWidth = 1.2
+        ctx.shadowBlur = 12
+        ctx.shadowColor = baseColor
+        ctx.stroke()
+      }
+      ctx.globalAlpha = 1
+      ctx.shadowBlur = 0
+    }
+
+    // ── Frequency spectrum bars (bottom strip, subtle) ─────────
+    if (analyser && freqData) {
+      const bars = 64
+      const binsPerBar = (freqData.length / bars) | 0
+      const barW = (W - 40) / bars
+      const barBaseY = H - 8
+      ctx.fillStyle = baseColor
+      ctx.shadowBlur = 6
+      ctx.shadowColor = baseColor
+      for (let b = 0; b < bars; b++) {
+        let m = 0
+        for (let k = 0; k < binsPerBar; k++) {
+          const v = freqData[b * binsPerBar + k]
+          if (v > m) m = v
+        }
+        const h = (m / 255) * 28
+        if (h < 1.5) continue
+        ctx.globalAlpha = 0.45 + (m / 255) * 0.45
+        ctx.fillRect(20 + b * barW, barBaseY - h, Math.max(1, barW - 1.5), h)
+      }
+      ctx.globalAlpha = 1
+      ctx.shadowBlur = 0
+    }
+
     requestAnimationFrame(animate)
   }
   requestAnimationFrame(animate)

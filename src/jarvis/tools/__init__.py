@@ -1,6 +1,7 @@
 """도구 통합. import 시 모든 모듈이 REGISTRY에 자동 등록."""
 from jarvis.tools import (  # noqa: F401  (sideeffect imports)
     applescript,
+    converters,
     dev,
     fileops,
     fs,
@@ -9,6 +10,7 @@ from jarvis.tools import (  # noqa: F401  (sideeffect imports)
     macos_extra,
     macos_extras2,
     macos_more,
+    network,
     shell,
     utils,
     web,
