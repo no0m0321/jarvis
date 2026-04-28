@@ -377,16 +377,30 @@ class JarvisOverlayApp: NSObject, NSApplicationDelegate, WKUIDelegate {
         }
     }
 
+    /// daemon이 명령 처리 중일 때만 lock=true → panel 유지 (hover 떠나도)
+    func isLockActive() -> Bool {
+        let url = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/Caches/jarvis-lock.json")
+        guard let data = try? Data(contentsOf: url),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let locked = json["lock"] as? Bool,
+              let ts = json["ts"] as? Double else {
+            return false
+        }
+        // 60초 이상 지난 lock은 stale (안전장치)
+        return locked && (Date().timeIntervalSince1970 - ts < 60)
+    }
+
     func checkHover() {
         let pos = NSEvent.mouseLocation
-        // 노치 영역만 trigger (panel 위치 무관)
         let triggerRect = notchTriggerRect()
-        // 펼쳤을 땐 panel 영역도 hover로 간주 (벗어나면 collapse)
         let activeRect = isExpanded ? panel.frame : triggerRect
-        // 펼친 후 panel 영역에 stay하면 유지
-        let inside = NSPointInRect(pos, activeRect) || (isExpanded && NSPointInRect(pos, triggerRect))
+        let mouseInside = NSPointInRect(pos, activeRect) || (isExpanded && NSPointInRect(pos, triggerRect))
+        // lock 활성 시 panel 강제 유지 (마우스 위치 무관)
+        let lockActive = isLockActive()
+        let shouldShow = mouseInside || lockActive
 
-        if inside {
+        if shouldShow {
             collapseTimer?.invalidate()
             collapseTimer = nil
             if !isExpanded { expand() }

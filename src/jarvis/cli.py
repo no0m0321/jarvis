@@ -112,13 +112,24 @@ def wake(
       3. transcribe (한/영 auto-detect) → run_agent(tool use) → TTS 답변
       4. hover OFF까지 대기 → loop
     """
+    import json as _json
     import time as _time
+    from pathlib import Path as _Path
 
     from jarvis import health_server, hud
     from jarvis.agent import run_agent
     from jarvis.tools.macos import _say
     from jarvis.voice import capture_phrase, transcribe
     from jarvis.voice.wake import _is_hover_active
+
+    _lock_path = _Path.home() / "Library" / "Caches" / "jarvis-lock.json"
+
+    def _write_lock(active: bool) -> None:
+        try:
+            _lock_path.parent.mkdir(parents=True, exist_ok=True)
+            _lock_path.write_text(_json.dumps({"lock": active, "ts": _time.time()}))
+        except Exception:
+            pass
 
     try:
         port = health_server.start()
@@ -142,6 +153,8 @@ def wake(
                 _time.sleep(0.2)
 
             console.print("\n[bold magenta]🎙 hover detected — 명령 받겠습니다[/bold magenta]")
+            # 세션 시작 — lock ON (마우스 떠나도 panel 유지)
+            _write_lock(True)
 
             # 2. "네" chime
             if chime and not no_speak:
@@ -172,6 +185,7 @@ def wake(
 
             if not command_text:
                 console.print("[yellow](전사 결과 없음)[/yellow]")
+                _write_lock(False)
                 while _is_hover_active():
                     _time.sleep(0.3)
                 continue
@@ -187,12 +201,14 @@ def wake(
             )
             console.print(f"[bold]자비스:[/bold] {response}")
 
-            # 6. TTS 답변
+            # 6. TTS 답변 (lock 유지 — panel 강제 표시)
             if response and not no_speak:
                 hud.set_state("speaking", "answer")
                 _say(response[:500])
 
             hud.set_state("idle")
+            # 답변 완료 — lock OFF → JarvisHUD가 hover 안 되어 있으면 collapse
+            _write_lock(False)
 
             # 7. hover OFF까지 대기 (double-trigger 방지)
             while _is_hover_active():
@@ -201,6 +217,7 @@ def wake(
         console.print("\n[dim]세션 종료.[/dim]")
     finally:
         hud.set_state("idle")
+        _write_lock(False)
 
 
 @app.command()
