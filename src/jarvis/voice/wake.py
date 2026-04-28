@@ -36,14 +36,17 @@ DEFAULT_WAKE_WORDS: Tuple[str, ...] = (
     "쟈비스",
     "재비스",
     "자뷔스",
+    "헤이 자비스",
     # English
     "jarvis",
-    "javis",   # base 모델 한글 음성 → 영어 transcribe 변종
+    "javis",
     "jervis",
+    "hey jarvis",
+    "hi jarvis",
 )
-# 주의: "서비스/지비스/자비슨" 등 흔한 false positive 단어는 제거.
+# 'jarvis' substring 매칭이라 "Hey Jarvis"는 자동 인식됨
 
-_WAKE_PROMPT = "자비스. jarvis."  # 한국어/영어 둘 다 hint
+_WAKE_PROMPT = "자비스. 헤이 자비스. Hey Jarvis. Hi Jarvis."
 
 
 def detect_wake_word(
