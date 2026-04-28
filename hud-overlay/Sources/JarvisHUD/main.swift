@@ -133,10 +133,21 @@ window.__jarvisExpanded = false  // panel show/hide로 제어 (collapsed = invis
       return
     }
 
-    const cmap = { idle: "#7FFFD4", listening: "#00FFFF", analyzing: "#FF7B00", speaking: "#FFD700" }
-    const baseColor = cmap[window.__jarvisStateName || "idle"] || "#7FFFD4"
+    // 색상 매핑 (사용자 명시):
+    //   idle      = 흰색  (인식 안 함)
+    //   listening = 민트  (자비스 호출 + 명령 받는 중)
+    //   analyzing = 노랑  (작업 수행 중 — 도구 호출, LLM)
+    //   speaking  = 주황  (답변 출력)
+    const cmap = {
+      idle: "#FFFFFF",
+      listening: "#7FFFD4",
+      analyzing: "#FFD700",
+      speaking: "#FF7B00",
+    }
+    const baseColor = cmap[window.__jarvisStateName || "idle"] || "#FFFFFF"
 
-    // 3D Sphere only (반원 없음)
+    // 3D Sphere — sphere center를 canvas 위쪽으로 (높이의 30%)
+    const sphereCy = H * 0.30
     const t = frame * 0.0035
     const cosT = Math.cos(t), sinT = Math.sin(t)
     const cosT2 = Math.cos(t * 0.5), sinT2 = Math.sin(t * 0.5)
@@ -184,7 +195,7 @@ window.__jarvisExpanded = false  // panel show/hide로 제어 (collapsed = invis
       const sc = fov / (fov - rz)
       if (sc <= 0) continue
       const screenX = cx + rx * sc
-      const screenY = cy + ry * sc
+      const screenY = sphereCy + ry * sc
       if (screenX < -20 || screenX > W + 20 || screenY < -20 || screenY > H + 20) continue
       const depthFade = Math.max(0.25, Math.min(1, sc * 0.6))
       const alpha = depthFade * (0.7 + smoothPeak * 0.3) * expAlpha
@@ -202,7 +213,7 @@ window.__jarvisExpanded = false  // panel show/hide로 제어 (collapsed = invis
         const phase = ((frame + r * 18) % 90) / 90
         const radius = 30 + phase * 100
         ctx.beginPath()
-        ctx.arc(cx, cy, radius * (1 + smoothPeak * 0.4), 0, 6.2832)
+        ctx.arc(cx, sphereCy, radius * (1 + smoothPeak * 0.4), 0, 6.2832)
         ctx.strokeStyle = baseColor
         ctx.globalAlpha = (1 - phase) * smoothPeak * 0.55 * expAlpha
         ctx.lineWidth = 1.2
