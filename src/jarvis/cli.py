@@ -213,9 +213,17 @@ def wake(
                     continue
                 console.print(f"[green]> {command_text}[/green]")
 
-                # 종료어 체크
-                low = command_text.lower().strip(" .!?,")
-                if any(kw in low for kw in EXIT_KEYWORDS):
+                # 종료어 체크 (변종 다양화)
+                low = command_text.lower().strip(" .!?,~")
+                exit_match = any(kw in low for kw in EXIT_KEYWORDS)
+                # 한국어 변종 추가 매칭 — Whisper transcribe 변동 흡수
+                if not exit_match:
+                    norm = low.replace(" ", "").replace(",", "")
+                    for kw in ("사라져", "사라지", "그만", "종료", "잘자"):
+                        if kw in norm:
+                            exit_match = True
+                            break
+                if exit_match:
                     if not no_speak:
                         _say("알겠습니다 주인님")
                     break
@@ -233,9 +241,16 @@ def wake(
             hud.set_state("idle")
             _write_lock(False)
 
-            # hover OFF까지 대기 (다음 wake 전)
+            # 종료 후 cool-down — 사용자가 마우스 떠나야만 새 wake (hallucinate 방지)
+            console.print("[dim](종료 — 마우스를 노치에서 치워야 다음 wake[/dim]")
+            cool_down_until = _time.time() + 2.5
+            while _time.time() < cool_down_until:
+                _time.sleep(0.2)
+            # hover OFF 강제 대기 — 사용자가 마우스 노치에서 치울 때까지
             while _is_hover_active():
                 _time.sleep(0.3)
+            # 추가 안정화 대기 (hover OFF 후 0.5초)
+            _time.sleep(0.5)
     except KeyboardInterrupt:
         console.print("\n[dim]세션 종료.[/dim]")
     finally:

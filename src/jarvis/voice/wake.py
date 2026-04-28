@@ -46,7 +46,7 @@ DEFAULT_WAKE_WORDS: Tuple[str, ...] = (
 )
 # 'jarvis' substring 매칭이라 "Hey Jarvis"는 자동 인식됨
 
-_WAKE_PROMPT = "자비스. 헤이 자비스. Hey Jarvis. Hi Jarvis."
+_WAKE_PROMPT = "자비스."  # 약한 hint — hallucinate 방지
 
 
 def detect_wake_word(
