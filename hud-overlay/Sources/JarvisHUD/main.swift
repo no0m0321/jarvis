@@ -67,16 +67,19 @@ window.__jarvisExpanded = false  // panel show/hide로 제어 (collapsed = invis
 
   function stopMic() {
     if (micStream) {
-      micStream.getTracks().forEach(t => t.stop())
+      micStream.getTracks().forEach(t => { try { t.stop() } catch (e) {} })
       micStream = null
     }
     if (audioCtx) {
-      audioCtx.close().catch(() => {})
+      try { audioCtx.close() } catch (e) {}
       audioCtx = null
     }
     analyser = null
     freqData = null
   }
+  // Swift 쪽에서 즉시 호출 가능
+  window.__jarvisStopMic = stopMic
+  window.__jarvisStartMic = startMic
 
   let smoothVol = 0, smoothBass = 0, smoothMid = 0, smoothPeak = 0
   let expansion = 0
@@ -452,13 +455,16 @@ class JarvisOverlayApp: NSObject, NSApplicationDelegate, WKUIDelegate {
 
     func collapse() {
         isExpanded = false
-        webView.evaluateJavaScript("window.__jarvisExpanded = false", completionHandler: nil)
+        // 마이크 즉시 정지 — collapse 시작 즉시 stream 닫음 (macOS 마이크 LED OFF)
+        webView.evaluateJavaScript(
+            "window.__jarvisExpanded = false; if (window.__jarvisStopMic) window.__jarvisStopMic();",
+            completionHandler: nil
+        )
         NSAnimationContext.runAnimationGroup({ ctx in
             ctx.duration = 0.32
             ctx.timingFunction = CAMediaTimingFunction(name: .easeIn)
             self.panel.animator().alphaValue = 0
         }, completionHandler: { [weak self] in
-            // panel 자체 hide → 화면에서 사라짐 (잔재 X)
             self?.panel.orderOut(nil)
         })
         writeHoverFlag(false)
