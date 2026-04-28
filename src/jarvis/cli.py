@@ -206,33 +206,11 @@ def wake(
                 model_name=main_model,
             ).strip()
 
-            if not command_text:
-                console.print("[yellow](전사 결과 없음)[/yellow]")
-                _write_lock(False)
-                while _is_hover_active():
-                    _time.sleep(0.3)
-                continue
-
-            console.print(f"[green]> {command_text}[/green]")
-
-            # 6. run_agent로 명령 실행 (도구 사용)
-            response = run_agent(
-                command_text,
-                max_turns=8,
-                verbose=False,
-                console=console,
-            )
-            console.print(f"[bold]자비스:[/bold] {response}")
-
-            # 7. TTS 답변
-            if response and not no_speak:
-                hud.set_state("speaking", "answer")
-                _say(response[:500])
-
+            # multi-turn 종료 — lock 해제 + idle
             hud.set_state("idle")
             _write_lock(False)
 
-            # 8. hover OFF까지 대기 (double-trigger 방지)
+            # hover OFF까지 대기 (다음 wake 호출 전)
             while _is_hover_active():
                 _time.sleep(0.3)
     except KeyboardInterrupt:
