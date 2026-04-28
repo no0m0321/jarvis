@@ -4,7 +4,7 @@ import os
 import re
 import sys
 from collections.abc import Sequence
-from typing import Any, Tuple
+from typing import Any, Optional, Tuple
 
 from jarvis.voice.recorder import capture_phrase
 from jarvis.voice.transcribe import transcribe
@@ -13,32 +13,35 @@ _DEBUG = os.environ.get("JARVIS_WAKE_DEBUG", "0") == "1"
 
 # 한국어 small/base 모델은 "자비스"를 다양하게 전사 — 변종 폭넓게 허용
 DEFAULT_WAKE_WORDS: Tuple[str, ...] = (
+    # Korean
     "자비스",
     "쟈비스",
     "재비스",
     "자뷔스",
+    # English
     "jarvis",
+    "javis",   # base 모델 한글 음성 → 영어 transcribe 변종
+    "jervis",
 )
 # 주의: "서비스/지비스/자비슨" 등 흔한 false positive 단어는 제거.
-# 일상 발화에 자주 등장 + initial_prompt hint 때문에 모델이 hallucinate.
 
-
-_WAKE_PROMPT = "자비스."
+_WAKE_PROMPT = "자비스. jarvis."  # 한국어/영어 둘 다 hint
 
 
 def detect_wake_word(
     audio: Any,
     wake_words: Sequence[str] = DEFAULT_WAKE_WORDS,
     detection_model: str = "base",
-    language: str = "ko",
+    language: Optional[str] = None,  # None/auto → ko/en 둘 다 매칭
 ) -> Tuple[bool, str]:
     """오디오 → 전사 (약한 initial_prompt) → 매칭. (matched, text).
 
+    language=None: Whisper auto-detect (한국어/영어 둘 다 가능).
     너무 짧은(≤2자) 또는 빈 전사는 false positive 우려로 reject.
     """
     text = transcribe(
         audio,
-        language=language,
+        language=language,  # None → auto-detect
         model_name=detection_model,
         initial_prompt=_WAKE_PROMPT,
     )
