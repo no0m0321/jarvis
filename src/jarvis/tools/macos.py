@@ -36,7 +36,7 @@ def _say(text: str, voice: str = "", rate: int = 180) -> str:
     - Eddy (중성, 톤 살짝 낮음)
     - Reed (남성) — 한국어 발음 어색
     """
-    voice = voice or _os.environ.get("JARVIS_VOICE", "Eddy")
+    voice = voice or _os.environ.get("JARVIS_VOICE", "Yuna")
     try:
         subprocess.run(
             ["say", "-v", voice, "-r", str(rate), text],
