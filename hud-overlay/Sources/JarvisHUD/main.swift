@@ -279,22 +279,33 @@ class JarvisOverlayApp: NSObject, NSApplicationDelegate, WKUIDelegate {
         }
     }
 
-    /// 노치 영역 mouse trigger zone — 화면 상단 중앙 250×30
+    /// 노치 영역 mouse trigger zone — 넓게 (사용자 마우스 살짝 벗어나도 유지)
     func notchTriggerRect() -> NSRect {
         guard let screen = NSScreen.main else { return .zero }
-        let w: CGFloat = 280
-        let h: CGFloat = 36
+        let w: CGFloat = 600   // 넓게
+        let h: CGFloat = 60    // 메뉴바 두 배
         let x = screen.frame.midX - w / 2
         let y = screen.frame.maxY - h
         return NSRect(x: x, y: y, width: w, height: h)
     }
 
-    /// 펼친 sphere panel 위치
+    /// 펼친 sphere panel 위치 — 더 큰 panel + hover 영역 확장
     func panelFrame() -> NSRect {
         guard let screen = NSScreen.main else { return .zero }
         let x = screen.frame.midX - panelW / 2
         let y = screen.frame.maxY - panelH
         return NSRect(x: x, y: y, width: panelW, height: panelH)
+    }
+
+    /// 펼친 panel 주변 buffer 영역 (hover 유지용 — 마우스 panel 약간 벗어나도 OK)
+    func panelHoverRect() -> NSRect {
+        let f = panelFrame()
+        return NSRect(
+            x: f.minX - 60,
+            y: f.minY - 60,
+            width: f.width + 120,
+            height: f.height + 60  // 위쪽은 화면 끝이라 추가 X
+        )
     }
 
     func setupPanel() {
@@ -405,7 +416,8 @@ class JarvisOverlayApp: NSObject, NSApplicationDelegate, WKUIDelegate {
     func checkHover() {
         let pos = NSEvent.mouseLocation
         let triggerRect = notchTriggerRect()
-        let activeRect = isExpanded ? panel.frame : triggerRect
+        // 펼쳤을 때 — panel + buffer 영역 모두 hover 유지
+        let activeRect = isExpanded ? panelHoverRect() : triggerRect
         let mouseInside = NSPointInRect(pos, activeRect) || (isExpanded && NSPointInRect(pos, triggerRect))
         // lock 활성 시 panel 강제 유지 (마우스 위치 무관)
         let lockActive = isLockActive()
@@ -417,7 +429,8 @@ class JarvisOverlayApp: NSObject, NSApplicationDelegate, WKUIDelegate {
             if !isExpanded { expand() }
         } else if isExpanded {
             if collapseTimer == nil || !(collapseTimer?.isValid ?? false) {
-                collapseTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { [weak self] _ in
+                // collapse delay 0.5 → 2.0초 (마우스 잠깐 벗어나도 유지)
+                collapseTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [weak self] _ in
                     self?.collapse()
                 }
             }
