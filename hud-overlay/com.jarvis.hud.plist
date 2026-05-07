@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.swxvno.jarvis.hud</string>
+    <string>com.jarvis.hud</string>
     <key>ProgramArguments</key>
     <array>
         <string>/Applications/JarvisHUD.app/Contents/MacOS/JarvisHUD</string>

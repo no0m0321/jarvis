@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>JARVIS — 결제 완료</title>
+<meta name="robots" content="noindex" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Orbitron:wght@500;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+<style>
+:root {
+  --cyan: #4cc9ff;
+  --cyan-bright: #7de0ff;
+  --cyan-glow: rgba(76, 201, 255, 0.55);
+  --cyan-soft: rgba(76, 201, 255, 0.10);
+  --bg-0: #02060d;
+  --bg-1: #050b16;
+  --bg-2: #0a1320;
+  --line: rgba(76, 201, 255, 0.14);
+  --text: #d6effa;
+  --text-dim: #7896a4;
+  --error: #ff6b8e;
+  --success: #4ade80;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body {
+  background: var(--bg-0);
+  color: var(--text);
+  font-family: 'Outfit', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+body {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0, 132, 199, 0.2), transparent 60%),
+    radial-gradient(ellipse 50% 50% at 50% 80%, rgba(76, 201, 255, 0.08), transparent 70%),
+    var(--bg-0);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+}
+
+.brand {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.32em;
+  color: var(--cyan);
+  margin-bottom: 28px;
+  opacity: 0.85;
+}
+
+.card {
+  width: 100%;
+  max-width: 480px;
+  background: linear-gradient(180deg, rgba(10, 19, 32, 0.92), rgba(5, 11, 22, 0.92));
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  padding: 48px 36px;
+  text-align: center;
+  box-shadow:
+    0 24px 60px rgba(0, 132, 199, 0.1),
+    0 0 0 1px rgba(76, 201, 255, 0.02) inset;
+}
+
+.icon {
+  width: 84px;
+  height: 84px;
+  margin: 0 auto 22px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, var(--cyan-bright), var(--cyan) 60%, #0084c7 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 38px;
+  color: #001829;
+  font-weight: 800;
+  box-shadow: 0 0 56px var(--cyan-glow), 0 0 0 1px rgba(255,255,255,0.06) inset;
+  animation: pulse 2.4s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%,100% { transform: scale(1); box-shadow: 0 0 56px var(--cyan-glow); }
+  50%     { transform: scale(1.04); box-shadow: 0 0 80px var(--cyan-glow); }
+}
+
+h1 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 30px;
+  font-weight: 700;
+  margin-bottom: 10px;
+  background: linear-gradient(135deg, var(--text) 0%, var(--cyan-bright) 80%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.sub {
+  color: var(--text-dim);
+  font-size: 15px;
+  line-height: 1.7;
+  margin-bottom: 28px;
+}
+
+.status {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--cyan-bright);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+.status-msg {
+  color: var(--text-dim);
+  font-size: 13px;
+  margin-bottom: 28px;
+  min-height: 20px;
+}
+
+.spinner {
+  width: 22px;
+  height: 22px;
+  border: 2px solid rgba(76, 201, 255, 0.18);
+  border-top-color: var(--cyan-bright);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 8px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.btn {
+  width: 100%;
+  padding: 13px 16px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+  margin-top: 8px;
+  letter-spacing: 0.02em;
+}
+.btn-primary {
+  background: linear-gradient(180deg, var(--cyan-bright) 0%, var(--cyan) 100%);
+  color: #001829;
+  border-color: var(--cyan);
+  text-decoration: none;
+  display: inline-block;
+}
+.btn-primary:hover {
+  box-shadow: 0 0 28px var(--cyan-glow);
+  transform: translateY(-1px);
+}
+.btn-ghost {
+  background: transparent;
+  color: var(--cyan);
+  border-color: var(--line);
+}
+.btn-ghost:hover { background: var(--cyan-soft); }
+
+.session-id {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+  background: var(--bg-1);
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  margin-top: 18px;
+  word-break: break-all;
+}
+
+.error-state .icon {
+  background: radial-gradient(circle at 35% 35%, #ffb8c8, var(--error) 60%, #b03050 100%);
+  box-shadow: 0 0 56px rgba(255, 107, 142, 0.4);
+}
+.error-state h1 {
+  background: linear-gradient(135deg, var(--text) 0%, var(--error) 80%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+</style>
+</head>
+<body>
+
+<div class="brand">◈ J · A · R · V · I · S</div>
+
+<div id="card" class="card">
+  <div class="icon">✓</div>
+  <h1 id="title">결제 완료</h1>
+  <p class="sub" id="subtitle">자비스 다운로드를 준비하고 있습니다.</p>
+
+  <div class="status">
+    <span id="spinner" class="spinner"></span>
+    <span id="status">결제 검증 중…</span>
+  </div>
+  <div class="status-msg" id="statusMsg">최대 10초 소요됩니다.</div>
+
+  <a id="downloadBtn" class="btn btn-primary" style="display:none;" href="/">자비스 메인으로 — 다운로드</a>
+  <a id="retryBtn" class="btn btn-ghost" style="display:none;" href="javascript:location.reload()">다시 확인</a>
+
+  <div id="sessionId" class="session-id" style="display:none;"></div>
+</div>
+
+<!-- ── Config ── -->
+<script id="config">
+  window.SUPABASE_URL      = window.SUPABASE_URL      || "";
+  window.SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || "";
+</script>
+<script src="/env.js" onerror="void 0"></script>
+
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const $ = (id) => document.getElementById(id);
+const params = new URLSearchParams(window.location.search);
+const sessionId = params.get("session_id");
+
+if (sessionId) {
+  $("sessionId").textContent = sessionId;
+  $("sessionId").style.display = "block";
+}
+
+const URL = window.SUPABASE_URL;
+const KEY = window.SUPABASE_ANON_KEY;
+
+if (!URL || !KEY) {
+  showError("환경변수 누락", "Vercel에 NEXT_PUBLIC_SUPABASE_* 입력 필요");
+} else if (!sessionId) {
+  showError("session_id 없음", "Stripe 결제 후 자동으로 redirect 됩니다.");
+} else {
+  startPolling();
+}
+
+function showError(title, msg) {
+  $("card").classList.add("error-state");
+  $("card").querySelector(".icon").textContent = "⚠";
+  $("title").textContent = title;
+  $("subtitle").textContent = msg;
+  $("spinner").style.display = "none";
+  $("status").textContent = "ERROR";
+  $("statusMsg").textContent = "";
+  $("retryBtn").style.display = "inline-block";
+}
+
+function showSuccess() {
+  $("spinner").style.display = "none";
+  $("status").textContent = "PAID";
+  $("statusMsg").textContent = "내 대시보드로 이동합니다 — 다운로드 + 사용량 + 결제 내역.";
+  $("downloadBtn").textContent = "내 대시보드";
+  $("downloadBtn").href = "/dashboard.html?paid=1";
+  $("downloadBtn").style.display = "inline-block";
+  // 1.5초 후 자동 redirect → dashboard
+  setTimeout(() => {
+    window.location.href = "/dashboard.html?paid=1";
+  }, 1500);
+}
+
+async function startPolling() {
+  const supabase = createClient(URL, KEY);
+
+  // 로그인 세션 복원 (Stripe redirect 후에도 supabase 세션이 cookie에 있어야 함)
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user) {
+    showError("로그인 필요", "결제는 정상이지만 세션이 만료됐습니다. 로그인 후 메인에서 다운로드하세요.");
+    return;
+  }
+
+  let attempts = 0;
+  const MAX = 10; // 10회 × 1초 = 10초
+  const tick = async () => {
+    attempts += 1;
+    $("statusMsg").textContent = `검증 중 (${attempts}/${MAX})…`;
+
+    const { data, error } = await supabase
+      .from("purchases")
+      .select("status")
+      .eq("stripe_session_id", sessionId)
+      .eq("user_id", session.user.id)
+      .maybeSingle();
+
+    if (error) {
+      console.error("[success] DB error:", error);
+    }
+    if (data?.status === "paid") {
+      showSuccess();
+      return;
+    }
+    if (attempts >= MAX) {
+      $("spinner").style.display = "none";
+      $("status").textContent = "PENDING";
+      $("statusMsg").textContent = "결제는 도착했지만 webhook 처리가 늦어집니다. 1~2분 후 메인 페이지에서 새로고침하세요.";
+      $("retryBtn").style.display = "inline-block";
+      $("downloadBtn").textContent = "메인 페이지로";
+      $("downloadBtn").style.display = "inline-block";
+      return;
+    }
+    setTimeout(tick, 1000);
+  };
+  tick();
+}
+</script>
+
+</body>
+</html>

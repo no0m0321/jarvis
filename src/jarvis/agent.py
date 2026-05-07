@@ -30,7 +30,7 @@ def _final_text(content: Any) -> str:
 def run_agent(
     user_input: str,
     max_turns: int = 12,
-    max_tokens_per_turn: int = 4096,
+    max_tokens_per_turn: int = 16384,  # 4096 → 16384: 큰 코드(사이트, 긴 글) 한 번에 fit + write_file tool block 포함
     verbose: bool = True,
     console: Optional[Console] = None,
 ) -> str:

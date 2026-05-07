@@ -127,7 +127,10 @@ window.__jarvisExpanded = false  // panel show/hide로 제어 (collapsed = invis
     const cx = W / 2
     const cy = H / 2
 
-    // 항상 clear (잔재 방지)
+    const stateName = window.__jarvisStateName || "idle"
+    const isListening = stateName === "listening"
+
+    // 항상 완전 clear (transparent canvas — 검은 박스 방지)
     ctx.clearRect(0, 0, W, H)
 
     // 완전히 collapsed면 그리지 않음 (잔재 0)
@@ -147,19 +150,27 @@ window.__jarvisExpanded = false  // panel show/hide로 제어 (collapsed = invis
       analyzing: "#FFD700",
       speaking: "#FF7B00",
     }
-    const baseColor = cmap[window.__jarvisStateName || "idle"] || "#FFFFFF"
+    const baseColor = cmap[stateName] || "#FFFFFF"
 
     // 3D Sphere — sphere center를 canvas 위쪽으로 (높이의 30%)
     const sphereCy = H * 0.30
-    const t = frame * 0.0035
-    const cosT = Math.cos(t), sinT = Math.sin(t)
-    const cosT2 = Math.cos(t * 0.5), sinT2 = Math.sin(t * 0.5)
+    // listening은 회전 가속 (음성 강도에 따라)
+    const rotSpeed = 0.0035 + (isListening ? smoothVol * 0.015 : 0)
+    const t = frame * rotSpeed + (isListening ? 0 : 0)
+    window.__jarvisT = (window.__jarvisT || 0) + rotSpeed
+    const T = window.__jarvisT
+    const cosT = Math.cos(T), sinT = Math.sin(T)
+    const cosT2 = Math.cos(T * 0.5), sinT2 = Math.sin(T * 0.5)
 
-    const explosion = smoothVol * 90
-    const zPush = smoothBass * 70
-    const jitterAmt = Math.max(0, smoothVol - 0.04) * 14
-    const sizeBoost = 1 + smoothPeak * 1.8
-    const blurBoost = 12 + smoothPeak * 28
+    // listening은 모든 반응 1.6x 증폭 (시네마틱)
+    const reactBoost = isListening ? 1.6 : 1.0
+    const explosion = smoothVol * 90 * reactBoost
+    const zPush = smoothBass * 70 * reactBoost
+    const jitterAmt = Math.max(0, smoothVol - 0.04) * 14 * reactBoost
+    const sizeBoost = 1 + smoothPeak * 1.8 * reactBoost
+    const blurBoost = 12 + smoothPeak * 28 * reactBoost
+    // 전체 sphere pulse (bass 반응) — listening only
+    const spherePulse = isListening ? (1 + smoothBass * 0.35) : 1
 
     for (let i = 0; i < N; i++) {
       const x = px[i] + ppx[i]
@@ -186,11 +197,13 @@ window.__jarvisExpanded = false  // panel show/hide로 제어 (collapsed = invis
         ppy[i] += (Math.random() - 0.5) * jitterAmt
         ppz[i] += (Math.random() - 0.5) * jitterAmt * 0.5
       }
-      const ySign = py[i] >= 0 ? 1 : -1
-      const verticalKick = ySign * explosion + smoothMid * 18 * Math.sin(frame * 0.08 + px[i] * 0.01)
-      const wx = px[i] + ppx[i]
-      const wy = py[i] + verticalKick + ppy[i]
-      const wz = pz[i] + ppz[i] + (Math.abs(pz[i]) > 0 ? Math.sign(pz[i]) * zPush : 0)
+      // 3D radial outward — 각 입자를 중심에서 바깥으로 밀어냄 (구 전체가 균일하게 퍼짐)
+      const len = Math.sqrt(px[i]*px[i] + py[i]*py[i] + pz[i]*pz[i]) || 1
+      const nx = px[i] / len, ny = py[i] / len, nz = pz[i] / len
+      const radialKick = explosion + smoothMid * 18 * Math.sin(frame * 0.08 + i * 0.31)
+      const wx = (px[i] + nx * radialKick + ppx[i]) * spherePulse
+      const wy = (py[i] + ny * radialKick + ppy[i]) * spherePulse
+      const wz = (pz[i] + nz * radialKick + ppz[i]) * spherePulse
       const rx = wx * cosT - wz * sinT
       const rz = wx * sinT + wz * cosT
       const ry = wy * cosT2 - rz * 0.05 * sinT2
@@ -210,23 +223,6 @@ window.__jarvisExpanded = false  // panel show/hide로 제어 (collapsed = invis
     }
     ctx.globalAlpha = 1
     ctx.shadowBlur = 0
-
-    if (smoothPeak > 0.18) {
-      for (let r = 0; r < 3; r++) {
-        const phase = ((frame + r * 18) % 90) / 90
-        const radius = 30 + phase * 100
-        ctx.beginPath()
-        ctx.arc(cx, sphereCy, radius * (1 + smoothPeak * 0.4), 0, 6.2832)
-        ctx.strokeStyle = baseColor
-        ctx.globalAlpha = (1 - phase) * smoothPeak * 0.55 * expAlpha
-        ctx.lineWidth = 1.2
-        ctx.shadowBlur = 12
-        ctx.shadowColor = baseColor
-        ctx.stroke()
-      }
-      ctx.globalAlpha = 1
-      ctx.shadowBlur = 0
-    }
 
     requestAnimationFrame(animate)
   }
@@ -256,6 +252,8 @@ class JarvisOverlayApp: NSObject, NSApplicationDelegate, WKUIDelegate {
     var collapseTimer: Timer?
     var hoverPollTimer: Timer?
     var isExpanded = false
+    var hoverStartTime: TimeInterval?  // 마우스 노치 영역 진입 시각 — N초 후 expand
+    let hoverDelaySeconds: TimeInterval = 1.0
     let panelW: CGFloat = 420
     let panelH: CGFloat = 380
 
@@ -285,8 +283,8 @@ class JarvisOverlayApp: NSObject, NSApplicationDelegate, WKUIDelegate {
     /// 노치 영역 mouse trigger zone — 넓게 (사용자 마우스 살짝 벗어나도 유지)
     func notchTriggerRect() -> NSRect {
         guard let screen = NSScreen.main else { return .zero }
-        let w: CGFloat = 600   // 넓게
-        let h: CGFloat = 60    // 메뉴바 두 배
+        let w: CGFloat = 800   // 더 넓게 (노치 + 양옆 여유)
+        let h: CGFloat = 80    // 더 두껍게 — 메뉴바 위/아래 모두 흡수
         let x = screen.frame.midX - w / 2
         let y = screen.frame.maxY - h
         return NSRect(x: x, y: y, width: w, height: h)
@@ -318,7 +316,7 @@ class JarvisOverlayApp: NSObject, NSApplicationDelegate, WKUIDelegate {
             backing: .buffered,
             defer: false
         )
-        panel.level = .floating
+        panel.level = .screenSaver  // 모든 창보다 위 (메뉴바·full-screen 앱 위)
         panel.isOpaque = false
         panel.backgroundColor = .clear
         panel.hasShadow = false
@@ -422,9 +420,25 @@ class JarvisOverlayApp: NSObject, NSApplicationDelegate, WKUIDelegate {
         // 펼쳤을 때 — panel + buffer 영역 모두 hover 유지
         let activeRect = isExpanded ? panelHoverRect() : triggerRect
         let mouseInside = NSPointInRect(pos, activeRect) || (isExpanded && NSPointInRect(pos, triggerRect))
-        // lock 활성 시 panel 강제 유지 (마우스 위치 무관)
+        // lock 활성 (wake matched) 시 panel 강제 유지 (마우스 위치 무관)
         let lockActive = isLockActive()
-        let shouldShow = mouseInside || lockActive
+
+        // ── 3초 hover delay ──
+        // expand 전: 마우스가 노치 영역에 hoverDelaySeconds 머물러야만 mic+sphere 활성화
+        // 마우스 떠나면 hoverStartTime 리셋 → 다시 처음부터 카운트
+        let now = Date().timeIntervalSince1970
+        var hoverArmed = false
+        if mouseInside && !isExpanded {
+            if hoverStartTime == nil { hoverStartTime = now }
+            if let start = hoverStartTime, (now - start) >= hoverDelaySeconds {
+                hoverArmed = true
+            }
+        } else if !mouseInside {
+            hoverStartTime = nil  // 마우스 영역 떠남 → 카운트 리셋
+        }
+
+        // expand 조건: (1) 3초 채워진 hover, (2) lock 활성, (3) 이미 expand된 상태에서 마우스 panel 영역 내
+        let shouldShow = hoverArmed || lockActive || (isExpanded && mouseInside)
 
         if shouldShow {
             collapseTimer?.invalidate()
@@ -432,8 +446,9 @@ class JarvisOverlayApp: NSObject, NSApplicationDelegate, WKUIDelegate {
             if !isExpanded { expand() }
         } else if isExpanded {
             if collapseTimer == nil || !(collapseTimer?.isValid ?? false) {
-                // collapse delay 0.5 → 2.0초 (마우스 잠깐 벗어나도 유지)
-                collapseTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [weak self] _ in
+                // collapse delay 1.5s — wake 감지 사이클(발화 0.5 + 침묵 0.3 + 전사 0.1 ≈ 0.9s)보다
+                // 넉넉하게. lock 쓰이면(0.9s 이내) checkHover가 60ms 이내 cancels this timer.
+                collapseTimer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: false) { [weak self] _ in
                     self?.collapse()
                 }
             }
@@ -455,6 +470,7 @@ class JarvisOverlayApp: NSObject, NSApplicationDelegate, WKUIDelegate {
 
     func collapse() {
         isExpanded = false
+        hoverStartTime = nil  // 다음 hover는 다시 3초부터
         // 마이크 즉시 정지 — collapse 시작 즉시 stream 닫음 (macOS 마이크 LED OFF)
         webView.evaluateJavaScript(
             "window.__jarvisExpanded = false; if (window.__jarvisStopMic) window.__jarvisStopMic();",
@@ -490,10 +506,6 @@ class JarvisOverlayApp: NSObject, NSApplicationDelegate, WKUIDelegate {
                   let state = json["state"] as? String else { return }
             let escaped = state.replacingOccurrences(of: "'", with: "\\'")
             self.webView.evaluateJavaScript("window.__jarvisStateName = '\(escaped)'", completionHandler: nil)
-            // 자비스가 listening/speaking 상태면 자동 expand (hover 없어도)
-            if state == "listening" || state == "analyzing" || state == "speaking" {
-                if !self.isExpanded { self.expand() }
-            }
         }
     }
 

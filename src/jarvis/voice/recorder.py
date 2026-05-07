@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Callable, Optional
 
 import numpy as np
 import sounddevice as sd
@@ -69,11 +69,16 @@ def capture_phrase(
     max_speech_duration: float = 10.0,
     max_wait_for_speech: float = 300.0,
     on_chunk_rms: Any = None,
+    should_continue: Optional[Callable[[], bool]] = None,
 ) -> np.ndarray:
     """발화가 시작될 때까지 대기 → 발화 캡처 → 침묵 시 종료.
 
     record_until_silence와 다른 점: 발화 시작 전에는 무한 대기(최대 max_wait_for_speech),
     발화 종료 침묵은 더 짧게(0.5초 기본). wake word 감지에 적합.
+
+    should_continue: 매 100ms chunk 직전 호출. False 반환 시 즉시 종료.
+        wake mode에서 hover OFF → 즉시 mic close 용도. 발화 시작 후엔 무시(이미 말하는 중이므로
+        끝까지 캡처). cycle 방지: max_wait를 길게 둘 수 있으면서도 hover OFF 빠른 회수.
     """
     chunk_ms = 100
     chunk_samples = samplerate * chunk_ms // 1000
@@ -93,6 +98,9 @@ def capture_phrase(
         blocksize=chunk_samples,
     ) as stream:
         while True:
+            # 발화 시작 전이면 should_continue 체크 — false면 즉시 mic close
+            if not speech_started and should_continue is not None and not should_continue():
+                return np.zeros(0, dtype=np.float32)
             data, _overflowed = stream.read(chunk_samples)
             rms = float(np.sqrt(np.mean(data ** 2)))
             if on_chunk_rms is not None:

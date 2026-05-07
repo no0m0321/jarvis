@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleIdentifier</key>
-    <string>com.swxvno.jarvis.hud</string>
+    <string>com.jarvis.hud</string>
     <key>CFBundleName</key>
     <string>JarvisHUD</string>
     <key>CFBundleDisplayName</key>

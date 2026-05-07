@@ -12,7 +12,7 @@ from jarvis.assistant import JarvisAssistant
 
 app = typer.Typer(
     name="jarvis",
-    help="자비스 — 승우의 개인 AI 비서",
+    help="자비스 — 음성 기반 개인 AI 비서",
     no_args_is_help=True,
     add_completion=False,
 )
@@ -98,7 +98,7 @@ def listen(
 @app.command()
 def wake(
     word: str = typer.Option("", "--word", help="추가 wake word (기본 변종 + 이 단어 포함)"),
-    detect_model: str = typer.Option("base", "--detect-model", help="wake 감지용 (빠른 게 좋음)"),
+    detect_model: str = typer.Option("tiny", "--detect-model", help="wake 감지용 (빠른 게 좋음 — '자비스' 짧으니 tiny 충분)"),
     main_model: str = typer.Option("small", "--model", help="명령 전사용"),
     no_speak: bool = typer.Option(False, "--no-speak", help="TTS 출력 끔"),
     lang: str = typer.Option("auto", "--lang", help="명령 언어. 'auto' = 한/영 자동 감지"),
@@ -121,12 +121,11 @@ def wake(
     from jarvis.agent import run_agent
     from jarvis.tools.macos import _say
     from jarvis.voice import (
-        DEFAULT_WAKE_WORDS,
         capture_phrase,
         listen_for_wake,
         transcribe,
     )
-    from jarvis.voice.wake import _is_hover_active
+    from jarvis.voice.wake import _is_hover_active, get_wake_words
 
     _lock_path = _Path.home() / "Library" / "Caches" / "jarvis-lock.json"
 
@@ -136,6 +135,10 @@ def wake(
             _lock_path.write_text(_json.dumps({"lock": active, "ts": _time.time()}))
         except Exception:
             pass
+
+    # 호칭 — JARVIS_OWNER_NAME env 우선, 없으면 "주인님"
+    from jarvis.config import settings as _s
+    _OWNER = (_s.owner_name.strip() or "주인님")
 
     try:
         port = health_server.start()
@@ -148,7 +151,8 @@ def wake(
     console.print("[dim]노치 hover → 마이크 ON | '자비스/Jarvis' 부르면 응답[/dim]")
     console.print("[dim]Ctrl+C 종료 | 명령은 한국어 (auto는 짧은 발화에 부정확)[/dim]")
 
-    wake_words = list(DEFAULT_WAKE_WORDS)
+    # DEFAULT_WAKE_WORDS + JARVIS_WAKE_WORD env (쉼표 구분) + --word CLI 추가
+    wake_words = list(get_wake_words())
     if word:
         wake_words.insert(0, word)
 
@@ -169,20 +173,24 @@ def wake(
             heard = listen_for_wake(
                 wake_words=wake_words,
                 detection_model=detect_model,
-                language=None,  # auto-detect 한/영
+                language="ko",  # 한국어 강제 — auto-detect는 짧은 '자비스'를 'Service'/'Yavuz' 등으로 오인
+                silence_threshold=0.012,  # capture_phrase 기본과 맞춤 — 약한 발화 시작 흡수
+                chunk_silence_duration=0.3,  # 발화 종료 → 응답 빠르게 (0.5 → 0.3)
                 on_chunk_rms=rms_cb,
             )
             console.print(f"[bold magenta]wake matched → {heard}[/bold magenta]")
 
-            # 3. wake matched — 빠른 응답 + lock 시작
+            # 3. wake matched — 즉시 lock + 비동기 ack ("네") 후 곧바로 listening
             _write_lock(True)
-            if chime and not no_speak:
+            if not no_speak:
                 hud.set_state("speaking", "ack")
-                _say("네 주인님")
+                # 비동기 — TTS 끝날 때까지 기다리지 않고 바로 다음 listening으로
+                import subprocess as _sp
+                _sp.Popen(["say", "-v", "Yuna", "네"])
 
             # 4. Multi-turn 대화 loop — '사라져' 등 종료어까지 계속
             EXIT_KEYWORDS = {
-                "사라져", "사라지다", "그만", "종료", "끝", "잘자",
+                "꺼져", "꺼지다", "사라져", "사라지다", "그만", "종료", "끝", "잘자",
                 "bye", "goodbye", "stop", "quit",
             }
             empty_streak = 0
@@ -203,7 +211,7 @@ def wake(
                     empty_streak += 1
                     if empty_streak >= 3:
                         if not no_speak:
-                            _say("쉬겠습니다 주인님")
+                            _say(f"쉬겠습니다 {_OWNER}")
                         break
                     continue
                 empty_streak = 0
@@ -222,13 +230,13 @@ def wake(
                 # 한국어 변종 추가 매칭 — Whisper transcribe 변동 흡수
                 if not exit_match:
                     norm = low.replace(" ", "").replace(",", "")
-                    for kw in ("사라져", "사라지", "그만", "종료", "잘자"):
+                    for kw in ("꺼져", "꺼지", "사라져", "사라지", "그만", "종료", "잘자"):
                         if kw in norm:
                             exit_match = True
                             break
                 if exit_match:
                     if not no_speak:
-                        _say("알겠습니다 주인님")
+                        _say(f"알겠습니다 {_OWNER}")
                     break
 
                 # run_agent → 답변
@@ -340,8 +348,17 @@ app.add_typer(hud_app, name="hud")
 
 @hud_app.command("start")
 def hud_start() -> None:
-    """Übersicht 앱 시작 (위젯 자동 로드)."""
+    """Übersicht 앱 시작 (위젯 자동 로드). macOS 전용."""
     import os as _os
+    from jarvis.platform import IS_MACOS, os_label
+
+    if not IS_MACOS:
+        console.print(
+            f"[yellow]HUD widget(Übersicht)은 macOS 전용 — {os_label()}에서 미지원.[/yellow]\n"
+            "[dim]Windows/Linux: HUD 상태 파일은 작성되지만 위젯은 표시 안 됨. "
+            "v0.5.x에서 cross-platform HUD 예정.[/dim]"
+        )
+        return
 
     apps = _os.popen("ls /Applications/ 2>/dev/null").read()
     if "bersicht" not in apps:
@@ -353,8 +370,13 @@ def hud_start() -> None:
 
 @hud_app.command("stop")
 def hud_stop() -> None:
-    """Übersicht 종료."""
+    """Übersicht 종료. macOS 전용."""
     import os as _os
+    from jarvis.platform import IS_MACOS, os_label
+
+    if not IS_MACOS:
+        console.print(f"[yellow]Übersicht은 macOS 전용 — {os_label()}에서 미지원.[/yellow]")
+        return
 
     _os.system("osascript -e 'tell application \"Übersicht\" to quit' 2>/dev/null || pkill -f bersicht")
     console.print("OK: Übersicht 종료")
@@ -479,6 +501,94 @@ REGISTRY.register(Tool(
 ''')
     console.print(f"OK: {example}")
     console.print("[dim]daemon 또는 jarvis 명령 재시작 시 자동 로드됨[/dim]")
+
+
+@plugin_app.command("install")
+def plugin_install(
+    source: str = typer.Argument(
+        ..., help="GitHub repo URL (https://github.com/user/repo) 또는 파일 URL (https://...py)"
+    ),
+    name: str = typer.Option("", "--name", help="저장 파일명 override (기본: URL 끝)"),
+) -> None:
+    """플러그인을 URL/GitHub repo에서 ~/.jarvis/plugins/ 에 설치.
+
+    안전: 사용자 플러그인은 임의 Python 코드 — 신뢰하는 source만 설치.
+    GitHub repo 입력 시 main 브랜치의 plugin.py 또는 단일 .py 파일 자동 감지.
+    """
+    import re
+    import urllib.request
+    from pathlib import Path
+
+    plugin_dir = Path.home() / ".jarvis" / "plugins"
+    plugin_dir.mkdir(parents=True, exist_ok=True)
+
+    # 보안 경고
+    console.print("[yellow]⚠ 플러그인은 임의 Python 코드를 실행합니다.[/yellow]")
+    console.print(f"[yellow]  source: {source}[/yellow]")
+    confirm = Prompt.ask("계속? (y/N)", default="N")
+    if confirm.lower() not in ("y", "yes"):
+        console.print("취소.")
+        return
+
+    # GitHub repo URL → raw file URL 변환
+    m = re.match(r"https?://github\.com/([^/]+)/([^/]+?)(?:\.git)?/?$", source)
+    if m:
+        user, repo = m.group(1), m.group(2)
+        # 우선순위: plugin.py → jarvis_plugin.py → main.py → repo이름.py
+        candidates = [
+            f"https://raw.githubusercontent.com/{user}/{repo}/main/plugin.py",
+            f"https://raw.githubusercontent.com/{user}/{repo}/main/jarvis_plugin.py",
+            f"https://raw.githubusercontent.com/{user}/{repo}/main/{repo}.py",
+        ]
+        url = None
+        for u in candidates:
+            try:
+                with urllib.request.urlopen(u, timeout=5) as r:
+                    if r.status == 200:
+                        url = u
+                        break
+            except Exception:
+                continue
+        if not url:
+            console.print(f"[red]repo에서 plugin.py 또는 {repo}.py 찾을 수 없음[/red]")
+            return
+        out_name = name or f"{repo}.py"
+    else:
+        url = source
+        out_name = name or url.rsplit("/", 1)[-1]
+        if not out_name.endswith(".py"):
+            out_name += ".py"
+
+    target = plugin_dir / out_name
+    if target.exists():
+        if Prompt.ask(f"{target.name} 이미 존재 — 덮어쓸까? (y/N)", default="N").lower() not in ("y", "yes"):
+            return
+
+    try:
+        with urllib.request.urlopen(url, timeout=10) as r:
+            data = r.read().decode("utf-8")
+    except Exception as e:
+        console.print(f"[red]다운로드 실패: {e}[/red]")
+        return
+
+    target.write_text(data, encoding="utf-8")
+    console.print(f"[green]OK: {target} ({len(data)}B)[/green]")
+    console.print("[dim]plugin reload 또는 daemon 재시작으로 활성화[/dim]")
+
+
+@plugin_app.command("remove")
+def plugin_remove(name: str = typer.Argument(..., help="플러그인 파일명 (확장자 제외)")) -> None:
+    """플러그인 제거 (~/.jarvis/plugins/<name>.py 삭제)."""
+    from pathlib import Path
+
+    plugin_dir = Path.home() / ".jarvis" / "plugins"
+    target = plugin_dir / (name if name.endswith(".py") else f"{name}.py")
+    if not target.exists():
+        console.print(f"[red]없음: {target}[/red]")
+        return
+    if Prompt.ask(f"{target.name} 삭제? (y/N)", default="N").lower() in ("y", "yes"):
+        target.unlink()
+        console.print(f"[green]OK: 제거됨[/green]")
 
 
 @app.command("config")
@@ -642,7 +752,7 @@ def hud_history(
 def daemon_install(
     no_chime: bool = typer.Option(False, "--no-chime"),
     no_speak: bool = typer.Option(False, "--no-speak"),
-    detect_model: str = typer.Option("base", "--detect-model"),
+    detect_model: str = typer.Option("tiny", "--detect-model"),
     main_model: str = typer.Option("small", "--model"),
     debug: bool = typer.Option(False, "--debug", help="JARVIS_WAKE_DEBUG=1로 verbose 로그"),
 ) -> None:
@@ -703,6 +813,166 @@ def daemon_logs(
         os.execvp("tail", ["tail", "-f", "-n", str(lines), str(path)])
     else:
         console.print(tail_log(stream, lines))
+
+
+@app.command()
+def init() -> None:
+    """첫 실행 마법사 — API 키, 마이크, 권한, daemon 등록 안내."""
+    from pathlib import Path
+
+    console.print("[bold cyan]자비스 첫 실행 마법사[/bold cyan]\n")
+
+    # 1) API 키
+    project_root = Path(__file__).resolve().parents[2]
+    env_path = project_root / ".env"
+    if not env_path.exists():
+        env_path.write_text("ANTHROPIC_API_KEY=\nJARVIS_MODEL=claude-opus-4-7\n", encoding="utf-8")
+    cur = env_path.read_text(encoding="utf-8")
+    if "ANTHROPIC_API_KEY=" in cur and not cur.split("ANTHROPIC_API_KEY=", 1)[1].split("\n", 1)[0].strip().startswith("sk-"):
+        key = Prompt.ask("[1/4] ANTHROPIC_API_KEY (입력 후 Enter, 비우면 건너뜀)", default="")
+        if key.strip():
+            new = "\n".join(
+                line if not line.startswith("ANTHROPIC_API_KEY=") else f"ANTHROPIC_API_KEY={key.strip()}"
+                for line in cur.splitlines()
+            )
+            env_path.write_text(new + "\n", encoding="utf-8")
+            console.print("[green]  ✔ .env 저장[/green]")
+    else:
+        console.print("[green][1/4] ANTHROPIC_API_KEY 이미 설정됨[/green]")
+
+    # 2) 호칭
+    owner = Prompt.ask("[2/4] 사용자 호칭 (예: 민지님 / Boss / 주인님)", default="주인님")
+    if owner and owner != "주인님":
+        with env_path.open("a", encoding="utf-8") as f:
+            f.write(f"JARVIS_OWNER_NAME={owner}\n")
+        console.print(f"[green]  ✔ 호칭: {owner}[/green]")
+
+    # 3) memory.md 안내
+    memo = Path.home() / ".jarvis" / "memory.md"
+    memo.parent.mkdir(parents=True, exist_ok=True)
+    if not memo.exists():
+        from jarvis.assistant import _MEMORY_TEMPLATE
+        memo.write_text(_MEMORY_TEMPLATE, encoding="utf-8")
+        console.print(f"[green][3/4] 메모 템플릿 생성: {memo}[/green]")
+        console.print("[dim]  → 사용자 정체성·선호를 적어두면 모든 세션에서 참조됨[/dim]")
+    else:
+        console.print(f"[green][3/4] 메모 이미 존재: {memo}[/green]")
+
+    # 4) macOS 권한 + daemon 안내
+    console.print("[yellow][4/4] macOS 권한 + daemon 등록[/yellow]")
+    console.print("  • 권한 트리거:  [bold]jarvis permissions[/bold]")
+    console.print("  • 진단:         [bold]jarvis doctor[/bold]")
+    console.print("  • daemon 시작:  [bold]jarvis daemon install[/bold]")
+
+    console.print("\n[bold green]초기화 완료.[/bold green] 동작 확인:  [cyan]jarvis ask \"안녕\"[/cyan]")
+
+
+@app.command()
+def doctor() -> None:
+    """진단 — API 키 / 마이크 / 의존성 / launchd 상태 / HUD 검사."""
+    import importlib
+    import shutil
+    import subprocess as _sp
+    from pathlib import Path
+
+    console.print("[bold cyan]자비스 진단 (jarvis doctor)[/bold cyan]")
+    ok = lambda m: console.print(f"[green]  ✔[/green] {m}")
+    bad = lambda m: console.print(f"[red]  ✗[/red] {m}")
+
+    # 1) API key
+    from jarvis.config import settings as _s
+    if _s.anthropic_api_key.startswith("sk-"):
+        ok(f"ANTHROPIC_API_KEY (앞: {_s.anthropic_api_key[:10]}…)")
+    else:
+        bad("ANTHROPIC_API_KEY 미설정 — .env 또는 jarvis init")
+
+    # 2) Python 의존성
+    for mod in ("anthropic", "typer", "rich", "sounddevice", "numpy", "faster_whisper"):
+        try:
+            importlib.import_module(mod)
+            ok(f"의존성: {mod}")
+        except ImportError:
+            bad(f"의존성: {mod} (pip install -e .)")
+
+    # 3) 마이크
+    try:
+        import sounddevice as _sd
+        devs = _sd.query_devices()
+        in_devs = [d for d in devs if d.get("max_input_channels", 0) > 0]
+        if in_devs:
+            ok(f"마이크 입력 장치 {len(in_devs)}개 — 기본: {_sd.default.device}")
+        else:
+            bad("마이크 입력 장치 없음")
+    except Exception as e:
+        bad(f"마이크 query 실패: {e}")
+
+    # 4) launchd daemon
+    try:
+        out = _sp.run(
+            ["launchctl", "list"], capture_output=True, text=True, timeout=3
+        ).stdout
+        if "com.swxvno.jarvis" in out or "jarvis.wake" in out:
+            ok("launchd daemon 등록됨")
+        else:
+            bad("launchd daemon 미등록 — jarvis daemon install")
+    except Exception:
+        bad("launchctl 실행 실패")
+
+    # 5) HUD
+    if shutil.which("swift"):
+        ok("swift toolchain 발견")
+    else:
+        bad("swift 없음 — Xcode Command Line Tools 설치")
+    hud_bin = Path.home() / "jarvis" / "hud-overlay" / ".build" / "release" / "JarvisHUD"
+    if hud_bin.exists():
+        ok(f"JarvisHUD 빌드됨: {hud_bin}")
+    else:
+        # 다른 위치 시도
+        proj_hud = Path(__file__).resolve().parents[2] / "hud-overlay" / ".build" / "release" / "JarvisHUD"
+        if proj_hud.exists():
+            ok(f"JarvisHUD 빌드됨: {proj_hud}")
+        else:
+            bad("JarvisHUD 미빌드 — cd hud-overlay && swift build -c release")
+
+    # 6) memory.md
+    memo = Path.home() / ".jarvis" / "memory.md"
+    if memo.exists():
+        ok(f"~/.jarvis/memory.md ({memo.stat().st_size}B)")
+    else:
+        bad("~/.jarvis/memory.md 없음 — jarvis init")
+
+    console.print()
+
+
+@app.command()
+def permissions() -> None:
+    """macOS 자동화 권한 다이얼로그 일괄 트리거 (Calendar/Reminders/Music/Mail)."""
+    import subprocess as _sp
+
+    console.print("[bold cyan]macOS 자동화 권한 트리거[/bold cyan]")
+    console.print("[dim]각 앱에 대한 권한 다이얼로그가 뜸. 모두 '허용' 누르시오.[/dim]\n")
+
+    targets = [
+        ("Calendar", 'tell application "Calendar" to count calendars'),
+        ("Reminders", 'tell application "Reminders" to count lists'),
+        ("Music", 'tell application "Music" to player state'),
+        ("Mail", 'tell application "Mail" to count accounts'),
+        ("Finder", 'tell application "Finder" to count items in home'),
+        ("System Events", 'tell application "System Events" to count processes'),
+    ]
+    for name, script in targets:
+        try:
+            r = _sp.run(
+                ["osascript", "-e", script], capture_output=True, text=True, timeout=10
+            )
+            if r.returncode == 0:
+                console.print(f"[green]  ✔[/green] {name}")
+            else:
+                console.print(f"[yellow]  ⚠[/yellow] {name} — {r.stderr.strip()[:80]}")
+        except Exception as e:
+            console.print(f"[red]  ✗[/red] {name} — {e}")
+
+    console.print("\n[dim]시스템 환경설정 → 개인정보 보호 → 자동화에서 자비스 항목 확인 가능.[/dim]")
 
 
 if __name__ == "__main__":

@@ -39,8 +39,8 @@ if [ "$ACTION" = "install" ] || [ "$ACTION" = "launchd" ]; then
 fi
 
 if [ "$ACTION" = "launchd" ]; then
-    PLIST_SRC="com.swxvno.jarvis.hud.plist"
-    PLIST_DEST="$HOME/Library/LaunchAgents/com.swxvno.jarvis.hud.plist"
+    PLIST_SRC="com.jarvis.hud.plist"
+    PLIST_DEST="$HOME/Library/LaunchAgents/com.jarvis.hud.plist"
     echo "==> Registering LaunchAgent"
     cp "$PLIST_SRC" "$PLIST_DEST"
     launchctl bootout "gui/$(id -u)" "$PLIST_DEST" 2>/dev/null || true

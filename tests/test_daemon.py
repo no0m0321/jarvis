@@ -12,7 +12,7 @@ from jarvis.daemon import (
 
 
 def test_label() -> None:
-    assert LABEL == "com.swxvno.jarvis.wake"
+    assert LABEL == "com.jarvis.wake"
     assert PLIST_PATH.name == f"{LABEL}.plist"
     assert "LaunchAgents" in str(PLIST_PATH)
 

@@ -70,9 +70,11 @@ def test_hud_data_script_executes() -> None:
     """hud-data.sh가 valid JSON 출력하는지."""
     import json
     import subprocess
+    from pathlib import Path
 
+    script = Path(__file__).resolve().parents[1] / "scripts" / "hud-data.sh"
     result = subprocess.run(
-        ["bash", "/Users/swxvno/jarvis/scripts/hud-data.sh"],
+        ["bash", str(script)],
         capture_output=True, text=True, timeout=10,
     )
     assert result.returncode == 0, result.stderr

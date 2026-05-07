@@ -1,0 +1,40 @@
+# pre-commit hooks — local secret scan + 기본 점검
+#
+# 설치:
+#   brew install pre-commit gitleaks
+#   pre-commit install
+#
+# 모든 commit 직전에 자동 실행. push 전 secret leak 방지.
+
+repos:
+  # ── secret scan (가장 중요) ──
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.21.2
+    hooks:
+      - id: gitleaks
+        name: 🔒 gitleaks (secret scan)
+
+  # ── 기본 위생 ──
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: detect-private-key
+        name: 🔑 private key 검사
+      - id: detect-aws-credentials
+        name: ☁️  AWS credentials 검사
+        args: ["--allow-missing-credentials"]
+      - id: end-of-file-fixer
+        name: 📄 파일 끝 newline 정리
+      - id: trailing-whitespace
+        name: ⏎ trailing whitespace 제거
+      - id: check-merge-conflict
+        name: 🔀 merge conflict marker 검사
+      - id: check-added-large-files
+        name: 📦 큰 파일 (>500KB) 차단
+        args: ["--maxkb=500"]
+      - id: check-yaml
+        name: 📋 YAML 문법 검사
+      - id: check-json
+        name: 📋 JSON 문법 검사
+      - id: check-toml
+        name: 📋 TOML 문법 검사

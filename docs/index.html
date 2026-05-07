@@ -1,0 +1,3590 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>J.A.R.V.I.S — Voice-First Personal AI · Stark-grade HUD for macOS</title>
+<meta name="description" content="Claude 기반 한국어 우선 자비스. wake word 음성 대화 + 296개 도구 + 시네마틱 홀로그래픽 HUD. macOS 네이티브." />
+<meta property="og:title" content="J.A.R.V.I.S — Stark-grade Voice AI for macOS" />
+<meta property="og:description" content="자비스를 부르세요. Claude Opus 4.7이 응답합니다." />
+<meta property="og:type" content="website" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Orbitron:wght@400;500;700;900&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --cyan: #4cc9ff;
+  --cyan-bright: #7de0ff;
+  --cyan-dim: #5fb4d4;
+  --cyan-deep: #0084c7;
+  --cyan-glow: rgba(76, 201, 255, 0.55);
+  --cyan-soft: rgba(76, 201, 255, 0.10);
+  --cyan-faint: rgba(76, 201, 255, 0.04);
+  --bg-0: #02060d;
+  --bg-1: #050b16;
+  --bg-2: #0a1320;
+  --line: rgba(76, 201, 255, 0.12);
+  --line-strong: rgba(76, 201, 255, 0.32);
+  --text: #d6effa;
+  --text-dim: #7896a4;
+  /* Iron Man 액센트 — 미니멀 사용 (LIVE/ONLINE/위험 = red, 가격/완료/PAID = gold) */
+  --stark-red: #ff3344;
+  --stark-red-bright: #ff5566;
+  --stark-red-glow: rgba(255, 51, 68, 0.6);
+  --stark-red-soft: rgba(255, 51, 68, 0.08);
+  --stark-gold: #ffd166;
+  --stark-gold-bright: #ffe6a0;
+  --stark-gold-glow: rgba(255, 209, 102, 0.55);
+  --stark-gold-soft: rgba(255, 209, 102, 0.08);
+  --r-sm: 14px;
+  --r-md: 22px;
+  --r-lg: 32px;
+  --r-xl: 44px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  background: var(--bg-0);
+  color: var(--text);
+  font-family: 'Outfit', 'Pretendard', system-ui, -apple-system, sans-serif;
+  font-weight: 400;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection { background: var(--cyan); color: #001018; }
+
+/* ---------- Background layers ---------- */
+.bg-base {
+  position: fixed; inset: 0; z-index: -4;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0, 132, 199, 0.22), transparent 60%),
+    radial-gradient(ellipse 60% 50% at 15% 70%, rgba(76, 201, 255, 0.10), transparent 70%),
+    radial-gradient(ellipse 50% 50% at 85% 40%, rgba(0, 60, 110, 0.18), transparent 70%),
+    var(--bg-0);
+}
+.bg-grid {
+  position: fixed; inset: 0; z-index: -3;
+  background-image:
+    linear-gradient(to right, rgba(76, 201, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(76, 201, 255, 0.035) 1px, transparent 1px);
+  background-size: 80px 80px;
+  mask-image: radial-gradient(ellipse at center, black 30%, transparent 85%);
+  pointer-events: none;
+}
+.bg-orb-1, .bg-orb-2 {
+  position: fixed; z-index: -2;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  animation: orbFloat 18s ease-in-out infinite;
+}
+.bg-orb-1 {
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, rgba(76, 201, 255, 0.18), transparent 70%);
+  top: -200px; right: -150px;
+}
+.bg-orb-2 {
+  width: 700px; height: 700px;
+  background: radial-gradient(circle, rgba(0, 132, 199, 0.14), transparent 70%);
+  bottom: -250px; left: -200px;
+  animation-delay: -9s;
+}
+@keyframes orbFloat {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(30px, -40px) scale(1.1); }
+}
+canvas#particles { position: fixed; inset: 0; z-index: -1; pointer-events: none; opacity: 0.7; }
+
+/* ---------- Top nav ---------- */
+nav.top {
+  position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+  z-index: 100;
+  display: flex; align-items: center; gap: 32px;
+  padding: 10px 12px 10px 24px;
+  background: rgba(8, 16, 28, 0.55);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border: 1px solid var(--line-strong);
+  border-radius: 100px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04);
+  max-width: calc(100% - 32px);
+}
+nav.top .brand {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: 0.32em;
+  color: var(--cyan-bright);
+  display: flex; align-items: center; gap: 12px;
+}
+nav.top .brand .dot {
+  width: 8px; height: 8px;
+  background: var(--cyan);
+  border-radius: 50%;
+  box-shadow: 0 0 14px var(--cyan), 0 0 4px #fff inset;
+  animation: blink 1.6s ease-in-out infinite;
+}
+@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+nav.top .links {
+  display: flex; gap: 28px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+nav.top .links a {
+  color: var(--text-dim); text-decoration: none;
+  transition: color 0.2s, text-shadow 0.2s;
+}
+nav.top .links a:hover { color: var(--cyan-bright); text-shadow: 0 0 8px var(--cyan-glow); }
+nav.top .nav-cta {
+  background: var(--cyan);
+  color: #001018;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  padding: 9px 18px;
+  border-radius: 100px;
+  text-decoration: none;
+  box-shadow: 0 0 20px var(--cyan-glow);
+  transition: all 0.2s;
+}
+nav.top .nav-cta:hover { background: var(--cyan-bright); box-shadow: 0 0 30px var(--cyan-glow); }
+
+/* ---------- Hero ---------- */
+.hero {
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  padding: 120px 40px 80px;
+  position: relative;
+}
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  gap: 80px;
+  max-width: 1380px;
+  width: 100%;
+  align-items: center;
+}
+.hero-text .tag {
+  display: inline-flex; align-items: center; gap: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--cyan-bright);
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  border: 1px solid var(--line-strong);
+  padding: 9px 18px 9px 14px;
+  background: var(--cyan-soft);
+  margin-bottom: 32px;
+  border-radius: 100px;
+  backdrop-filter: blur(8px);
+}
+.hero-text .tag::before {
+  content: ''; width: 6px; height: 6px; background: var(--cyan); border-radius: 50%;
+  box-shadow: 0 0 8px var(--cyan);
+}
+.hero-text h1 {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size: clamp(72px, 9vw, 140px);
+  line-height: 0.88;
+  letter-spacing: 0.01em;
+  color: #f0fbff;
+  margin-bottom: 24px;
+  position: relative;
+}
+.hero-text h1 .gradient {
+  background:
+    linear-gradient(180deg, #ffffff 0%, #d6effa 30%, var(--cyan-bright) 65%, var(--cyan) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  /* multi-layer glow — 영화 같은 cyan halo (drop-shadow가 글자 외곽으로만 자연스럽게 퍼짐) */
+  filter:
+    drop-shadow(0 0 18px rgba(125, 224, 255, 0.55))
+    drop-shadow(0 0 48px rgba(76, 201, 255, 0.30))
+    drop-shadow(0 0 96px rgba(0, 132, 199, 0.20));
+  display: inline-block;
+}
+.hero-text h1 .accent {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--cyan-dim);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: clamp(9.5px, 1vw, 12px);
+  letter-spacing: 0.22em;
+  margin-top: 22px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.hero-text h1 .accent::before,
+.hero-text h1 .accent::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--cyan-dim), transparent);
+  opacity: 0.5;
+  min-width: 24px;
+}
+.hero-text h1 .accent .accent-mark {
+  color: var(--cyan-bright);
+  filter: drop-shadow(0 0 6px var(--cyan-glow));
+  font-size: 1.2em;
+  letter-spacing: 0;
+}
+.hero-text .subtitle {
+  font-size: 21px;
+  font-weight: 300;
+  color: var(--text);
+  margin-bottom: 16px;
+  line-height: 1.5;
+  max-width: 540px;
+}
+.hero-text .meta {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--text-dim);
+  letter-spacing: 0.06em;
+  margin-bottom: 36px;
+  display: flex; gap: 12px; flex-wrap: wrap;
+}
+.hero-text .meta span {
+  border: 1px solid var(--line);
+  padding: 7px 14px;
+  border-radius: 100px;
+  background: rgba(76, 201, 255, 0.03);
+  display: inline-flex; align-items: center; gap: 8px;
+  transition: all 0.2s;
+}
+.hero-text .meta span::before {
+  content: ''; width: 4px; height: 4px; background: var(--cyan); border-radius: 50%;
+  box-shadow: 0 0 6px var(--cyan);
+}
+.hero-text .meta span:hover { border-color: var(--cyan); color: var(--cyan-bright); }
+
+/* ---------- Install card (HUD style) ---------- */
+.install-card {
+  background:
+    linear-gradient(135deg, rgba(8, 22, 36, 0.78), rgba(2, 8, 16, 0.92)),
+    repeating-linear-gradient(0deg,
+      transparent 0px,
+      transparent 3px,
+      rgba(76, 201, 255, 0.018) 4px,
+      transparent 5px);
+  border: 1px solid var(--line-strong);
+  padding: 24px 26px 22px;
+  position: relative;
+  margin-bottom: 28px;
+  backdrop-filter: blur(20px);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.4),
+    0 0 60px rgba(76, 201, 255, 0.10),
+    inset 0 1px 0 rgba(125, 224, 255, 0.10),
+    inset 0 0 0 1px rgba(76, 201, 255, 0.04);
+}
+.install-card::before {
+  /* 상단 cyan accent line — HUD 시그니처 */
+  content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent 5%, var(--cyan-bright) 50%, transparent 95%);
+  box-shadow: 0 0 12px var(--cyan-glow);
+}
+.install-card::after {
+  /* 좌측 세로 띠 — terminal-prompt accent */
+  content: ""; position: absolute; top: 12px; bottom: 12px; left: 0;
+  width: 2px;
+  background: linear-gradient(180deg, transparent, var(--cyan-bright), transparent);
+  opacity: 0.7;
+}
+
+.install-card .label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--cyan-bright);
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+  display: flex; justify-content: space-between; align-items: center;
+  text-shadow: 0 0 8px var(--cyan-soft);
+}
+.install-card .label .copy-btn {
+  background: var(--cyan-soft);
+  border: 1px solid var(--line-strong);
+  color: var(--cyan-bright);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  border-radius: 100px;
+  display: flex; align-items: center; gap: 6px;
+}
+.install-card .label .copy-btn:hover {
+  background: var(--cyan);
+  color: #001018;
+  box-shadow: 0 0 16px var(--cyan-glow);
+}
+.install-card .label .copy-btn.copied { background: #5dff8a; color: #001018; border-color: #5dff8a; }
+.install-card code {
+  display: block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: #e8f7ff;
+  word-break: break-all;
+  line-height: 1.5;
+}
+.install-card code .prompt { color: var(--cyan); margin-right: 8px; user-select: none; }
+
+.cta-row { display: flex; gap: 14px; flex-wrap: wrap; }
+.btn {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 16px 32px;
+  text-decoration: none;
+  display: inline-flex; align-items: center; gap: 10px;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.25s ease;
+  border: 1px solid transparent;
+  border-radius: 100px;
+}
+.btn-primary {
+  background: linear-gradient(135deg, var(--cyan-bright), var(--cyan-deep));
+  color: #001018;
+  font-weight: 700;
+  box-shadow:
+    0 8px 28px rgba(76, 201, 255, 0.35),
+    inset 0 1px 0 rgba(255,255,255,0.4),
+    inset 0 -2px 8px rgba(0, 60, 100, 0.4);
+}
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 14px 40px rgba(76, 201, 255, 0.55),
+    inset 0 1px 0 rgba(255,255,255,0.5),
+    inset 0 -2px 8px rgba(0, 60, 100, 0.4);
+}
+.btn-ghost {
+  color: var(--cyan-bright);
+  background: rgba(76, 201, 255, 0.04);
+  border-color: var(--line-strong);
+}
+.btn-ghost:hover {
+  background: var(--cyan-soft);
+  border-color: var(--cyan);
+  text-shadow: 0 0 10px var(--cyan-glow);
+}
+
+/* ============================================ */
+/* ============= HUD STAGE — V2 ============= */
+/* ============================================ */
+.hud-stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  max-width: 620px;
+  margin: 0 auto;
+  display: flex; align-items: center; justify-content: center;
+  /* drop-shadow는 자식에 stacking context를 만들어 ::after scan beam을 클립함 →
+     글로우는 .hud-halo가 대신 담당. */
+}
+
+/* outer halo (background blur disc) */
+.hud-halo {
+  position: absolute;
+  width: 90%; height: 90%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(76, 201, 255, 0.12) 0%, transparent 65%);
+  filter: blur(20px);
+  animation: haloPulse 4s ease-in-out infinite;
+}
+@keyframes haloPulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.04); }
+}
+
+/* sonar pulse rings (3 staggered) */
+.sonar {
+  position: absolute;
+  width: 30%; height: 30%;
+  border-radius: 50%;
+  border: 1.5px solid var(--cyan);
+  opacity: 0;
+  animation: sonarPulse 4s ease-out infinite;
+  pointer-events: none;
+}
+.sonar.s2 { animation-delay: -1.3s; border-color: var(--cyan-bright); }
+.sonar.s3 { animation-delay: -2.6s; }
+@keyframes sonarPulse {
+  0% { transform: scale(1); opacity: 0.85; border-width: 2px; }
+  100% { transform: scale(3.5); opacity: 0; border-width: 0.5px; }
+}
+
+.hud-stage svg.rings { position: absolute; inset: 0; width: 100%; height: 100%; }
+.spin-cw { animation: spin 28s linear infinite; transform-origin: 300px 300px; transform-box: fill-box; }
+.spin-ccw { animation: spin 22s linear infinite reverse; transform-origin: 300px 300px; transform-box: fill-box; }
+.spin-fast { animation: spin 10s linear infinite; transform-origin: 300px 300px; transform-box: fill-box; }
+.spin-slow { animation: spin 60s linear infinite; transform-origin: 300px 300px; transform-box: fill-box; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.ring { fill: none; stroke: var(--cyan); }
+.ring-soft { stroke: var(--cyan); opacity: 0.35; }
+.ring-bright { stroke: var(--cyan-bright); }
+.ring-pulse { animation: opacityPulse 3s ease-in-out infinite; }
+@keyframes opacityPulse { 0%,100% { opacity: 0.4; } 50% { opacity: 1; } }
+
+/* core orb — multi-layer */
+.hud-core-wrap {
+  position: absolute;
+  width: 28%; height: 28%;
+  display: flex; align-items: center; justify-content: center;
+  animation: coreFloat 4s ease-in-out infinite;
+}
+@keyframes coreFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+.hud-core-glow {
+  position: absolute;
+  width: 200%; height: 200%;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--cyan) 0%, rgba(76, 201, 255, 0.3) 25%, transparent 65%);
+  filter: blur(20px);
+  animation: corePulse 3s ease-in-out infinite;
+}
+@keyframes corePulse {
+  0%, 100% { opacity: 0.7; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+.hud-core {
+  position: relative;
+  width: 100%; height: 100%;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 28%, #ffffff 0%, #c9f0ff 12%, var(--cyan-bright) 30%, var(--cyan) 55%, var(--cyan-deep) 80%, #002740 100%);
+  box-shadow:
+    inset -6px -10px 30px rgba(0, 40, 70, 0.55),
+    inset 6px 10px 30px rgba(255, 255, 255, 0.4),
+    0 0 40px var(--cyan-glow);
+}
+.hud-core::before {
+  content: ''; position: absolute;
+  top: 14%; left: 22%;
+  width: 35%; height: 28%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0) 70%);
+  filter: blur(2px);
+}
+.hud-core::after {
+  content: ''; position: absolute;
+  bottom: 18%; right: 22%;
+  width: 18%; height: 12%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(255,255,255,0.5), transparent 70%);
+  filter: blur(1px);
+}
+
+/* orbiting nodes around core (3 nodes at different radii) */
+.orbit {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.orbit.o1 { width: 56%; height: 56%; animation: spin 14s linear infinite; }
+.orbit.o2 { width: 72%; height: 72%; animation: spin 22s linear infinite reverse; }
+.orbit.o3 { width: 88%; height: 88%; animation: spin 32s linear infinite; }
+.orbit .node {
+  position: absolute;
+  top: -6px; left: 50%;
+  transform: translateX(-50%);
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: var(--cyan-bright);
+  box-shadow: 0 0 14px var(--cyan-bright), 0 0 4px #fff inset;
+}
+.orbit .node.sm { width: 6px; height: 6px; top: -3px; }
+.orbit .node.right { left: auto; right: 0; top: 50%; transform: translateY(-50%); }
+.orbit .node.bottom { left: 50%; top: auto; bottom: -6px; transform: translateX(-50%); }
+
+/* radial waveform bars (audio visualizer ring) */
+.wave-ring {
+  position: absolute;
+  width: 50%; height: 50%;
+  pointer-events: none;
+}
+.wave-ring .bar {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 2px;
+  background: linear-gradient(to top, var(--cyan), transparent);
+  transform-origin: bottom center;
+  border-radius: 2px;
+  animation: barPulse 1.4s ease-in-out infinite;
+}
+@keyframes barPulse {
+  0%, 100% { height: 8px; opacity: 0.4; }
+  50% { height: 24px; opacity: 1; }
+}
+
+/* corner labels — softened */
+.hud-stage .hlabel {
+  position: absolute;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.28em;
+  color: var(--cyan-bright);
+  text-transform: uppercase;
+  background: rgba(8, 16, 28, 0.55);
+  padding: 8px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 100px;
+  backdrop-filter: blur(10px);
+  white-space: nowrap;
+  display: flex; align-items: center; gap: 8px;
+}
+.hud-stage .hlabel::before {
+  content: ''; width: 5px; height: 5px; background: var(--cyan); border-radius: 50%;
+  box-shadow: 0 0 6px var(--cyan);
+}
+.hud-stage .hlabel.lt { top: 8%; left: -4%; }
+.hud-stage .hlabel.rt { top: 12%; right: -4%; }
+.hud-stage .hlabel.lb { bottom: 14%; left: -2%; }
+.hud-stage .hlabel.rb { bottom: 8%; right: -4%; }
+.hud-stage .hlabel.tickr { color: #5dff8a; }
+.hud-stage .hlabel.tickr::before { background: #5dff8a; box-shadow: 0 0 8px #5dff8a; animation: blink 1.4s ease-in-out infinite; }
+
+/* scanning beam */
+.scan-beam {
+  position: absolute;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  animation: spin 6s linear infinite;
+}
+.scan-beam::before {
+  content: ''; position: absolute;
+  top: 50%; left: 50%;
+  width: 50%; height: 1.5px;
+  transform-origin: left center;
+  background: linear-gradient(to right, transparent 0%, var(--cyan) 60%, var(--cyan-bright) 95%, transparent);
+  filter: blur(0.4px);
+  box-shadow: 0 0 12px var(--cyan);
+  opacity: 0.65;
+}
+
+/* ---------- Section base ---------- */
+section.block {
+  padding: 120px 40px;
+  max-width: 1380px;
+  margin: 0 auto;
+  position: relative;
+}
+.section-head {
+  display: flex; align-items: baseline;
+  gap: 24px;
+  margin-bottom: 64px;
+  padding-bottom: 28px;
+  border-bottom: 1px solid var(--line);
+}
+.section-head .num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--cyan);
+  letter-spacing: 0.32em;
+  padding: 6px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 100px;
+  background: var(--cyan-soft);
+}
+.section-head h2 {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: clamp(30px, 4vw, 48px);
+  letter-spacing: -0.01em;
+  color: #f0fbff;
+}
+.section-head h2 .accent {
+  background: linear-gradient(135deg, var(--cyan-bright), var(--cyan));
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.section-head .sub {
+  margin-left: auto;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+/* ---------- Stats ---------- */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+.stat {
+  background: linear-gradient(160deg, rgba(8, 22, 36, 0.5), rgba(2, 8, 16, 0.7));
+  padding: 40px 28px;
+  text-align: center;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  backdrop-filter: blur(10px);
+  transition: all 0.35s ease;
+}
+.stat:hover {
+  transform: translateY(-4px);
+  border-color: var(--cyan);
+  box-shadow: 0 20px 50px rgba(76, 201, 255, 0.15);
+}
+.stat .v {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size: 56px;
+  background: linear-gradient(135deg, #fff, var(--cyan-bright) 60%, var(--cyan));
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+  line-height: 1;
+  filter: drop-shadow(0 0 16px var(--cyan-glow));
+}
+.stat .l {
+  margin-top: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.32em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+/* ---------- Features ---------- */
+.features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 22px;
+}
+.feature {
+  background: linear-gradient(160deg, rgba(8, 22, 36, 0.55), rgba(2, 8, 16, 0.75));
+  border: 1px solid var(--line);
+  padding: 36px 32px;
+  position: relative;
+  transition: all 0.4s cubic-bezier(.2,.7,.2,1);
+  overflow: hidden;
+  border-radius: var(--r-lg);
+  backdrop-filter: blur(10px);
+}
+.feature::before {
+  content: ''; position: absolute;
+  inset: 0;
+  border-radius: var(--r-lg);
+  padding: 1px;
+  background: linear-gradient(135deg, var(--cyan), transparent 40%, transparent 60%, var(--cyan-deep));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.4s;
+  pointer-events: none;
+}
+.feature:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 20px 60px rgba(76, 201, 255, 0.18);
+}
+.feature:hover::before { opacity: 1; }
+.feature .icon {
+  width: 56px; height: 56px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, var(--cyan-soft), rgba(76, 201, 255, 0.02));
+  border: 1px solid var(--line-strong);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 28px;
+  color: var(--cyan-bright);
+  position: relative;
+  box-shadow: 0 0 20px rgba(76, 201, 255, 0.1), inset 0 1px 0 rgba(255,255,255,0.05);
+}
+.feature .icon svg { width: 26px; height: 26px; stroke: var(--cyan-bright); fill: none; stroke-width: 1.5; }
+.feature h3 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  color: #f0fbff;
+  margin-bottom: 10px;
+  letter-spacing: -0.01em;
+}
+.feature p {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-dim);
+  font-weight: 300;
+}
+.feature .tag-mini {
+  margin-top: 20px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--cyan);
+  letter-spacing: 0.18em;
+  display: inline-block;
+  padding: 5px 12px;
+  border: 1px solid var(--line);
+  border-radius: 100px;
+  background: var(--cyan-soft);
+}
+
+/* ---------- Demo ---------- */
+.demo-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 48px;
+  align-items: start;
+}
+.terminal {
+  background: linear-gradient(180deg, #050d18, #02060d);
+  border: 1px solid var(--line-strong);
+  position: relative;
+  font-family: 'JetBrains Mono', monospace;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, 0.5),
+    0 0 60px rgba(76, 201, 255, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+.terminal-bar {
+  background: rgba(8, 16, 28, 0.9);
+  padding: 12px 18px;
+  display: flex; align-items: center; gap: 10px;
+  border-bottom: 1px solid var(--line);
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+}
+.terminal-bar .dot { width: 11px; height: 11px; border-radius: 50%; }
+.terminal-bar .dot.r { background: #ff5f57; }
+.terminal-bar .dot.y { background: #ffbd2e; }
+.terminal-bar .dot.g { background: #28c93f; }
+.terminal-bar .title { margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.16em; }
+.terminal-body {
+  padding: 28px 26px;
+  font-size: 13px;
+  line-height: 1.75;
+  color: #d6effa;
+  min-height: 400px;
+}
+.terminal-body .line { display: block; }
+.terminal-body .prompt { color: var(--cyan); }
+.terminal-body .cmd { color: #fff; }
+.terminal-body .out { color: var(--text-dim); }
+.terminal-body .ok { color: #5dff8a; }
+.terminal-body .accent { color: var(--cyan-bright); }
+.terminal-body .cursor {
+  display: inline-block; width: 8px; height: 14px;
+  background: var(--cyan); vertical-align: middle;
+  animation: blink 1s steps(2) infinite;
+  box-shadow: 0 0 8px var(--cyan); border-radius: 2px;
+}
+.demo-info h3 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 26px;
+  font-weight: 600;
+  color: #f0fbff;
+  margin-bottom: 16px;
+  letter-spacing: -0.01em;
+}
+.demo-info p {
+  color: var(--text-dim);
+  line-height: 1.7;
+  margin-bottom: 24px;
+  font-size: 16px;
+}
+.cmd-list { list-style: none; margin-top: 28px; }
+.cmd-list li {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  padding: 14px 20px;
+  border-radius: var(--r-sm);
+  margin-bottom: 8px;
+  color: var(--text);
+  background: rgba(76, 201, 255, 0.03);
+  border: 1px solid var(--line);
+  transition: all 0.2s;
+}
+.cmd-list li:hover {
+  border-color: var(--cyan);
+  background: var(--cyan-soft);
+  transform: translateX(4px);
+}
+.cmd-list li .k { color: var(--cyan-bright); }
+.cmd-list li .c { color: var(--text-dim); margin-left: 10px; }
+
+/* ---------- Tools chips ---------- */
+.tool-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 10px;
+}
+.chip {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--text);
+  border: 1px solid var(--line);
+  padding: 14px 18px;
+  background: rgba(8, 22, 36, 0.4);
+  letter-spacing: 0.04em;
+  transition: all 0.25s;
+  border-radius: 100px;
+  display: flex; align-items: center;
+}
+.chip:hover {
+  color: var(--cyan-bright);
+  border-color: var(--cyan);
+  background: var(--cyan-soft);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(76, 201, 255, 0.15);
+}
+.chip .num {
+  display: inline-block;
+  color: var(--cyan);
+  font-weight: 700;
+  margin-right: 12px;
+  opacity: 0.6;
+  font-size: 10px;
+}
+
+/* ---------- Requirements ---------- */
+.req {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 22px;
+}
+.req-card {
+  border: 1px solid var(--line);
+  padding: 32px 28px;
+  background: linear-gradient(160deg, rgba(8, 22, 36, 0.5), rgba(2, 8, 16, 0.7));
+  position: relative;
+  border-radius: var(--r-lg);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+.req-card:hover {
+  border-color: var(--cyan);
+  transform: translateY(-3px);
+  box-shadow: 0 16px 40px rgba(76, 201, 255, 0.12);
+}
+.req-card .h {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--cyan);
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 100px;
+  background: var(--cyan-soft);
+}
+.req-card .v {
+  font-family: 'Outfit', sans-serif;
+  font-size: 26px;
+  font-weight: 600;
+  color: #f0fbff;
+  margin-bottom: 6px;
+  letter-spacing: -0.01em;
+}
+.req-card .d {
+  font-size: 13px;
+  color: var(--text-dim);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ---------- Final CTA ---------- */
+.cta-final {
+  text-align: center;
+  padding: 140px 40px;
+  position: relative;
+  margin: 60px auto 0;
+  max-width: 1380px;
+  border-radius: var(--r-xl);
+  background:
+    radial-gradient(ellipse 80% 100% at center, rgba(76, 201, 255, 0.18), transparent 60%),
+    linear-gradient(160deg, rgba(8, 22, 36, 0.8), rgba(2, 8, 16, 0.9));
+  border: 1px solid var(--line-strong);
+  overflow: hidden;
+}
+.cta-final::before {
+  content: ''; position: absolute;
+  width: 600px; height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--cyan-soft), transparent 70%);
+  top: -200px; left: 50%; transform: translateX(-50%);
+  pointer-events: none;
+}
+.cta-final h2 {
+  position: relative;
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(40px, 5.5vw, 72px);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  background: linear-gradient(135deg, #fff 0%, var(--cyan-bright) 50%, var(--cyan) 100%);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 18px;
+  filter: drop-shadow(0 0 30px rgba(76, 201, 255, 0.4));
+}
+.cta-final p {
+  position: relative;
+  font-size: 20px;
+  color: var(--text);
+  margin-bottom: 44px;
+  font-weight: 300;
+}
+.cta-final .row {
+  position: relative;
+  display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;
+}
+
+/* ---------- Footer ---------- */
+footer {
+  border-top: 1px solid var(--line);
+  padding: 60px 40px 40px;
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 40px;
+  max-width: 1380px;
+  margin: 80px auto 0;
+  font-size: 13px;
+}
+footer .brand-foot {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 800;
+  font-size: 16px;
+  letter-spacing: 0.32em;
+  color: var(--cyan-bright);
+  margin-bottom: 16px;
+  display: flex; align-items: center; gap: 12px;
+}
+footer .brand-foot .dot {
+  width: 8px; height: 8px; background: var(--cyan); border-radius: 50%;
+  box-shadow: 0 0 12px var(--cyan);
+}
+footer .desc { color: var(--text-dim); font-size: 13px; line-height: 1.7; }
+footer h5 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--cyan);
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  margin-bottom: 18px;
+}
+footer ul { list-style: none; }
+footer li { margin-bottom: 10px; }
+footer a {
+  color: var(--text-dim); text-decoration: none;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  transition: color 0.2s;
+}
+footer a:hover { color: var(--cyan-bright); }
+footer .legal {
+  grid-column: 1 / -1;
+  border-top: 1px solid var(--line);
+  margin-top: 40px;
+  padding-top: 28px;
+  display: flex; justify-content: space-between;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 0.06em;
+}
+
+/* ---------- Toast ---------- */
+.toast {
+  position: fixed;
+  bottom: 30px; left: 50%;
+  transform: translateX(-50%) translateY(120%);
+  background: rgba(8, 16, 28, 0.95);
+  border: 1px solid var(--cyan);
+  color: var(--cyan-bright);
+  padding: 14px 26px;
+  border-radius: 100px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  z-index: 200;
+  transition: transform 0.4s cubic-bezier(.2,.7,.2,1);
+  box-shadow: 0 10px 40px rgba(76, 201, 255, 0.4);
+  backdrop-filter: blur(20px);
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ---------- Mobile ---------- */
+@media (max-width: 980px) {
+  nav.top { padding: 8px 8px 8px 18px; gap: 16px; border-radius: 100px; }
+  nav.top .links { display: none; }
+  nav.top .brand { font-size: 12px; }
+  .hero { padding: 110px 20px 60px; }
+  .hero-grid { grid-template-columns: 1fr; gap: 60px; }
+  .hud-stage { max-width: 380px; }
+  .hud-stage .hlabel { font-size: 8px; padding: 6px 10px; }
+  .hud-stage .hlabel.lt { left: 0; }
+  .hud-stage .hlabel.rt { right: 0; }
+  .hud-stage .hlabel.lb { left: 0; }
+  .hud-stage .hlabel.rb { right: 0; }
+  section.block { padding: 80px 20px; }
+  .stats { grid-template-columns: repeat(2, 1fr); }
+  .demo-grid { grid-template-columns: 1fr; gap: 32px; }
+  footer { grid-template-columns: 1fr 1fr; padding: 50px 20px 30px; }
+  .section-head { flex-wrap: wrap; }
+  .section-head .sub { margin-left: 0; flex-basis: 100%; }
+  .cta-final { padding: 80px 24px; }
+}
+
+/* ──────── v0.4.0: Auth + Purchase UI ──────── */
+.auth-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 0.04em;
+}
+.auth-status .auth-link {
+  color: var(--cyan-bright);
+  text-decoration: none;
+  border: 1px solid var(--line);
+  padding: 6px 12px;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+}
+.auth-status .auth-link:hover {
+  border-color: var(--line-strong);
+  background: var(--cyan-soft);
+}
+.auth-status .auth-email {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--cyan-dim);
+}
+.auth-status .auth-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--cyan-bright);
+  box-shadow: 0 0 8px var(--cyan-glow);
+}
+.auth-status .auth-signout {
+  cursor: pointer;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: 11px;
+  padding: 4px 8px;
+}
+.auth-status .auth-signout:hover { color: var(--cyan); }
+
+.cta-action[data-state="buy"]::before { content: "⬇ "; }
+.cta-action[data-state="login"]::before { content: "→ "; }
+.cta-action[data-state="download"]::before { content: "⬇ "; }
+.cta-action[data-state="loading"] { opacity: 0.6; cursor: wait; }
+.cta-action[data-state="paid"] {
+  background: linear-gradient(180deg, #5fffa0 0%, #34d399 100%);
+  color: #00251a;
+  border-color: #34d399;
+  box-shadow: 0 0 28px rgba(52, 211, 153, 0.4);
+}
+
+.cta-action {
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+}
+.cta-action:disabled { opacity: 0.6; cursor: wait; }
+
+#purchase-banner {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(120%);
+  background: linear-gradient(180deg, #34d399 0%, #10b981 100%);
+  color: #00251a;
+  padding: 14px 28px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 14px;
+  z-index: 9999;
+  box-shadow: 0 12px 40px rgba(52, 211, 153, 0.4);
+  transition: transform 0.4s cubic-bezier(.2,.7,.2,1);
+}
+#purchase-banner.show { transform: translateX(-50%) translateY(0); }
+
+@media (max-width: 720px) {
+  .auth-status { font-size: 10px; }
+  .auth-status .auth-email { max-width: 120px; }
+}
+
+/* ────────────────────────────────────────────────────────────────────
+   PHASE 1 — Boot Sequence Overlay (Iron Man JARVIS)
+   페이지 진입 시 ~4초 풀스크린 부팅 시뮬레이션 후 fade-out.
+   같은 세션에서 재로드 시 sessionStorage로 skip.
+   ──────────────────────────────────────────────────────────────────── */
+#boot-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: var(--bg-0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--cyan-bright);
+  overflow: hidden;
+  cursor: default;
+}
+#boot-overlay::before {
+  /* Scan line texture */
+  content: "";
+  position: absolute; inset: 0;
+  background:
+    repeating-linear-gradient(0deg,
+      transparent 0px,
+      transparent 2px,
+      rgba(76, 201, 255, 0.025) 3px,
+      transparent 4px);
+  pointer-events: none;
+  animation: bootScanlines 8s linear infinite;
+}
+#boot-overlay::after {
+  /* CRT vignette */
+  content: "";
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.9) 100%);
+  pointer-events: none;
+}
+@keyframes bootScanlines {
+  0%   { background-position: 0 0; }
+  100% { background-position: 0 100px; }
+}
+
+#boot-overlay.fade-out {
+  animation: bootFadeOut 0.8s cubic-bezier(.5,0,.5,1) forwards;
+}
+@keyframes bootFadeOut {
+  0%   { opacity: 1; transform: scale(1); filter: blur(0); }
+  60%  { opacity: 0.4; transform: scale(1.06); filter: blur(2px); }
+  100% { opacity: 0; transform: scale(1.18); filter: blur(8px); visibility: hidden; }
+}
+
+.boot-content {
+  text-align: center;
+  max-width: 720px;
+  width: 100%;
+  padding: 32px;
+  position: relative;
+  z-index: 2;
+}
+
+.boot-corner {
+  position: absolute;
+  width: 60px; height: 60px;
+  border-color: var(--cyan-bright);
+  border-style: solid;
+  pointer-events: none;
+  opacity: 0;
+  animation: bootCornerIn 0.5s ease-out 0.2s forwards;
+}
+.boot-corner.tl { top: 32px;    left: 32px;    border-width: 1.5px 0 0 1.5px; }
+.boot-corner.tr { top: 32px;    right: 32px;   border-width: 1.5px 1.5px 0 0; }
+.boot-corner.bl { bottom: 32px; left: 32px;    border-width: 0 0 1.5px 1.5px; }
+.boot-corner.br { bottom: 32px; right: 32px;   border-width: 0 1.5px 1.5px 0; }
+.boot-corner::before {
+  content: ""; position: absolute;
+  width: 6px; height: 6px;
+  background: var(--cyan-bright);
+  box-shadow: 0 0 12px var(--cyan-glow);
+  border-radius: 50%;
+}
+.boot-corner.tl::before { top: -3px; left: -3px; }
+.boot-corner.tr::before { top: -3px; right: -3px; }
+.boot-corner.bl::before { bottom: -3px; left: -3px; }
+.boot-corner.br::before { bottom: -3px; right: -3px; }
+@keyframes bootCornerIn { to { opacity: 1; } }
+
+.boot-logo {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: clamp(20px, 4.6vw, 44px);
+  letter-spacing: 0.2em;
+  margin-bottom: 8px;
+  background: linear-gradient(135deg, var(--cyan-bright) 0%, var(--cyan) 50%, #0084c7 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 24px var(--cyan-glow));
+  opacity: 0;
+  white-space: nowrap;
+  animation: bootLogoIn 0.8s cubic-bezier(.2,.7,.2,1) 0.1s forwards;
+}
+@keyframes bootLogoIn {
+  0%   { opacity: 0; transform: translateY(-12px) scale(0.96); letter-spacing: 0.36em; filter: blur(8px); }
+  100% { opacity: 1; transform: translateY(0)    scale(1);    letter-spacing: 0.2em;  filter: blur(0); }
+}
+
+.boot-version {
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-bottom: 36px;
+  opacity: 0;
+  animation: bootFadeIn 0.6s ease-out 0.6s forwards;
+}
+@keyframes bootFadeIn { to { opacity: 1; } }
+
+.boot-lines {
+  text-align: left;
+  font-size: 12px;
+  line-height: 1.9;
+  min-height: 110px;
+  margin-bottom: 24px;
+  white-space: pre;
+}
+.boot-line {
+  opacity: 0;
+  display: block;
+  color: var(--cyan-dim);
+}
+.boot-line.show { animation: bootLineIn 0.4s ease-out forwards; }
+.boot-line .ok { color: var(--cyan-bright); margin-right: 8px; }
+.boot-line .glow { color: #fff; text-shadow: 0 0 8px var(--cyan-glow); }
+@keyframes bootLineIn {
+  0%   { opacity: 0; transform: translateX(-8px); }
+  60%  { opacity: 0.5; }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+.boot-progress {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+  opacity: 0;
+  animation: bootFadeIn 0.4s ease-out 0.7s forwards;
+}
+.boot-bar {
+  flex: 1;
+  height: 4px;
+  background: rgba(76, 201, 255, 0.08);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+.boot-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--cyan-deep), var(--cyan), var(--cyan-bright));
+  box-shadow: 0 0 12px var(--cyan-glow);
+  transition: width 0.18s linear;
+  position: relative;
+}
+.boot-fill::after {
+  /* leading edge pulse */
+  content: ""; position: absolute;
+  right: -4px; top: 0; bottom: 0;
+  width: 8px;
+  background: var(--cyan-bright);
+  box-shadow: 0 0 16px var(--cyan-glow), 0 0 32px var(--cyan-glow);
+  filter: blur(2px);
+}
+.boot-pct {
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  color: var(--cyan-bright);
+  min-width: 48px;
+  text-align: right;
+}
+
+.boot-status {
+  font-size: 13px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  min-height: 22px;
+  color: var(--cyan-bright);
+  opacity: 0;
+  animation: bootFadeIn 0.5s ease-out 0.8s forwards;
+}
+.boot-status.online {
+  color: #ff3344;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: 0.32em;
+  text-shadow:
+    0 0 16px rgba(255, 51, 68, 0.8),
+    0 0 32px rgba(255, 51, 68, 0.4);
+  animation: bootOnline 0.6s ease-out, bootBlink 0.4s ease-in-out 2;
+}
+.boot-status.greeting {
+  color: #ffd700;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 16px;
+  letter-spacing: 0.24em;
+  text-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+  animation: bootFadeIn 0.6s ease-out forwards;
+}
+@keyframes bootOnline {
+  0%   { transform: scale(0.92); filter: blur(4px); opacity: 0; }
+  60%  { transform: scale(1.08); filter: blur(0);   opacity: 1; }
+  100% { transform: scale(1);    filter: blur(0);   opacity: 1; }
+}
+@keyframes bootBlink { 50% { opacity: 0.3; } }
+
+.boot-skip {
+  position: absolute;
+  bottom: 24px;
+  right: 24px;
+  background: transparent;
+  color: var(--text-dim);
+  border: 1px solid var(--line);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  padding: 8px 14px;
+  border-radius: 6px;
+  letter-spacing: 0.16em;
+  cursor: pointer;
+  opacity: 0;
+  animation: bootFadeIn 0.4s ease-out 1s forwards;
+  transition: all 0.15s ease;
+  z-index: 3;
+}
+.boot-skip:hover {
+  border-color: var(--cyan-dim);
+  color: var(--cyan-bright);
+  background: var(--cyan-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #boot-overlay { animation: none !important; }
+  .boot-logo, .boot-version, .boot-status, .boot-progress, .boot-skip { animation: none; opacity: 1; }
+}
+
+/* ────────────────────────────────────────────────────────────────────
+   PHASE 2 — Hero HUD 강화
+   - Page-wide 4-corner HUD brackets (영구, 부팅 후 fade-in)
+   - Hero scan line sweep (orb 위 → 아래)
+   - Glitch h1 reveal
+   ──────────────────────────────────────────────────────────────────── */
+
+/* ── Page-wide 4-corner HUD brackets ── */
+.page-corner {
+  position: fixed;
+  width: 48px; height: 48px;
+  border-color: var(--cyan-bright);
+  border-style: solid;
+  pointer-events: none;
+  z-index: 50;
+  opacity: 0;
+  animation: pageCornerIn 0.8s cubic-bezier(.2,.7,.2,1) 4.4s forwards;
+  /* boot 끝(4.4s)에 등장 */
+}
+.page-corner.tl { top: 16px;    left: 16px;    border-width: 1px 0 0 1px; }
+.page-corner.tr { top: 16px;    right: 16px;   border-width: 1px 1px 0 0; }
+.page-corner.bl { bottom: 16px; left: 16px;    border-width: 0 0 1px 1px; }
+.page-corner.br { bottom: 16px; right: 16px;   border-width: 0 1px 1px 0; }
+.page-corner::before {
+  content: ""; position: absolute;
+  width: 5px; height: 5px;
+  background: var(--cyan-bright);
+  border-radius: 50%;
+  box-shadow: 0 0 10px var(--cyan-glow);
+  animation: pageCornerPulse 2.4s ease-in-out infinite;
+}
+.page-corner.tl::before { top: -2.5px; left: -2.5px; }
+.page-corner.tr::before { top: -2.5px; right: -2.5px; }
+.page-corner.bl::before { bottom: -2.5px; left: -2.5px; }
+.page-corner.br::before { bottom: -2.5px; right: -2.5px; }
+.page-corner::after {
+  /* tick mark — 모서리 라벨 */
+  position: absolute;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 0.16em;
+  color: var(--cyan-dim);
+  opacity: 0.7;
+}
+.page-corner.tl::after { content: "JR-1"; top: 6px;  left: 12px; }
+.page-corner.tr::after { content: "JR-2"; top: 6px;  right: 12px; }
+.page-corner.bl::after { content: "JR-3"; bottom: 6px; left: 12px; }
+.page-corner.br::after { content: "JR-4"; bottom: 6px; right: 12px; }
+
+@keyframes pageCornerIn { to { opacity: 1; } }
+@keyframes pageCornerPulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 10px var(--cyan-glow); }
+  50%      { opacity: 0.5; box-shadow: 0 0 4px var(--cyan-glow); }
+}
+
+@media (max-width: 720px) {
+  .page-corner { width: 32px; height: 32px; }
+  .page-corner::after { font-size: 7px; }
+}
+
+/* ── Hero HUD scan-line sweep ── */
+.hud-stage {
+  position: relative;
+  /* isolation 제거 — scan beam이 부모 stacking context 안에서 자유롭게 뻗을 수 있게 */
+  overflow: visible;
+}
+.hud-stage::after {
+  /* scan beam — orb 위에 cyan 빛 띠. 좌우로 hud-stage 폭 1.5배 만큼 확장 → 절대 잘리지 않음 */
+  content: "";
+  position: absolute;
+  left: -50%;
+  right: -50%;
+  width: 200%;
+  height: 3px;
+  top: 0;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    transparent 15%,
+    rgba(76, 201, 255, 0.4) 30%,
+    rgba(125, 224, 255, 1) 50%,
+    rgba(76, 201, 255, 0.4) 70%,
+    transparent 85%,
+    transparent 100%);
+  box-shadow: 0 0 16px var(--cyan-glow), 0 0 32px var(--cyan-glow);
+  filter: blur(0.5px);
+  pointer-events: none;
+  z-index: 5;
+  opacity: 0.85;
+  animation: hudScanSweep 4.2s cubic-bezier(.65,.05,.35,1) infinite;
+  animation-delay: 4.4s;  /* boot 끝나고 시작 */
+  animation-fill-mode: backwards;
+  mix-blend-mode: screen;
+}
+@keyframes hudScanSweep {
+  0%, 7%   { top: -3%;   opacity: 0; }
+  10%      { opacity: 0.85; }
+  50%      { top: 50%;   opacity: 1; }
+  90%      { opacity: 0.85; }
+  93%, 100% { top: 103%;  opacity: 0; }
+}
+
+/* ── Glitch h1 reveal ── */
+.hero h1 {
+  position: relative;
+}
+.hero h1.glitch-init {
+  /* 부팅 끝나고 글리치 시작 — 1.6s 동안 */
+  animation: glitchReveal 1.6s steps(8, end) 4.5s both;
+}
+.hero h1.glitch-init .gradient,
+.hero h1.glitch-init .accent {
+  display: inline-block;
+}
+.hero h1.glitch-init::before,
+.hero h1.glitch-init::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  pointer-events: none;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+}
+.hero h1.glitch-init::before {
+  color: rgba(255, 51, 68, 0.45);
+  transform: translate(-2px, 0);
+  animation: glitchClipR 1.6s steps(8, end) 4.5s both;
+  mix-blend-mode: screen;
+}
+.hero h1.glitch-init::after {
+  color: rgba(125, 224, 255, 0.5);
+  transform: translate(2px, 0);
+  animation: glitchClipB 1.6s steps(8, end) 4.5s both;
+  mix-blend-mode: screen;
+}
+@keyframes glitchReveal {
+  0%   { filter: blur(8px) brightness(0.4); opacity: 0; transform: translateX(-4px); }
+  20%  { filter: blur(2px) brightness(0.8); opacity: 0.6; clip-path: inset(0 50% 0 0); }
+  40%  { filter: blur(0.5px); clip-path: inset(40% 0 30% 0); }
+  60%  { filter: blur(0); clip-path: inset(0 0 0 30%); }
+  80%  { filter: brightness(1.4); clip-path: inset(0); }
+  100% { filter: none; opacity: 1; transform: translateX(0); clip-path: inset(0); }
+}
+@keyframes glitchClipR {
+  0%, 100% { opacity: 0; }
+  10%, 20% { opacity: 0.7; clip-path: inset(20% 0 60% 0); transform: translate(-3px, 1px); }
+  30%, 40% { opacity: 0.4; clip-path: inset(60% 0 10% 0); transform: translate(2px, -1px); }
+  50%, 60% { opacity: 0.5; clip-path: inset(10% 0 70% 0); transform: translate(-2px, 0); }
+  70%, 90% { opacity: 0; }
+}
+@keyframes glitchClipB {
+  0%, 100% { opacity: 0; }
+  15%, 25% { opacity: 0.5; clip-path: inset(40% 0 30% 0); transform: translate(3px, -1px); }
+  35%, 45% { opacity: 0.6; clip-path: inset(0 0 60% 0); transform: translate(-2px, 1px); }
+  55%, 75% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-corner { animation: none; opacity: 1; }
+  .page-corner::before { animation: none; }
+  .hud-stage::after { animation: none; opacity: 0; }
+  .hero h1.glitch-init { animation: none; }
+  .hero h1.glitch-init::before, .hero h1.glitch-init::after { animation: none; opacity: 0; }
+}
+
+/* ────────────────────────────────────────────────────────────────────
+   PHASE 3 — Iron Man 액센트 (스타크 빨강 + 골드)
+   미니멀: LIVE 인디케이터, 가격, 핵심 스탯만.
+   ──────────────────────────────────────────────────────────────────── */
+
+/* ── LIVE indicator (nav 우측, boot 끝나고 등장) ── */
+.live-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px 5px 10px;
+  border: 1px solid rgba(255, 51, 68, 0.4);
+  background: var(--stark-red-soft);
+  border-radius: 999px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--stark-red-bright);
+  text-transform: uppercase;
+  opacity: 0;
+  animation: livePillIn 0.6s cubic-bezier(.2,.7,.2,1) 4.6s forwards;
+}
+.live-pill .live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--stark-red);
+  box-shadow: 0 0 8px var(--stark-red-glow), 0 0 16px var(--stark-red-glow);
+  animation: liveBlink 1.4s ease-in-out infinite;
+}
+@keyframes liveBlink {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.45; transform: scale(0.85); }
+}
+@keyframes livePillIn {
+  0%   { opacity: 0; transform: scale(0.7); }
+  60%  { opacity: 1; transform: scale(1.06); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@media (max-width: 720px) {
+  .live-pill { font-size: 9px; padding: 4px 9px 4px 8px; }
+}
+
+/* ── Price gold accent ── */
+.price-gold {
+  color: var(--stark-gold-bright);
+  font-weight: 700;
+  text-shadow: 0 0 12px var(--stark-gold-glow);
+  letter-spacing: 0.04em;
+}
+.cta-action[data-state="buy"] .price-gold,
+.cta-action[data-state="login"] .price-gold {
+  color: #00111d;            /* primary 버튼은 dark text — 골드 글로우만 */
+  text-shadow: 0 0 18px rgba(255, 230, 160, 0.7), 0 0 6px rgba(255, 209, 102, 0.9);
+}
+
+/* ── Stat 골드 강조 ── */
+.stat .stat-value.stat-gold {
+  background: linear-gradient(135deg, var(--stark-gold-bright) 0%, var(--stark-gold) 60%, #b88800 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 12px var(--stark-gold-glow));
+}
+.stat.stat-highlight {
+  position: relative;
+}
+.stat.stat-highlight::after {
+  /* 골드 underline */
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  width: 32px;
+  height: 1.5px;
+  background: linear-gradient(90deg, transparent, var(--stark-gold), transparent);
+  box-shadow: 0 0 8px var(--stark-gold-glow);
+  opacity: 0;
+  animation: statGoldUnderline 0.6s ease-out 5.0s forwards;
+}
+@keyframes statGoldUnderline {
+  0%   { width: 0;    opacity: 0; }
+  100% { width: 64px; opacity: 1; }
+}
+
+/* ── nav top 정렬 보정 (LIVE pill 추가로) ── */
+nav.top { gap: 12px; flex-wrap: wrap; }
+
+@media (prefers-reduced-motion: reduce) {
+  .live-pill { animation: none; opacity: 1; }
+  .live-pill .live-dot { animation: none; }
+  .stat.stat-highlight::after { animation: none; opacity: 1; width: 64px; }
+}
+
+/* ────────────────────────────────────────────────────────────────────
+   PHASE 4 — Live Demo (마이크 + 파형 + 자비스 응답)
+   ──────────────────────────────────────────────────────────────────── */
+.live-demo-section {
+  padding: 80px 24px 80px;
+}
+.live-demo {
+  max-width: 920px;
+  margin: 0 auto;
+  background:
+    radial-gradient(ellipse 60% 80% at 50% 0%, rgba(76, 201, 255, 0.10), transparent 70%),
+    linear-gradient(180deg, rgba(10, 19, 32, 0.92), rgba(2, 6, 13, 0.92));
+  border: 1px solid var(--line-strong);
+  border-radius: 24px;
+  padding: 48px 36px 40px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 32px 80px rgba(0, 132, 199, 0.10), 0 0 0 1px rgba(76, 201, 255, 0.04) inset;
+}
+.live-demo::before {
+  /* Top scanline accent */
+  content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--cyan-bright), transparent);
+}
+.live-demo .ld-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  color: var(--cyan-bright);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.live-demo .ld-tag::before {
+  content: ""; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--cyan-bright); box-shadow: 0 0 8px var(--cyan-glow);
+}
+.live-demo h2 {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: clamp(24px, 3.6vw, 36px);
+  letter-spacing: 0.06em;
+  margin-bottom: 8px;
+  color: var(--text);
+  text-transform: uppercase;
+}
+.live-demo .ld-sub {
+  color: var(--text-dim);
+  font-size: 14px;
+  margin-bottom: 32px;
+}
+
+/* ── Stage ── */
+.live-demo .ld-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+  padding: 28px 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--bg-1);
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+.live-demo .ld-stage::before {
+  /* corner brackets */
+  content: ""; position: absolute; inset: 14px;
+  border: 1px dashed rgba(76, 201, 255, 0.10);
+  border-radius: 14px;
+  pointer-events: none;
+}
+
+/* status text above waveform */
+.ld-status {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  min-height: 18px;
+  text-align: center;
+}
+.ld-status.active { color: var(--cyan-bright); text-shadow: 0 0 8px var(--cyan-glow); }
+.ld-status.error  { color: var(--stark-red-bright); }
+.ld-status.wake   { color: var(--stark-gold-bright); animation: ldStatusPulse 0.6s ease-in-out 2; }
+@keyframes ldStatusPulse { 50% { transform: scale(1.05); } }
+
+/* ── 32-bar waveform ── */
+.ld-waveform {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 96px;
+  width: 100%;
+  max-width: 480px;
+}
+.ld-bar {
+  width: 6px;
+  height: 4px;
+  background: linear-gradient(180deg, var(--cyan-bright), var(--cyan), var(--cyan-deep));
+  border-radius: 3px;
+  box-shadow: 0 0 8px var(--cyan-glow);
+  transition: height 0.08s linear, opacity 0.2s ease;
+  opacity: 0.45;
+}
+.ld-bar.live {
+  opacity: 1;
+}
+@media (max-width: 540px) {
+  .ld-bar { width: 4px; }
+  .ld-waveform { gap: 3px; height: 72px; }
+}
+
+/* ── orb pulse around waveform when wake ── */
+.ld-stage.wake-burst::after {
+  content: ""; position: absolute; left: 50%; top: 50%;
+  width: 120px; height: 120px;
+  margin: -60px 0 0 -60px;
+  border-radius: 50%;
+  border: 2px solid var(--cyan-bright);
+  box-shadow: 0 0 32px var(--cyan-glow);
+  pointer-events: none;
+  animation: ldWakeBurst 1s cubic-bezier(.2,.7,.2,1) forwards;
+}
+@keyframes ldWakeBurst {
+  0%   { transform: scale(0.4); opacity: 1;   border-width: 4px; }
+  100% { transform: scale(3.2); opacity: 0;   border-width: 0.5px; }
+}
+
+/* ── Transcript ── */
+.ld-transcript {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px 22px;
+  min-height: 130px;
+  max-height: 260px;
+  overflow-y: auto;
+  font-size: 14px;
+  line-height: 1.7;
+  margin-bottom: 24px;
+}
+.ld-transcript::-webkit-scrollbar { width: 6px; }
+.ld-transcript::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
+.ld-line { padding: 6px 0; opacity: 0; animation: ldLineIn 0.4s ease-out forwards; }
+@keyframes ldLineIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; } }
+.ld-line .role {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-right: 10px;
+}
+.ld-line.role-user .role { color: var(--cyan-bright); }
+.ld-line.role-jarvis .role { color: var(--stark-gold-bright); }
+.ld-line.role-sys .role { color: var(--text-dim); }
+.ld-line.role-sys { color: var(--text-dim); font-size: 12px; font-family: 'JetBrains Mono', monospace; }
+.ld-line .body { color: var(--text); }
+.ld-line.role-jarvis .body::before { content: "◈ "; color: var(--stark-gold-bright); }
+.ld-line .typing { border-right: 2px solid var(--cyan-bright); animation: ldCaret 0.6s steps(1, end) infinite; }
+@keyframes ldCaret { 50% { border-color: transparent; } }
+
+.ld-transcript .empty {
+  color: var(--text-dim);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-align: center;
+  padding: 32px 0;
+  letter-spacing: 0.08em;
+}
+
+/* ── Buttons ── */
+.ld-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+}
+.ld-btn {
+  background: linear-gradient(180deg, var(--cyan-bright), var(--cyan) 60%, var(--cyan-deep));
+  color: #00111d;
+  border: 1px solid var(--cyan-bright);
+  padding: 14px 28px;
+  border-radius: 10px;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.18em;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.18s cubic-bezier(.2,.7,.2,1);
+  box-shadow: 0 0 24px var(--cyan-glow), 0 0 0 0 rgba(76, 201, 255, 0.4);
+}
+.ld-btn:hover { transform: translateY(-2px); box-shadow: 0 0 36px var(--cyan-glow), 0 8px 24px rgba(76, 201, 255, 0.4); }
+.ld-btn:active { transform: translateY(0); }
+.ld-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+.ld-btn.recording {
+  background: linear-gradient(180deg, var(--stark-red-bright), var(--stark-red));
+  border-color: var(--stark-red-bright);
+  color: #fff;
+  box-shadow: 0 0 32px var(--stark-red-glow);
+  animation: ldRecBlink 1s ease-in-out infinite;
+}
+@keyframes ldRecBlink { 50% { box-shadow: 0 0 16px var(--stark-red-glow); } }
+
+.ld-btn-ghost {
+  background: transparent;
+  color: var(--cyan-bright);
+  border: 1px solid var(--line);
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.ld-btn-ghost:hover { border-color: var(--line-strong); background: var(--cyan-soft); }
+
+.ld-mock-input {
+  flex: 1;
+  min-width: 200px;
+  background: var(--bg-2);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px;
+  outline: none;
+  display: none;
+  transition: border-color 0.15s ease;
+}
+.ld-mock-input:focus { border-color: var(--cyan-dim); box-shadow: 0 0 0 3px var(--cyan-soft); }
+.ld-mock-input.show { display: inline-block; }
+
+.ld-hint {
+  margin-top: 14px;
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+}
+.ld-hint .key {
+  display: inline-block;
+  padding: 2px 8px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--bg-1);
+  margin: 0 2px;
+  color: var(--cyan-bright);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ld-bar { transition: none; }
+  .ld-stage.wake-burst::after { animation: none; opacity: 0; }
+  .ld-btn.recording { animation: none; }
+}
+
+/* ────────────────────────────────────────────────────────────────────
+   PHASE 5 — Mouse Parallax (HUD orb 3D tilt + 카드 tilt + bg drift)
+   ──────────────────────────────────────────────────────────────────── */
+
+/* Hero HUD orb — 마우스 따라 3D rotate */
+.hud-stage {
+  transform-style: preserve-3d;
+  transition: transform 0.5s cubic-bezier(.2,.7,.2,1);
+  will-change: transform;
+}
+
+/* Background grid — 마우스 따라 미세 평행이동 (5px 한도) */
+.bg-grid {
+  transition: transform 0.6s cubic-bezier(.2,.7,.2,1);
+  will-change: transform;
+}
+
+/* Feature 카드 — hover 시 3D tilt */
+.feature {
+  transform-style: preserve-3d;
+  transition: transform 0.25s cubic-bezier(.2,.7,.2,1), box-shadow 0.25s ease;
+  will-change: transform;
+}
+.feature:hover {
+  z-index: 2;
+}
+.feature::before {
+  /* 호버 시 골드 톱 라이트 글로우 */
+  content: ""; position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(125, 224, 255, 0.08), transparent 60%);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+}
+.feature:hover::before { opacity: 1; }
+
+/* Stat 카드도 미니 tilt */
+.stat {
+  transform-style: preserve-3d;
+  transition: transform 0.3s cubic-bezier(.2,.7,.2,1);
+  will-change: transform;
+}
+
+/* Touch 디바이스 / reduced-motion 비활성 */
+@media (hover: none) and (pointer: coarse) {
+  .hud-stage, .bg-grid, .feature, .stat {
+    transform: none !important;
+    transition: none !important;
+    will-change: auto;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hud-stage, .bg-grid, .feature, .stat {
+    transform: none !important;
+    transition: none !important;
+  }
+}
+
+/* ────────────────────────────────────────────────────────────────────
+   PHASE 6 — SFX Toggle (nav 우측 작은 토글)
+   ──────────────────────────────────────────────────────────────────── */
+.sfx-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--text-dim);
+  padding: 5px 10px 5px 8px;
+  border-radius: 999px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  opacity: 0;
+  animation: bootFadeIn 0.6s 4.7s forwards;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+}
+.sfx-toggle:hover {
+  border-color: var(--line-strong);
+  color: var(--cyan-bright);
+  background: var(--cyan-faint);
+}
+.sfx-toggle.on {
+  color: var(--cyan-bright);
+  border-color: var(--cyan-dim);
+  background: var(--cyan-soft);
+  box-shadow: 0 0 12px var(--cyan-soft);
+}
+.sfx-toggle .sfx-icon {
+  font-size: 11px;
+  filter: grayscale(0.4);
+  transition: filter 0.15s ease;
+}
+.sfx-toggle.on .sfx-icon {
+  filter: none;
+  text-shadow: 0 0 6px var(--cyan-glow);
+}
+.sfx-toggle .sfx-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  transition: all 0.2s ease;
+}
+.sfx-toggle.on .sfx-dot {
+  background: var(--cyan-bright);
+  box-shadow: 0 0 6px var(--cyan-glow);
+  animation: liveBlink 1.8s ease-in-out infinite;
+}
+
+@media (max-width: 720px) {
+  .sfx-toggle { font-size: 9px; padding: 4px 8px 4px 7px; }
+  .sfx-toggle .sfx-label { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sfx-toggle { animation: none; opacity: 1; }
+  .sfx-toggle.on .sfx-dot { animation: none; }
+}
+
+/* ────────────────────────────────────────────────────────────────────
+   POLISH — Cursor spotlight (마우스 따라가는 cyan glow)
+   Iron Man HUD 시그니처. 페이지 전체에 ambient cyan 빛.
+   ──────────────────────────────────────────────────────────────────── */
+.cursor-spotlight {
+  position: fixed;
+  top: 0; left: 0;
+  width: 720px;
+  height: 720px;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    rgba(125, 224, 255, 0.10) 0%,
+    rgba(76, 201, 255, 0.06) 25%,
+    rgba(76, 201, 255, 0.02) 50%,
+    transparent 70%);
+  pointer-events: none;
+  z-index: 1;
+  transform: translate3d(-9999px, -9999px, 0) translate(-50%, -50%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  mix-blend-mode: screen;
+  filter: blur(8px);
+  will-change: transform;
+}
+.cursor-spotlight.show { opacity: 1; }
+.cursor-spotlight::after {
+  /* 이너 부드러운 코어 — 더 진한 cyan dot */
+  content: "";
+  position: absolute;
+  inset: 35% 35%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(125, 224, 255, 0.15), transparent 60%);
+  filter: blur(4px);
+}
+
+/* 터치 + reduced-motion 비활성 */
+@media (hover: none) and (pointer: coarse) { .cursor-spotlight { display: none; } }
+@media (prefers-reduced-motion: reduce)    { .cursor-spotlight { display: none; } }
+</style>
+</head>
+<body>
+
+<!-- ── PHASE 1 — Boot Sequence Overlay ─────────────────────────── -->
+<div id="boot-overlay" aria-hidden="true">
+  <span class="boot-corner tl"></span>
+  <span class="boot-corner tr"></span>
+  <span class="boot-corner bl"></span>
+  <span class="boot-corner br"></span>
+
+  <div class="boot-content">
+    <div class="boot-logo">◈ J · A · R · V · I · S</div>
+    <div class="boot-version">v0.4.0 · MARK · VII · STARK · INDUSTRIES</div>
+    <div class="boot-lines" id="bootLines"></div>
+    <div class="boot-progress">
+      <div class="boot-bar"><div class="boot-fill" id="bootFill"></div></div>
+      <div class="boot-pct" id="bootPct">0%</div>
+    </div>
+    <div class="boot-status" id="bootStatus">INITIALIZING…</div>
+  </div>
+
+  <button class="boot-skip" id="bootSkip" type="button">SKIP →</button>
+</div>
+
+<!-- ── PHASE 2 — Page-wide HUD brackets (boot 후 영구) ─────────── -->
+<span class="page-corner tl" aria-hidden="true"></span>
+<span class="page-corner tr" aria-hidden="true"></span>
+<span class="page-corner bl" aria-hidden="true"></span>
+<span class="page-corner br" aria-hidden="true"></span>
+
+<!-- ── POLISH — Cursor spotlight (Iron Man HUD ambient glow) ──── -->
+<div class="cursor-spotlight" id="cursorSpotlight" aria-hidden="true"></div>
+
+<div class="bg-base"></div>
+<div class="bg-grid"></div>
+<div class="bg-orb-1"></div>
+<div class="bg-orb-2"></div>
+<canvas id="particles"></canvas>
+
+<nav class="top">
+  <div class="brand"><span class="dot"></span>J · A · R · V · I · S</div>
+  <span class="live-pill" aria-label="자비스 시스템 활성"><span class="live-dot"></span>LIVE</span>
+  <div class="links">
+    <a href="#features">FEATURES</a>
+    <a href="#tools">TOOLS</a>
+    <a href="#req">SYSTEM</a>
+    <a href="https://github.com/no0m0321/jarvis" target="_blank">GITHUB</a>
+  </div>
+  <button class="sfx-toggle" id="sfxToggle" type="button" aria-pressed="false" aria-label="SFX 사운드 토글">
+    <span class="sfx-dot"></span>
+    <span class="sfx-icon">🔇</span>
+    <span class="sfx-label">MUTED</span>
+  </button>
+  <div class="auth-status" id="auth-status">
+    <a class="auth-link" href="/login.html">로그인</a>
+  </div>
+</nav>
+
+<!-- ============ HERO ============ -->
+<section class="hero">
+  <div class="hero-grid">
+    <div class="hero-text">
+      <span class="tag">STARK INDUSTRIES · PERSONAL AI</span>
+      <h1 class="glitch-init" data-text="JARVIS">
+        <span class="gradient">JARVIS</span>
+        <span class="accent">JUST · A · RATHER · VERY · INTELLIGENT · SYSTEM</span>
+      </h1>
+      <p class="subtitle">
+        Claude Opus 4.7로 구동되는 한국어 우선 음성 비서.<br />
+        "자비스" 한 마디로 296개의 도구를 자율 실행하는 macOS 네이티브 어시스턴트.
+      </p>
+      <div class="meta">
+        <span>Voice-First</span>
+        <span>296 Tools</span>
+        <span>Holographic HUD</span>
+        <span>macOS Native</span>
+      </div>
+
+      <div class="install-card" id="install">
+        <div class="label">
+          <span>// ONE-LINE INSTALL · macOS</span>
+          <button class="copy-btn" id="copy-btn" onclick="copyInstall()">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            <span id="copy-label">COPY</span>
+          </button>
+        </div>
+        <code id="install-cmd"><span class="prompt">$</span>curl -fsSL https://raw.githubusercontent.com/no0m0321/jarvis/main/install.sh | bash</code>
+      </div>
+
+      <div class="cta-row">
+        <button class="btn btn-primary cta-action" data-state="loading" id="cta-action-1" disabled>
+          BUY · <span class="price-gold">$6</span> · GET SOURCE
+        </button>
+        <a class="btn btn-ghost" href="https://github.com/no0m0321/jarvis" target="_blank">
+          ◉ VIEW SOURCE
+        </a>
+      </div>
+    </div>
+
+    <!-- ============ HUD ORB v2 ============ -->
+    <div class="hud-stage">
+
+      <div class="hud-halo"></div>
+
+      <div class="sonar"></div>
+      <div class="sonar s2"></div>
+      <div class="sonar s3"></div>
+
+      <div class="hlabel lt"><span>SYS · CORE</span></div>
+      <div class="hlabel rt tickr"><span>CLAUDE OPUS 4.7</span></div>
+      <div class="hlabel lb"><span>VOICE · KO + EN</span></div>
+      <div class="hlabel rb tickr"><span>296 TOOLS · LIVE</span></div>
+
+      <svg class="rings" viewBox="0 0 600 600" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <linearGradient id="arcGrad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="var(--cyan)" stop-opacity="0" />
+            <stop offset="50%" stop-color="var(--cyan-bright)" stop-opacity="1" />
+            <stop offset="100%" stop-color="var(--cyan)" stop-opacity="0" />
+          </linearGradient>
+          <linearGradient id="arcGrad2" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="var(--cyan-bright)" stop-opacity="1" />
+            <stop offset="100%" stop-color="var(--cyan-deep)" stop-opacity="0.2" />
+          </linearGradient>
+          <radialGradient id="centerGrad" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="var(--cyan)" stop-opacity="0.3" />
+            <stop offset="100%" stop-color="var(--cyan)" stop-opacity="0" />
+          </radialGradient>
+          <path id="textArc" d="M 130 300 A 170 170 0 0 1 470 300" />
+          <path id="textArcBottom" d="M 470 300 A 170 170 0 0 1 130 300" />
+        </defs>
+
+        <!-- background subtle disc -->
+        <circle cx="300" cy="300" r="270" fill="url(#centerGrad)" opacity="0.6" />
+
+        <!-- outermost dotted ring (very slow) -->
+        <g class="spin-slow">
+          <circle class="ring ring-soft" cx="300" cy="300" r="285" stroke-width="0.6" stroke-dasharray="1 8" />
+          <circle cx="300" cy="15" r="3" fill="var(--cyan-bright)" opacity="0.7" />
+          <circle cx="585" cy="300" r="3" fill="var(--cyan-bright)" opacity="0.7" />
+          <circle cx="300" cy="585" r="3" fill="var(--cyan-bright)" opacity="0.7" />
+          <circle cx="15" cy="300" r="3" fill="var(--cyan-bright)" opacity="0.7" />
+        </g>
+
+        <!-- outer thin ring with arc segments -->
+        <g class="spin-cw">
+          <circle class="ring" cx="300" cy="300" r="260" stroke-width="0.8" opacity="0.35" />
+          <!-- bright arc segments at top/bottom -->
+          <path d="M 90 300 A 210 210 0 0 1 200 117" stroke="url(#arcGrad)" stroke-width="3" fill="none" />
+          <path d="M 510 300 A 210 210 0 0 1 400 483" stroke="url(#arcGrad)" stroke-width="3" fill="none" />
+          <!-- tick marks every 30deg -->
+          <g stroke="var(--cyan)" stroke-width="1.4" opacity="0.7">
+            <line x1="300" y1="40" x2="300" y2="58" />
+            <line x1="300" y1="542" x2="300" y2="560" />
+            <line x1="40" y1="300" x2="58" y2="300" />
+            <line x1="542" y1="300" x2="560" y2="300" />
+            <line x1="430" y1="73" x2="439" y2="89" />
+            <line x1="170" y1="73" x2="161" y2="89" />
+            <line x1="430" y1="527" x2="439" y2="511" />
+            <line x1="170" y1="527" x2="161" y2="511" />
+          </g>
+        </g>
+
+        <!-- mid dashed ring with nodes -->
+        <g class="spin-ccw">
+          <circle class="ring ring-soft" cx="300" cy="300" r="225" stroke-width="0.8" stroke-dasharray="3 4" />
+          <circle cx="300" cy="75" r="5" fill="var(--cyan-bright)" />
+          <circle cx="525" cy="300" r="5" fill="var(--cyan-bright)" />
+          <circle cx="300" cy="525" r="5" fill="var(--cyan-bright)" />
+          <circle cx="75" cy="300" r="5" fill="var(--cyan-bright)" />
+        </g>
+
+        <!-- arc bracket ring (heavy bright) -->
+        <g class="spin-cw">
+          <path d="M 110 300 A 190 190 0 0 1 300 110" stroke="var(--cyan-bright)" stroke-width="2.5" fill="none" stroke-linecap="round" />
+          <path d="M 490 300 A 190 190 0 0 1 300 490" stroke="var(--cyan-bright)" stroke-width="2.5" fill="none" stroke-linecap="round" />
+          <circle cx="110" cy="300" r="6" fill="var(--cyan-bright)" />
+          <circle cx="490" cy="300" r="6" fill="var(--cyan-bright)" />
+        </g>
+
+        <!-- inner hex-ish ring -->
+        <g class="spin-ccw">
+          <circle class="ring" cx="300" cy="300" r="160" stroke-width="0.8" opacity="0.5" />
+          <!-- 6 segments around -->
+          <g fill="var(--cyan)">
+            <circle cx="300" cy="140" r="3" />
+            <circle cx="439" cy="220" r="3" />
+            <circle cx="439" cy="380" r="3" />
+            <circle cx="300" cy="460" r="3" />
+            <circle cx="161" cy="380" r="3" />
+            <circle cx="161" cy="220" r="3" />
+          </g>
+        </g>
+
+        <!-- progress arc -->
+        <g class="spin-fast">
+          <circle class="ring" cx="300" cy="300" r="125" stroke-width="0.5" opacity="0.3" stroke-dasharray="1 3" />
+          <path d="M 300 175 A 125 125 0 1 1 220 200" stroke="url(#arcGrad2)" stroke-width="2.5" fill="none" stroke-linecap="round" />
+          <circle cx="220" cy="200" r="4" fill="var(--cyan-bright)" />
+        </g>
+
+        <!-- center crosshair (faint) -->
+        <g opacity="0.18" class="ring-pulse">
+          <line x1="300" y1="80" x2="300" y2="520" stroke="var(--cyan)" stroke-width="0.5" />
+          <line x1="80" y1="300" x2="520" y2="300" stroke="var(--cyan)" stroke-width="0.5" />
+        </g>
+
+        <!-- arc text -->
+        <text font-family="JetBrains Mono" font-size="11" fill="var(--cyan-bright)" letter-spacing="6" opacity="0.8" font-weight="500">
+          <textPath xlink:href="#textArc" startOffset="50%" text-anchor="middle">
+            J · A · R · V · I · S    M A R K   V I I
+          </textPath>
+        </text>
+        <text font-family="JetBrains Mono" font-size="9" fill="var(--cyan)" letter-spacing="4" opacity="0.5">
+          <textPath xlink:href="#textArcBottom" startOffset="50%" text-anchor="middle">
+            ◉ ACTIVE · WAKE STANDBY · 0xFF · 47.2Hz
+          </textPath>
+        </text>
+      </svg>
+
+      <!-- radial waveform bars -->
+      <div class="wave-ring" id="waveRing"></div>
+
+      <!-- orbiting nodes -->
+      <div class="orbit o1"><div class="node"></div><div class="node sm bottom"></div></div>
+      <div class="orbit o2"><div class="node sm right"></div></div>
+      <div class="orbit o3"><div class="node sm"></div><div class="node sm right"></div><div class="node sm bottom"></div></div>
+
+      <!-- scanning beam -->
+      <div class="scan-beam"></div>
+
+      <!-- core orb -->
+      <div class="hud-core-wrap">
+        <div class="hud-core-glow"></div>
+        <div class="hud-core"></div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ============ STATS ============ -->
+<section class="block">
+  <div class="stats">
+    <div class="stat stat-highlight"><div class="v stat-value stat-gold">296</div><div class="l">TOOLS</div></div>
+    <div class="stat"><div class="v">4</div><div class="l">PERSONAS</div></div>
+    <div class="stat"><div class="v">30+</div><div class="l">HUD FX</div></div>
+    <div class="stat"><div class="v">∞</div><div class="l">MEMORY</div></div>
+  </div>
+</section>
+
+<!-- ============ LIVE DEMO (Phase 4) ============ -->
+<section class="live-demo-section" id="demo-live">
+  <div class="live-demo">
+    <span class="ld-tag">LIVE · INTERACTIVE</span>
+    <h2>JARVIS를 직접 불러보세요</h2>
+    <p class="ld-sub">"자비스" 라고 말하면 응답합니다. 마이크 권한이 필요합니다.</p>
+
+    <div class="ld-stage" id="ldStage">
+      <div class="ld-status" id="ldStatus">PRESS BELOW · 마이크 활성화 후 말씀하세요</div>
+      <div class="ld-waveform" id="ldWaveform" aria-hidden="true"></div>
+    </div>
+
+    <div class="ld-transcript" id="ldTranscript">
+      <div class="empty">대화는 여기에 표시됩니다 — say "자비스, 시간 알려줘"</div>
+    </div>
+
+    <div class="ld-actions">
+      <button class="ld-btn" id="ldStart" type="button">⏵ PRESS TO INTERACT</button>
+      <button class="ld-btn-ghost" id="ldReset" type="button">RESET</button>
+      <input class="ld-mock-input" id="ldMockInput" placeholder="자비스, 시간 알려줘 (마이크 미지원 시 텍스트 모드)" />
+    </div>
+
+    <div class="ld-hint">
+      <span class="key">자비스</span>로 깨우고 · <span class="key">시간 / 도구 / 음악 / 화면</span> 같은 키워드 ·
+      <span class="key">Esc</span>로 정지
+    </div>
+  </div>
+</section>
+
+<!-- ============ FEATURES ============ -->
+<section class="block" id="features">
+  <div class="section-head">
+    <span class="num">01</span>
+    <h2>Core <span class="accent">Capabilities</span></h2>
+    <span class="sub">SECTION 01 / 04</span>
+  </div>
+  <div class="features">
+    <div class="feature">
+      <div class="icon">
+        <svg viewBox="0 0 24 24"><path d="M12 1v22M5 8a7 7 0 0114 0M5 16a7 7 0 0014 0" stroke-linecap="round" /></svg>
+      </div>
+      <h3>Wake Word</h3>
+      <p>"자비스" 한 마디로 즉시 활성화. faster-whisper 로컬 STT로 클라우드 의존 없이 오프라인 음성 인식.</p>
+      <div class="tag-mini">VOICE · LOCAL · KO+EN</div>
+    </div>
+    <div class="feature">
+      <div class="icon">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" /><path d="M12 1v6M12 17v6M4.2 4.2l4.2 4.2M15.6 15.6l4.2 4.2M1 12h6M17 12h6M4.2 19.8l4.2-4.2M15.6 8.4l4.2-4.2" stroke-linecap="round" /></svg>
+      </div>
+      <h3>Tool-Use Agent</h3>
+      <p>Claude가 296개의 client-side 도구를 자율 호출하는 multi-turn agentic loop. 셸 · 파일 · 캘린더 · 브라우저까지.</p>
+      <div class="tag-mini">AGENTIC · MULTI-TURN</div>
+    </div>
+    <div class="feature">
+      <div class="icon">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1.5" fill="currentColor" /></svg>
+      </div>
+      <h3>Holographic HUD</h3>
+      <p>80-particle 3D cloud, voice-reactive scaling, hexagonal grid, code rain. Übersicht widget으로 데스크톱에 상주.</p>
+      <div class="tag-mini">HUD · v6 · 30+ FX</div>
+    </div>
+    <div class="feature">
+      <div class="icon">
+        <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /><path d="M12 7v5l3 2" stroke-linecap="round" /></svg>
+      </div>
+      <h3>Persistent Memory</h3>
+      <p>~/.jarvis/memory.md 자동 첨부 + chromadb 벡터 메모리. 사용자 선호와 맥락을 영구 학습.</p>
+      <div class="tag-mini">VECTOR · ∞ MEMORY</div>
+    </div>
+    <div class="feature">
+      <div class="icon">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3" /><path d="M3 9h18M9 21V9" /></svg>
+      </div>
+      <h3>Multi-Persona</h3>
+      <p>jarvis · casual · formal · creative — 4종 system prompt 즉시 전환. JARVIS_PERSONA env 또는 CLI flag.</p>
+      <div class="tag-mini">4 · PERSONAS</div>
+    </div>
+    <div class="feature">
+      <div class="icon">
+        <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round" /></svg>
+      </div>
+      <h3>launchd Daemon</h3>
+      <p>RunAtLoad + KeepAlive로 macOS 부팅 시 자동 시작. health server :41417로 /healthz · /metrics 노출.</p>
+      <div class="tag-mini">AUTO-START · HEALTHCHECK</div>
+    </div>
+    <div class="feature">
+      <div class="icon">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18" /></svg>
+      </div>
+      <h3>Multi-Provider</h3>
+      <p>Anthropic 기본 · OpenAI · 로컬 Ollama 즉시 전환. JARVIS_PROVIDER env 한 줄로 LLM 백엔드 변경.</p>
+      <div class="tag-mini">CLAUDE · OPENAI · OLLAMA</div>
+    </div>
+    <div class="feature">
+      <div class="icon">
+        <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4" stroke-linecap="round" stroke-linejoin="round" /><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" stroke-linecap="round" /></svg>
+      </div>
+      <h3>Plugin System</h3>
+      <p>~/.jarvis/plugins/*.py 자동 import. GitHub repo URL 한 줄로 plugin 설치. 도구를 무한 확장.</p>
+      <div class="tag-mini">EXTENSIBLE · PYTHON</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ DEMO ============ -->
+<section class="block">
+  <div class="section-head">
+    <span class="num">02</span>
+    <h2>Live <span class="accent">Console</span></h2>
+    <span class="sub">SECTION 02 / 04</span>
+  </div>
+  <div class="demo-grid">
+    <div class="terminal">
+      <div class="terminal-bar">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="title">jarvis@stark-industries — zsh</span>
+      </div>
+      <div class="terminal-body" id="term">
+        <span class="line"><span class="prompt">$</span> <span class="cmd">jarvis daemon install --no-chime</span></span>
+        <span class="line out">→ launchd plist 생성: ~/Library/LaunchAgents/com.jarvis.daemon.plist</span>
+        <span class="line ok">✓ daemon bootstrapped · wake word listening...</span>
+        <span class="line">&nbsp;</span>
+        <span class="line out">[ 21:47:03 ] 🎤 wake detected → "자비스, 오늘 일정 확인해줘"</span>
+        <span class="line accent">↳ Claude Opus 4.7 · agentic loop · turn 1/5</span>
+        <span class="line out">  ├─ tool: calendar_list_today()</span>
+        <span class="line out">  ├─ tool: now()</span>
+        <span class="line out">  └─ tool: say(...)</span>
+        <span class="line ok">✓ 응답 완료 · 2.4s · 3 turns · TTS Reed</span>
+        <span class="line">&nbsp;</span>
+        <span class="line"><span class="prompt">$</span> <span class="cmd">jarvis ask "PR #142 리뷰해줘"</span></span>
+        <span class="line out">→ web_search · git_diff · read_file · ...</span>
+        <span class="line accent">↳ 분석 중<span class="cursor"></span></span>
+      </div>
+    </div>
+
+    <div class="demo-info">
+      <h3>한 줄로 시작</h3>
+      <p>설치 → init wizard → "자비스 부르기" 까지 5분.<br />
+      모든 명령은 셸과 음성에서 동일하게 동작합니다.</p>
+
+      <ul class="cmd-list">
+        <li><span class="k">jarvis init</span><span class="c"># API 키 / 호칭 / 메모 템플릿</span></li>
+        <li><span class="k">jarvis doctor</span><span class="c"># 진단 (마이크 / launchd / HUD)</span></li>
+        <li><span class="k">jarvis ask</span><span class="c"># 단발 질의</span></li>
+        <li><span class="k">jarvis chat</span><span class="c"># 대화형 모드</span></li>
+        <li><span class="k">jarvis do</span><span class="c"># 자율 실행</span></li>
+        <li><span class="k">jarvis listen</span><span class="c"># 음성 한 번 듣기</span></li>
+        <li><span class="k">jarvis daemon install</span><span class="c"># 부팅 시 자동 시작</span></li>
+        <li><span class="k">jarvis hud start</span><span class="c"># 홀로그래픽 HUD 활성화</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TOOLS ============ -->
+<section class="block" id="tools">
+  <div class="section-head">
+    <span class="num">03</span>
+    <h2><span class="accent">Toolbox</span> · 296</h2>
+    <span class="sub">SECTION 03 / 04</span>
+  </div>
+  <div class="tool-grid">
+    <div class="chip"><span class="num">01</span>run_shell</div>
+    <div class="chip"><span class="num">02</span>read_file</div>
+    <div class="chip"><span class="num">03</span>write_file</div>
+    <div class="chip"><span class="num">04</span>list_dir</div>
+    <div class="chip"><span class="num">05</span>search_files</div>
+    <div class="chip"><span class="num">06</span>fetch_url</div>
+    <div class="chip"><span class="num">07</span>web_search</div>
+    <div class="chip"><span class="num">08</span>notify</div>
+    <div class="chip"><span class="num">09</span>say · TTS</div>
+    <div class="chip"><span class="num">10</span>open_url</div>
+    <div class="chip"><span class="num">11</span>screen_capture</div>
+    <div class="chip"><span class="num">12</span>clipboard_io</div>
+    <div class="chip"><span class="num">13</span>calendar_add</div>
+    <div class="chip"><span class="num">14</span>reminder_add</div>
+    <div class="chip"><span class="num">15</span>mail_compose</div>
+    <div class="chip"><span class="num">16</span>spotlight_search</div>
+    <div class="chip"><span class="num">17</span>music_control</div>
+    <div class="chip"><span class="num">18</span>set_volume</div>
+    <div class="chip"><span class="num">19</span>set_brightness</div>
+    <div class="chip"><span class="num">20</span>battery_info</div>
+    <div class="chip"><span class="num">21</span>wifi_info</div>
+    <div class="chip"><span class="num">22</span>top_processes</div>
+    <div class="chip"><span class="num">23</span>system_action</div>
+    <div class="chip"><span class="num">24</span>git_status</div>
+    <div class="chip"><span class="num">25</span>git_diff</div>
+    <div class="chip"><span class="num">26</span>memory_save</div>
+    <div class="chip"><span class="num">27</span>memory_recall</div>
+    <div class="chip"><span class="num">28</span>code_exec</div>
+    <div class="chip"><span class="num">29</span>data_viz</div>
+    <div class="chip"><span class="num">30</span>finance_quote</div>
+    <div class="chip"><span class="num">31</span>vision_analyze</div>
+    <div class="chip"><span class="num">+</span>265 more...</div>
+  </div>
+</section>
+
+<!-- ============ REQUIREMENTS ============ -->
+<section class="block" id="req">
+  <div class="section-head">
+    <span class="num">04</span>
+    <h2>System <span class="accent">Requirements</span></h2>
+    <span class="sub">SECTION 04 / 04</span>
+  </div>
+  <div class="req">
+    <div class="req-card">
+      <div class="h">PLATFORM</div>
+      <div class="v">macOS 12+</div>
+      <div class="d">Apple Silicon · Intel</div>
+    </div>
+    <div class="req-card">
+      <div class="h">RUNTIME</div>
+      <div class="v">Python 3.9+</div>
+      <div class="d">3.9 / 3.11 / 3.12</div>
+    </div>
+    <div class="req-card">
+      <div class="h">API KEY</div>
+      <div class="v">Anthropic</div>
+      <div class="d">OpenAI · Ollama 선택 가능</div>
+    </div>
+    <div class="req-card">
+      <div class="h">AUDIO</div>
+      <div class="v">Microphone</div>
+      <div class="d">macOS 자동화 권한 필요</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FINAL CTA ============ -->
+<section class="block">
+  <div class="cta-final">
+    <h2>READY TO BOOT</h2>
+    <p>"자비스" — 부르기만 하면, 응답합니다.</p>
+    <div class="row">
+      <button class="btn btn-primary cta-action" data-state="loading" id="cta-action-2" disabled>
+        INITIATE PURCHASE · <span class="price-gold">$6</span>
+      </button>
+      <a class="btn btn-ghost" href="https://github.com/no0m0321/jarvis" target="_blank">
+        ◉ ARCHIVE · GITHUB
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div>
+    <div class="brand-foot"><span class="dot"></span>J · A · R · V · I · S</div>
+    <p class="desc">
+      Voice-first personal AI assistant.<br />
+      Stark-grade interface. Korean-first. Claude-powered. Autonomous.<br />
+      <span style="color: var(--cyan-dim); font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.18em; display: inline-block; margin-top: 8px;">// MARK · VII · v0.3.1</span>
+    </p>
+  </div>
+  <div>
+    <h5>// PRODUCT</h5>
+    <ul>
+      <li><a href="#features">Features</a></li>
+      <li><a href="#tools">Toolbox</a></li>
+      <li><a href="#install">Install</a></li>
+      <li><a href="#req">Requirements</a></li>
+    </ul>
+  </div>
+  <div>
+    <h5>// DOCS</h5>
+    <ul>
+      <li><a href="https://github.com/no0m0321/jarvis/blob/main/README.md" target="_blank">README</a></li>
+      <li><a href="https://github.com/no0m0321/jarvis/blob/main/docs/ARCHITECTURE.md" target="_blank">Architecture</a></li>
+      <li><a href="https://github.com/no0m0321/jarvis/blob/main/docs/SECURITY.md" target="_blank">Security</a></li>
+      <li><a href="https://github.com/no0m0321/jarvis/blob/main/CHANGELOG.md" target="_blank">Changelog</a></li>
+    </ul>
+  </div>
+  <div>
+    <h5>// COMMUNITY</h5>
+    <ul>
+      <li><a href="https://github.com/no0m0321/jarvis" target="_blank">GitHub</a></li>
+      <li><a href="https://github.com/no0m0321/jarvis/issues" target="_blank">Issues</a></li>
+      <li><a href="https://github.com/no0m0321/jarvis/blob/main/CONTRIBUTING.md" target="_blank">Contributing</a></li>
+      <li><a href="https://github.com/no0m0321/jarvis/blob/main/LICENSE" target="_blank">MIT License</a></li>
+    </ul>
+  </div>
+  <div class="legal">
+    <span>© 2026 · STARK · INDUSTRIES (parody)</span>
+    <span>BUILT · WITH · CLAUDE · OPUS · 4.7</span>
+  </div>
+</footer>
+
+<div class="toast" id="toast">✓ INSTALL COMMAND COPIED</div>
+
+<script>
+// ===== Copy install command =====
+function copyInstall() {
+  const cmd = 'curl -fsSL https://raw.githubusercontent.com/no0m0321/jarvis/main/install.sh | bash';
+  navigator.clipboard.writeText(cmd).then(() => {
+    const toast = document.getElementById('toast');
+    const btn = document.getElementById('copy-btn');
+    const lbl = document.getElementById('copy-label');
+    toast.classList.add('show');
+    btn.classList.add('copied');
+    lbl.textContent = 'COPIED';
+    setTimeout(() => {
+      toast.classList.remove('show');
+      btn.classList.remove('copied');
+      lbl.textContent = 'COPY';
+    }, 2400);
+  }).catch(() => {});
+}
+
+// ===== Generate radial waveform bars =====
+(() => {
+  const ring = document.getElementById('waveRing');
+  if (!ring) return;
+  const N = 60;
+  for (let i = 0; i < N; i++) {
+    const angle = (i / N) * 360;
+    const bar = document.createElement('div');
+    bar.className = 'bar';
+    bar.style.transform = `translate(-50%, 0) rotate(${angle}deg) translateY(-130px)`;
+    bar.style.animationDelay = `${(i / N) * 1.4}s`;
+    bar.style.height = `${8 + Math.random() * 10}px`;
+    ring.appendChild(bar);
+  }
+})();
+
+// ===== Particle background (network nodes) =====
+(() => {
+  const canvas = document.getElementById('particles');
+  const ctx = canvas.getContext('2d');
+  let w, h, particles = [];
+
+  function resize() {
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  const N = window.innerWidth < 700 ? 35 : 80;
+  for (let i = 0; i < N; i++) {
+    particles.push({
+      x: Math.random() * w,
+      y: Math.random() * h,
+      vx: (Math.random() - 0.5) * 0.25,
+      vy: (Math.random() - 0.5) * 0.25,
+      r: Math.random() * 1.4 + 0.3,
+      a: Math.random() * 0.5 + 0.15,
+    });
+  }
+
+  function tick() {
+    ctx.clearRect(0, 0, w, h);
+    for (let i = 0; i < particles.length; i++) {
+      const p = particles[i];
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < 0 || p.x > w) p.vx *= -1;
+      if (p.y < 0 || p.y > h) p.vy *= -1;
+
+      for (let j = i + 1; j < particles.length; j++) {
+        const q = particles[j];
+        const dx = p.x - q.x, dy = p.y - q.y;
+        const d = Math.sqrt(dx*dx + dy*dy);
+        if (d < 150) {
+          ctx.strokeStyle = `rgba(76, 201, 255, ${(1 - d/150) * 0.10})`;
+          ctx.lineWidth = 0.5;
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(q.x, q.y);
+          ctx.stroke();
+        }
+      }
+      ctx.fillStyle = `rgba(76, 201, 255, ${p.a})`;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    requestAnimationFrame(tick);
+  }
+  tick();
+})();
+
+// ===== Reveal on scroll =====
+const io = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.style.opacity = '1';
+      e.target.style.transform = 'translateY(0)';
+    }
+  });
+}, { threshold: 0.1 });
+document.querySelectorAll('.feature, .stat, .req-card, .chip, .terminal, .demo-info').forEach((el, i) => {
+  el.style.opacity = '0';
+  el.style.transform = 'translateY(24px)';
+  el.style.transition = `opacity 0.7s cubic-bezier(.2,.7,.2,1) ${i * 0.025}s, transform 0.7s cubic-bezier(.2,.7,.2,1) ${i * 0.025}s`;
+  io.observe(el);
+});
+</script>
+
+<!-- ──────── PHASE 6: SFX module (Web Audio 합성) ──────── -->
+<script>
+(function jarvisSFX() {
+  const STORAGE_KEY = 'jarvis-sfx';
+  const toggle = document.getElementById('sfxToggle');
+  if (!toggle) return;
+
+  let ctx = null;
+  let enabled = localStorage.getItem(STORAGE_KEY) === '1';
+
+  function ensureCtx() {
+    if (!ctx) {
+      const C = window.AudioContext || window.webkitAudioContext;
+      if (!C) return null;
+      ctx = new C();
+    }
+    if (ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  }
+
+  // 핵심 합성 함수 — sine/triangle/square/sawtooth + freq sweep + envelope
+  function tone(freq, dur, opts = {}) {
+    if (!enabled) return;
+    const c = ensureCtx();
+    if (!c) return;
+    const now = c.currentTime + (opts.delay || 0);
+    const osc = c.createOscillator();
+    const gain = c.createGain();
+    osc.type = opts.type || 'sine';
+    osc.frequency.setValueAtTime(freq, now);
+    if (opts.endFreq) {
+      osc.frequency.exponentialRampToValueAtTime(opts.endFreq, now + dur);
+    }
+    const peak = opts.vol ?? 0.06;
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(peak, now + Math.min(0.01, dur * 0.2));
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+    osc.connect(gain).connect(c.destination);
+    osc.start(now);
+    osc.stop(now + dur + 0.02);
+  }
+
+  // ── Sound presets (자비스 시그니처) ──
+  const SFX = {
+    blip:    () => tone(1800, 0.05,  { vol: 0.04, type: 'square' }),
+    click:   () => tone(1200, 0.04,  { vol: 0.05 }),
+    tick:    () => tone(900,  0.025, { vol: 0.03 }),
+    ping:    () => tone(2600, 0.18,  { vol: 0.10, endFreq: 900, type: 'sine' }),
+    whoosh:  () => tone(80,   0.45,  { vol: 0.12, endFreq: 240, type: 'sawtooth' }),
+    confirm: () => {
+      tone(800,  0.06, { vol: 0.06 });
+      tone(1200, 0.08, { vol: 0.06, delay: 0.07 });
+    },
+    chord: () => {
+      // C5 + E5 + G5 (gold tone)
+      [523, 659, 784].forEach((f, i) => tone(f, 0.55, { vol: 0.04, type: 'triangle', delay: i * 0.04 }));
+    },
+    online: () => {
+      // 빵 — 저주파 sweep + high ping
+      tone(60,  0.4,  { vol: 0.14, endFreq: 220, type: 'sawtooth' });
+      tone(2000, 0.25, { vol: 0.07, endFreq: 1400, type: 'sine', delay: 0.05 });
+    },
+    typing: () => tone(1400, 0.015, { vol: 0.025, type: 'square' }),
+  };
+
+  // 외부 모듈에서 호출 가능 (boot driver, live demo 등)
+  window.jarvisSFX = {
+    isEnabled: () => enabled,
+    play: (name) => { if (SFX[name]) SFX[name](); },
+    ...SFX,
+  };
+
+  // ── UI 동기화 ──
+  function syncUI() {
+    toggle.classList.toggle('on', enabled);
+    toggle.setAttribute('aria-pressed', String(enabled));
+    toggle.querySelector('.sfx-icon').textContent = enabled ? '🔊' : '🔇';
+    const lbl = toggle.querySelector('.sfx-label');
+    if (lbl) lbl.textContent = enabled ? 'SFX' : 'MUTED';
+  }
+  syncUI();
+
+  toggle.addEventListener('click', () => {
+    enabled = !enabled;
+    localStorage.setItem(STORAGE_KEY, enabled ? '1' : '0');
+    syncUI();
+    if (enabled) {
+      // user gesture로 AudioContext 활성 + 확인음 1회
+      ensureCtx();
+      SFX.confirm();
+    }
+  });
+
+  // ── 자동 hook: CTA / 인터랙티브 버튼 ──
+  // hover blip + click confirm
+  function hookButtons() {
+    const sel = '.cta-action, .ld-btn, .btn-primary, .nav-cta, .copy-btn';
+    document.querySelectorAll(sel).forEach(el => {
+      if (el.dataset.sfxHooked) return;
+      el.dataset.sfxHooked = '1';
+      el.addEventListener('mouseenter', SFX.blip, { passive: true });
+      el.addEventListener('click', SFX.click, { passive: true });
+    });
+  }
+  hookButtons();
+  // 동적으로 버튼이 추가될 수 있어서 재시도 (CTA는 JS가 라벨 갱신)
+  setTimeout(hookButtons, 5000);
+
+  // ── 자동 hook: Live Demo wake burst ──
+  const stage = document.getElementById('ldStage');
+  if (stage) {
+    new MutationObserver(() => {
+      if (stage.classList.contains('wake-burst')) SFX.ping();
+    }).observe(stage, { attributes: true, attributeFilter: ['class'] });
+  }
+
+  // ── 자동 hook: Live Demo typewriter (말 하나씩 나올 때 미세 click) ──
+  const transcript = document.getElementById('ldTranscript');
+  if (transcript) {
+    let lastTextLen = 0;
+    new MutationObserver(() => {
+      // typing caret이 있는 마지막 .body 길이 변화 감지
+      const last = transcript.querySelector('.ld-line:last-child .body.typing');
+      if (last && last.textContent.length > lastTextLen) {
+        lastTextLen = last.textContent.length;
+        if (lastTextLen % 3 === 0) SFX.typing();  // 3글자마다 — 너무 시끄럽지 않게
+      } else if (!last) {
+        lastTextLen = 0;
+      }
+    }).observe(transcript, { childList: true, subtree: true, characterData: true });
+  }
+})();
+</script>
+
+<!-- ──────── PHASE 5: Mouse Parallax (HUD + bg + cards) ──────── -->
+<script>
+// ── POLISH: Cursor spotlight (마우스 따라가는 cyan glow) ──
+(function cursorSpotlight() {
+  if (matchMedia('(hover: none) and (pointer: coarse)').matches) return;
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const sp = document.getElementById('cursorSpotlight');
+  if (!sp) return;
+
+  let x = -1000, y = -1000;
+  let tx = -1000, ty = -1000;
+  let visible = false;
+
+  document.addEventListener('mousemove', (e) => {
+    x = e.clientX; y = e.clientY;
+    if (!visible) { sp.classList.add('show'); visible = true; }
+  }, { passive: true });
+
+  document.addEventListener('mouseleave', () => {
+    sp.classList.remove('show'); visible = false;
+  });
+  document.addEventListener('mouseenter', () => {
+    if (x > -500) { sp.classList.add('show'); visible = true; }
+  });
+
+  function tick() {
+    // lerp 0.18 — 부드럽지만 너무 느리지 않게
+    tx += (x - tx) * 0.18;
+    ty += (y - ty) * 0.18;
+    sp.style.transform = `translate3d(${tx.toFixed(1)}px, ${ty.toFixed(1)}px, 0) translate(-50%, -50%)`;
+    requestAnimationFrame(tick);
+  }
+  tick();
+})();
+
+(function parallax() {
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const isTouch = matchMedia('(hover: none) and (pointer: coarse)').matches;
+  if (reduce || isTouch) return;
+
+  const hudStage = document.querySelector('.hud-stage');
+  const bgGrid   = document.querySelector('.bg-grid');
+  const features = document.querySelectorAll('.feature');
+  const stats    = document.querySelectorAll('.stat');
+
+  // ── Global mouse → HUD 3D tilt + bg drift ──
+  let mx = 0, my = 0;        // 정규화 -0.5 ~ 0.5
+  let tx = 0, ty = 0;        // 보간된 부드러운 값
+  let active = false;
+
+  document.addEventListener('mousemove', (e) => {
+    mx = e.clientX / window.innerWidth  - 0.5;
+    my = e.clientY / window.innerHeight - 0.5;
+    active = true;
+  }, { passive: true });
+
+  document.addEventListener('mouseleave', () => {
+    mx = 0; my = 0;
+  });
+
+  function tickGlobal() {
+    // 부드러운 lerp (ease-out)
+    tx += (mx - tx) * 0.06;
+    ty += (my - ty) * 0.06;
+
+    if (hudStage) {
+      // perspective는 inline style로 고정 (CSS 변수 충돌 방지)
+      const rotY = tx * 8;       // ±4deg
+      const rotX = -ty * 6;      // ±3deg
+      hudStage.style.transform = `perspective(1200px) rotateY(${rotY.toFixed(2)}deg) rotateX(${rotX.toFixed(2)}deg)`;
+    }
+    if (bgGrid) {
+      // 5px 한도, 천천히 (immersion 깨지지 않게)
+      const dx = tx * 12;
+      const dy = ty * 12;
+      bgGrid.style.transform = `translate3d(${dx.toFixed(1)}px, ${dy.toFixed(1)}px, 0)`;
+    }
+    requestAnimationFrame(tickGlobal);
+  }
+  if (hudStage || bgGrid) requestAnimationFrame(tickGlobal);
+
+  // ── Per-card tilt (feature + stat) ──
+  function attachTilt(el, opts = {}) {
+    const { maxRot = 8, scale = 1.02, lift = 6 } = opts;
+    let cleanup = null;
+
+    el.addEventListener('mouseenter', () => {
+      el.style.willChange = 'transform';
+    });
+    el.addEventListener('mousemove', (e) => {
+      const rect = el.getBoundingClientRect();
+      const cx = (e.clientX - rect.left) / rect.width  - 0.5;
+      const cy = (e.clientY - rect.top)  / rect.height - 0.5;
+      const rotY =  cx * maxRot;
+      const rotX = -cy * maxRot;
+      el.style.transform =
+        `perspective(800px) rotateY(${rotY.toFixed(2)}deg) rotateX(${rotX.toFixed(2)}deg) ` +
+        `translateZ(${lift}px) scale(${scale})`;
+    });
+    el.addEventListener('mouseleave', () => {
+      el.style.transform = '';
+      el.style.willChange = '';
+    });
+  }
+
+  features.forEach(c => attachTilt(c, { maxRot: 9, scale: 1.025, lift: 10 }));
+  stats.forEach(s => attachTilt(s, { maxRot: 5, scale: 1.04, lift: 4 }));
+
+  // ── 디바이스 변경 시 cleanup (예: 외장 트랙패드 → 터치) ──
+  const mqlTouch = matchMedia('(hover: none) and (pointer: coarse)');
+  const onChange = () => {
+    if (mqlTouch.matches) {
+      // 터치 모드로 바뀌면 transform 리셋
+      [hudStage, bgGrid, ...features, ...stats].forEach(el => {
+        if (el) { el.style.transform = ''; el.style.willChange = ''; }
+      });
+    }
+  };
+  if (mqlTouch.addEventListener) mqlTouch.addEventListener('change', onChange);
+})();
+</script>
+
+<!-- ──────── PHASE 4: Live Demo Driver ──────── -->
+<script>
+(function liveDemo() {
+  const stage      = document.getElementById('ldStage');
+  const statusEl   = document.getElementById('ldStatus');
+  const waveform   = document.getElementById('ldWaveform');
+  const transcript = document.getElementById('ldTranscript');
+  const startBtn   = document.getElementById('ldStart');
+  const resetBtn   = document.getElementById('ldReset');
+  const mockInput  = document.getElementById('ldMockInput');
+  if (!stage) return;
+
+  // ── 32-bar waveform 생성 ──
+  const BAR_COUNT = 32;
+  const bars = [];
+  for (let i = 0; i < BAR_COUNT; i++) {
+    const b = document.createElement('div');
+    b.className = 'ld-bar';
+    waveform.appendChild(b);
+    bars.push(b);
+  }
+
+  // ── 응답 사전 (키워드 매칭) ──
+  function nowKr() {
+    const d = new Date();
+    const h = d.getHours();
+    const m = d.getMinutes();
+    const period = h < 12 ? '오전' : '오후';
+    const hh = ((h + 11) % 12) + 1;
+    return `${period} ${hh}시 ${m}분`;
+  }
+  const RESPONSES = [
+    { kw: ['시간', '몇시', '몇 시'],         say: () => `${nowKr()}입니다, 주인님.` },
+    { kw: ['날짜', '오늘', '며칠'],          say: () => `오늘은 ${new Date().toLocaleDateString('ko-KR', {year:'numeric', month:'long', day:'numeric', weekday:'long'})}입니다.` },
+    { kw: ['도구', '몇개', '몇 개', 'tool'], say: () => '현재 296개의 도구가 활성 상태입니다, 주인님.' },
+    { kw: ['음악', '노래', '플레이'],         say: () => '주인님께 어떤 음악을 들려드릴까요?' },
+    { kw: ['화면', '스크린', '뭐 보여'],      say: () => '화면을 분석하고 있습니다 — vision_screen 도구가 활성화됐습니다.' },
+    { kw: ['카메라', '웹캠'],                say: () => '웹캠을 통해 보고 있습니다, 주인님.' },
+    { kw: ['고마워', '감사', 'thanks'],      say: () => '천만에요, 주인님.' },
+    { kw: ['안녕', '하이', 'hello'],         say: () => '안녕하세요, 주인님. 무엇을 도와드릴까요?' },
+    { kw: ['자비스'],                        say: () => '네, 주인님. 듣고 있습니다.' },
+    { kw: ['멈춰', '정지', '그만', 'stop'],   say: () => '정지하겠습니다.' },
+    { kw: ['배터리'],                        say: () => '시연 모드라 배터리 정보는 시뮬레이션입니다 — 78%로 가정.' },
+    { kw: ['배포', 'deploy', '서버'],         say: () => 'Vercel + Supabase + Stripe 풀스택으로 배포되었습니다.' },
+    { kw: ['예쁘다', '멋있', 'beautiful'],   say: () => '감사합니다, 주인님. Iron Man HUD에서 영감을 받았습니다.' },
+  ];
+  const FALLBACKS = [
+    '흥미로운 말씀이군요, 주인님.',
+    '이 데모는 시뮬레이션입니다 — 실제 자비스는 296개 도구로 응답합니다.',
+    '풀버전에서는 Claude Opus 4.7이 처리합니다.',
+    '말씀하시면 듣고 있습니다, 주인님.',
+  ];
+  function matchResponse(text) {
+    const lower = (text || '').toLowerCase();
+    for (const r of RESPONSES) {
+      for (const k of r.kw) {
+        if (lower.includes(k)) return r.say();
+      }
+    }
+    return FALLBACKS[Math.floor(Math.random() * FALLBACKS.length)];
+  }
+
+  // ── transcript helpers ──
+  function clearEmpty() {
+    const e = transcript.querySelector('.empty');
+    if (e) e.remove();
+  }
+  function addLine(role, text, opts = {}) {
+    clearEmpty();
+    const div = document.createElement('div');
+    div.className = `ld-line role-${role}`;
+    const roleLabel = role === 'user' ? '사용자' : role === 'jarvis' ? '자비스' : 'SYS';
+    div.innerHTML = `<span class="role">${roleLabel}</span><span class="body"></span>`;
+    transcript.appendChild(div);
+    transcript.scrollTop = transcript.scrollHeight;
+    const body = div.querySelector('.body');
+    if (opts.typewriter) {
+      // 글자 1개씩 등장
+      body.classList.add('typing');
+      let i = 0;
+      const speed = 28;
+      (function type() {
+        if (i <= text.length) {
+          body.textContent = text.slice(0, i);
+          i++;
+          setTimeout(type, speed);
+          transcript.scrollTop = transcript.scrollHeight;
+        } else {
+          body.classList.remove('typing');
+        }
+      })();
+    } else {
+      body.textContent = text;
+    }
+    return div;
+  }
+
+  function setStatus(text, kind) {
+    statusEl.textContent = text;
+    statusEl.className = 'ld-status' + (kind ? ' ' + kind : '');
+  }
+
+  // ── Wake burst effect ──
+  function wakeBurst() {
+    stage.classList.remove('wake-burst');
+    void stage.offsetWidth;  // reflow
+    stage.classList.add('wake-burst');
+    setStatus('WAKE — 듣고 있습니다', 'wake');
+    setTimeout(() => stage.classList.remove('wake-burst'), 1100);
+  }
+
+  // ── Web Audio + mic + analyser ──
+  let audioCtx = null;
+  let analyser = null;
+  let micStream = null;
+  let rafId = null;
+  let recording = false;
+  let speakingNoise = 0;
+
+  async function startMic() {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      throw new Error('이 브라우저는 마이크 미지원');
+    }
+    micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const src = audioCtx.createMediaStreamSource(micStream);
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 128;
+    analyser.smoothingTimeConstant = 0.7;
+    src.connect(analyser);
+    drawLoop();
+  }
+
+  function stopMic() {
+    cancelAnimationFrame(rafId);
+    rafId = null;
+    if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
+    if (audioCtx) { audioCtx.close(); audioCtx = null; }
+    analyser = null;
+    bars.forEach(b => { b.style.height = '4px'; b.classList.remove('live'); });
+  }
+
+  function drawLoop() {
+    if (!analyser) return;
+    const data = new Uint8Array(analyser.frequencyBinCount);
+    analyser.getByteFrequencyData(data);
+    // 64 bins → 32 bars (left 16 + right 16 미러링 효과)
+    let sum = 0;
+    for (let i = 0; i < BAR_COUNT; i++) {
+      const v = data[i] || 0;
+      sum += v;
+      const h = Math.max(4, (v / 255) * 90);
+      bars[i].style.height = h + 'px';
+      bars[i].classList.toggle('live', v > 30);
+    }
+    speakingNoise = sum / BAR_COUNT;
+    rafId = requestAnimationFrame(drawLoop);
+  }
+
+  // ── SpeechRecognition (Chrome/Edge/Safari 일부) ──
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let recognition = null;
+  let lastTranscript = '';
+  let silenceTimer = null;
+
+  function setupRecognition() {
+    if (!SR) return null;
+    const r = new SR();
+    r.lang = 'ko-KR';
+    r.continuous = true;
+    r.interimResults = true;
+    r.onresult = (e) => {
+      let interim = '', final = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const t = e.results[i][0].transcript;
+        if (e.results[i].isFinal) final += t;
+        else interim += t;
+      }
+      const fullText = (final || interim).trim();
+      if (!fullText) return;
+      lastTranscript = fullText;
+      // wake word 감지
+      if (/자비스|jarvis/i.test(fullText) && !stage.classList.contains('wake-burst')) {
+        wakeBurst();
+      }
+      // 1.2초 침묵 후 응답
+      clearTimeout(silenceTimer);
+      silenceTimer = setTimeout(() => {
+        if (!lastTranscript) return;
+        const heard = lastTranscript;
+        lastTranscript = '';
+        addLine('user', heard);
+        setStatus('ANALYZING…', 'active');
+        setTimeout(() => {
+          addLine('jarvis', matchResponse(heard), { typewriter: true });
+          setStatus('LISTENING — 말씀 더 하세요', 'active');
+        }, 600);
+      }, 1200);
+    };
+    r.onerror = (e) => {
+      console.warn('[live-demo] recognition error:', e.error);
+      if (e.error === 'no-speech') return;  // 정상
+      if (e.error === 'not-allowed') {
+        setStatus('마이크 권한 거부됨', 'error');
+        addLine('sys', '마이크 권한이 거부되어 텍스트 모드로 전환합니다.');
+        enableMockMode();
+      }
+    };
+    r.onend = () => {
+      // continuous=true인데 자동 종료될 수도 — recording 중이면 재시작
+      if (recording && recognition) {
+        try { recognition.start(); } catch {}
+      }
+    };
+    return r;
+  }
+
+  // ── Mock mode (마이크/음성인식 미지원/거부) ──
+  function enableMockMode() {
+    mockInput.classList.add('show');
+    mockInput.focus();
+    startBtn.style.display = 'none';
+    setStatus('TEXT MODE — 입력 후 Enter', '');
+  }
+  mockInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && mockInput.value.trim()) {
+      const text = mockInput.value.trim();
+      mockInput.value = '';
+      if (/자비스|jarvis/i.test(text)) wakeBurst();
+      addLine('user', text);
+      setTimeout(() => addLine('jarvis', matchResponse(text), { typewriter: true }), 400);
+    }
+  });
+
+  // ── Start / Reset ──
+  async function startDemo() {
+    if (recording) return;
+
+    // SpeechRecognition 미지원 → mock mode로
+    if (!SR) {
+      addLine('sys', '이 브라우저는 음성 인식 미지원 — 텍스트 모드로 전환합니다.');
+      enableMockMode();
+      return;
+    }
+
+    try {
+      await startMic();
+    } catch (err) {
+      console.warn('[live-demo] mic error:', err);
+      addLine('sys', '마이크 활성 실패 — 텍스트 모드로 전환합니다. (' + err.message + ')');
+      enableMockMode();
+      return;
+    }
+
+    recognition = setupRecognition();
+    if (!recognition) {
+      enableMockMode();
+      return;
+    }
+    try {
+      recognition.start();
+      recording = true;
+      startBtn.classList.add('recording');
+      startBtn.innerHTML = '◉ RECORDING · 다시 누르면 정지';
+      setStatus('LISTENING — 말씀하세요', 'active');
+      addLine('sys', '마이크 활성. "자비스"라고 말하면 응답합니다.');
+    } catch (err) {
+      console.warn('[live-demo] recognition start failed:', err);
+      stopMic();
+      enableMockMode();
+    }
+  }
+
+  function stopDemo() {
+    if (recognition) { try { recognition.stop(); } catch {} recognition = null; }
+    stopMic();
+    recording = false;
+    startBtn.classList.remove('recording');
+    startBtn.innerHTML = '⏵ PRESS TO INTERACT';
+    setStatus('정지됨 — 다시 시작하려면 위 버튼', '');
+  }
+
+  startBtn.addEventListener('click', () => {
+    if (recording) stopDemo();
+    else startDemo();
+  });
+
+  resetBtn.addEventListener('click', () => {
+    stopDemo();
+    transcript.innerHTML = '<div class="empty">대화는 여기에 표시됩니다 — say "자비스, 시간 알려줘"</div>';
+    setStatus('PRESS BELOW · 마이크 활성화 후 말씀하세요', '');
+    mockInput.classList.remove('show');
+    mockInput.value = '';
+    startBtn.style.display = '';
+  });
+
+  // Esc로 정지
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && recording) stopDemo();
+  });
+
+  // 페이지 떠날 때 cleanup
+  window.addEventListener('beforeunload', stopDemo);
+})();
+</script>
+
+<!-- ──────── PHASE 1: Boot Sequence Driver ──────── -->
+<script>
+(function bootSequence() {
+  const overlay = document.getElementById('boot-overlay');
+  if (!overlay) return;
+
+  const linesEl  = document.getElementById('bootLines');
+  const fillEl   = document.getElementById('bootFill');
+  const pctEl    = document.getElementById('bootPct');
+  const statusEl = document.getElementById('bootStatus');
+  const skipBtn  = document.getElementById('bootSkip');
+
+  // 같은 세션 안에서 새로고침 시 짧은 fade-only (5초 안 걸림)
+  const SESSION_KEY = 'jarvis-booted-v0.4';
+  const skipFull = sessionStorage.getItem(SESSION_KEY) === '1';
+  // ?reboot 쿼리는 강제 풀시퀀스
+  const force = new URLSearchParams(location.search).has('reboot');
+
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function fadeOut() {
+    sessionStorage.setItem(SESSION_KEY, '1');
+    window.jarvisSFX?.play('whoosh');
+    overlay.classList.add('fade-out');
+    setTimeout(() => { overlay.remove(); }, 900);
+  }
+
+  if ((skipFull && !force) || reduceMotion) {
+    // 빠른 skip — 0.4초 정도만 보여주고 fade
+    setTimeout(fadeOut, 400);
+    return;
+  }
+
+  // 풀 부팅 시퀀스
+  const lines = [
+    { t:  300, text: '[ OK ] CORE SYSTEMS · ONLINE' },
+    { t:  650, text: '[ OK ] CYAN MATRIX · CALIBRATED' },
+    { t:  950, text: '[ OK ] NEURAL CORE · ENGAGED' },
+    { t: 1300, text: '[ OK ] 296 TOOLS · LOADED' },
+    { t: 1650, text: '[ OK ] PERSONA · JARVIS · ACTIVE' },
+    { t: 2000, text: '[ OK ] WAKE WORD · 자비스 · ARMED' },
+  ];
+
+  function appendLine(text) {
+    const el = document.createElement('span');
+    el.className = 'boot-line show';
+    // [ OK ] prefix를 cyan으로
+    const m = text.match(/^(\[ ?OK ?\])\s*(.*)$/);
+    if (m) {
+      el.innerHTML = `<span class="ok">${m[1]}</span><span class="glow">${m[2]}</span>`;
+    } else {
+      el.textContent = text;
+    }
+    linesEl.appendChild(el);
+    window.jarvisSFX?.play('tick');
+  }
+
+  // 라인 순차 등장
+  lines.forEach(l => setTimeout(() => appendLine(l.text), l.t));
+
+  // Progress bar 0→100 over 2.4s
+  const PROG_DURATION = 2400;
+  const PROG_START = 200;
+  const PROG_END = PROG_START + PROG_DURATION;
+  const PROG_TICK = 30;
+  let progStarted = false;
+  function progressTick() {
+    const now = performance.now();
+    if (!progStarted) { window._progT0 = now; progStarted = true; }
+    const elapsed = now - window._progT0;
+    const pct = Math.min(100, Math.round((elapsed / PROG_DURATION) * 100));
+    fillEl.style.width = pct + '%';
+    pctEl.textContent  = pct + '%';
+    if (pct < 100) requestAnimationFrame(progressTick);
+  }
+  setTimeout(() => requestAnimationFrame(progressTick), PROG_START);
+
+  // 상태 메시지 흐름
+  const statusFlow = [
+    { t:  500, text: 'INITIALIZING…',                cls: '' },
+    { t: 1100, text: 'CALIBRATING NEURAL CORE…',     cls: '' },
+    { t: 1700, text: 'ENGAGING CYAN MATRIX…',        cls: '' },
+    { t: 2300, text: 'FINALIZING…',                  cls: '' },
+    { t: 2700, text: 'ONLINE',                       cls: 'online' },
+    { t: 3500, text: 'GOOD MORNING, SIR.',           cls: 'greeting' },
+  ];
+  statusFlow.forEach(s => setTimeout(() => {
+    statusEl.textContent = s.text;
+    statusEl.className = 'boot-status' + (s.cls ? ' ' + s.cls : '');
+    if (s.cls === 'online')        window.jarvisSFX?.play('online');
+    else if (s.cls === 'greeting') window.jarvisSFX?.play('chord');
+  }, s.t));
+
+  // 4.4초에 자동 fade-out
+  const autoFadeAt = setTimeout(fadeOut, 4400);
+
+  // Skip 버튼
+  skipBtn.addEventListener('click', () => {
+    clearTimeout(autoFadeAt);
+    fadeOut();
+  });
+  // Esc/Space 도 skip
+  window.addEventListener('keydown', function onKey(e) {
+    if (e.key === 'Escape' || e.key === ' ') {
+      clearTimeout(autoFadeAt);
+      window.removeEventListener('keydown', onKey);
+      fadeOut();
+    }
+  });
+})();
+</script>
+
+<!-- ──────── v0.4.0: Auth + Purchase state machine ──────── -->
+<div id="purchase-banner">✓ 결제 완료 · 다운로드 준비됨</div>
+
+<script id="config">
+  // 정적 사이트는 NEXT_PUBLIC_* 자동 주입 안 됨. /env.js 에서 주입(Vercel) 또는 직접 입력.
+  window.SUPABASE_URL      = window.SUPABASE_URL      || "";
+  window.SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || "";
+</script>
+<script src="/env.js" onerror="void 0"></script>
+
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const URL = window.SUPABASE_URL;
+const KEY = window.SUPABASE_ANON_KEY;
+const HAS_CONFIG = !!(URL && KEY);
+
+const $ = (id) => document.getElementById(id);
+const ctaButtons = [$("cta-action-1"), $("cta-action-2")].filter(Boolean);
+const authStatus = $("auth-status");
+const banner = $("purchase-banner");
+
+const supabase = HAS_CONFIG ? createClient(URL, KEY) : null;
+
+// ── 상태별 라벨 (HTML — $6은 .price-gold로 강조) ──
+const PRICE = '<span class="price-gold">$6</span>';
+const LABELS = {
+  loading:  { 1: "확인 중…",                                            2: "확인 중…" },
+  login:    { 1: `로그인 후 구매 · ${PRICE}`,                            2: "로그인 후 구매" },
+  buy:      { 1: `BUY · ${PRICE} · GET SOURCE`,                          2: `INITIATE PURCHASE · ${PRICE}` },
+  paid:     { 1: "DOWNLOAD JARVIS v0.3.0",                               2: "DOWNLOAD · v0.3.0" },
+  pending:  { 1: "결제 처리 중…",                                        2: "결제 처리 중…" },
+};
+
+function setCtaState(state) {
+  ctaButtons.forEach((btn, i) => {
+    btn.dataset.state = state;
+    btn.disabled = (state === "loading" || state === "pending");
+    // innerHTML — LABELS는 hardcoded이므로 XSS 안전
+    btn.innerHTML = LABELS[state]?.[i + 1] || "";
+  });
+}
+
+function renderAuthStatus(user) {
+  if (!authStatus) return;
+  if (user) {
+    authStatus.innerHTML = `
+      <span class="auth-dot"></span>
+      <span class="auth-email" title="${user.email || ''}">${user.email || ''}</span>
+      <a class="auth-link" href="/dashboard.html" style="margin-left:6px;">대시보드</a>
+      <button class="auth-signout" id="auth-signout-btn">로그아웃</button>
+    `;
+    $("auth-signout-btn")?.addEventListener("click", async () => {
+      await supabase?.auth.signOut();
+      location.reload();
+    });
+  } else {
+    authStatus.innerHTML = `<a class="auth-link" href="/login.html?next=${encodeURIComponent(location.pathname + location.search)}">로그인</a>`;
+  }
+}
+
+async function fetchPurchase(user) {
+  if (!supabase || !user) return null;
+  const { data } = await supabase
+    .from("purchases")
+    .select("status")
+    .eq("user_id", user.id)
+    .eq("status", "paid")
+    .limit(1)
+    .maybeSingle();
+  return data;
+}
+
+async function refreshState() {
+  if (!HAS_CONFIG) {
+    setCtaState("buy");
+    ctaButtons.forEach(b => { b.disabled = false; });
+    return;
+  }
+  setCtaState("loading");
+
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user || null;
+  renderAuthStatus(user);
+
+  if (!user) {
+    setCtaState("login");
+    return;
+  }
+
+  const purchase = await fetchPurchase(user);
+  if (purchase?.status === "paid") {
+    setCtaState("paid");
+  } else {
+    setCtaState("buy");
+  }
+}
+
+// ── CTA click handler ──
+async function onCtaClick(e) {
+  const btn = e.currentTarget;
+  const state = btn.dataset.state;
+
+  if (state === "login") {
+    location.href = "/login.html?next=" + encodeURIComponent(location.pathname + location.search);
+    return;
+  }
+
+  if (state === "buy") {
+    btn.disabled = true;
+    const orig = btn.textContent;
+    btn.textContent = "결제 페이지로…";
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        location.href = "/login.html?next=/";
+        return;
+      }
+      const r = await fetch("/api/checkout", {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer " + session.access_token,
+          "Content-Type": "application/json",
+        },
+      });
+      if (r.status === 409) {
+        // already purchased — refresh
+        await refreshState();
+        return;
+      }
+      if (!r.ok) throw new Error(`checkout failed (${r.status})`);
+      const { url } = await r.json();
+      location.href = url;
+    } catch (err) {
+      console.error(err);
+      btn.textContent = orig;
+      btn.disabled = false;
+      alert("결제 시작 실패: " + err.message);
+    }
+    return;
+  }
+
+  if (state === "paid") {
+    btn.disabled = true;
+    const orig = btn.textContent;
+    btn.textContent = "다운로드 준비 중…";
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("session expired");
+      const r = await fetch("/api/download", {
+        headers: { "Authorization": "Bearer " + session.access_token },
+      });
+      if (!r.ok) {
+        const errData = await r.json().catch(() => ({}));
+        throw new Error(errData.error || `download failed (${r.status})`);
+      }
+      const { url } = await r.json();
+      location.href = url;
+    } catch (err) {
+      console.error(err);
+      alert("다운로드 실패: " + err.message);
+    } finally {
+      btn.textContent = orig;
+      btn.disabled = false;
+    }
+    return;
+  }
+}
+
+ctaButtons.forEach(btn => btn.addEventListener("click", onCtaClick));
+
+// ── 결제 완료 직후(?paid=1) 배너 표시 ──
+if (new URLSearchParams(location.search).get("paid") === "1") {
+  banner.classList.add("show");
+  setTimeout(() => banner.classList.remove("show"), 4000);
+  // URL 정리
+  history.replaceState({}, "", location.pathname);
+}
+
+// ── 초기 상태 + 인증 변화 구독 ──
+refreshState();
+if (supabase) {
+  supabase.auth.onAuthStateChange(() => refreshState());
+}
+</script>
+
+</body>
+</html>

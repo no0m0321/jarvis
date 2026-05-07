@@ -1,0 +1,23 @@
+{
+  "name": "jarvis-site",
+  "version": "0.4.0",
+  "private": true,
+  "description": "자비스 판매 사이트 — Vercel functions + Supabase + Stripe",
+  "engines": {
+    "node": "20.x"
+  },
+  "scripts": {
+    "build": "node build-env.js",
+    "build:env": "node build-env.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "stripe": "^17.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@vercel/node": "^3.2.0",
+    "typescript": "^5.5.0"
+  }
+}

@@ -29,22 +29,34 @@ def _is_hover_active() -> bool:
     except Exception:
         return False
 
-# 한국어 small/base 모델은 "자비스"를 다양하게 전사 — 변종 폭넓게 허용
+# 한국어 tiny/small/base 모델은 "자비스"를 다양하게 전사 — 변종 폭넓게 허용
+# 실측 오인: 사비스, 헤이지알베스, 자비쓰, 차비스, 쟈브스 등
 DEFAULT_WAKE_WORDS: Tuple[str, ...] = (
-    # Korean
-    "자비스",
-    "쟈비스",
-    "재비스",
-    "자뷔스",
-    "헤이 자비스",
+    # Korean — "자비스" 정변종
+    "자비스", "쟈비스", "재비스", "자뷔스", "쟈브스", "자브스",
+    "자비쓰", "쟈비쓰", "자뷔쓰",
+    # Korean — tiny 모델 오인 변종
+    "사비스", "사비쓰", "차비스", "차비쓰", "짜비스", "짜비쓰",
+    # 헤이/하이 prefix 변종
+    "헤이 자비스", "헤이자비스", "헤이지알베스", "지알베스",
+    "하이 자비스", "하이자비스",
     # English
-    "jarvis",
-    "javis",
-    "jervis",
-    "hey jarvis",
-    "hi jarvis",
+    "jarvis", "javis", "jervis", "jarvys", "javys",
+    "hey jarvis", "hi jarvis",
 )
 # 'jarvis' substring 매칭이라 "Hey Jarvis"는 자동 인식됨
+
+
+def get_wake_words() -> Tuple[str, ...]:
+    """DEFAULT_WAKE_WORDS + JARVIS_WAKE_WORD 환경변수(쉼표 구분) 합쳐 반환.
+
+    예: JARVIS_WAKE_WORD="베이비,버디" → 기본 + 두 단어 추가.
+    """
+    extra = os.environ.get("JARVIS_WAKE_WORD", "").strip()
+    if not extra:
+        return DEFAULT_WAKE_WORDS
+    extras = tuple(w.strip() for w in extra.split(",") if w.strip())
+    return tuple(DEFAULT_WAKE_WORDS) + extras
 
 _WAKE_PROMPT = "자비스."  # 약한 hint — hallucinate 방지
 
@@ -103,7 +115,9 @@ def listen_for_wake(
             silence_duration=chunk_silence_duration,
             max_speech_duration=chunk_max_duration,
             silence_threshold=silence_threshold,
+            max_wait_for_speech=60.0,  # 길게 두되, should_continue로 hover OFF 즉시 close (mic LED 깜빡 방지)
             on_chunk_rms=on_chunk_rms,
+            should_continue=_is_hover_active if _HOVER_GATE else None,
         )
         if audio.size == 0:
             if _DEBUG:

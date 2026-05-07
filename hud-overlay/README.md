@@ -16,7 +16,7 @@ WKWebView (transparent, embedded HTML/JS)
 ## 빌드
 
 ```bash
-cd /Users/swxvno/jarvis/hud-overlay
+cd <jarvis>/hud-overlay
 ./build.sh                # JarvisHUD.app 빌드
 ./build.sh install        # + /Applications/ 설치
 ./build.sh launchd        # + LaunchAgent 등록 (자동 시작)
@@ -65,14 +65,14 @@ open ./JarvisHUD.app    # 빌드 디렉토리에서 바로 테스트
 
 또는 수동:
 ```bash
-cp com.swxvno.jarvis.hud.plist ~/Library/LaunchAgents/
-launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.swxvno.jarvis.hud.plist
+cp com.jarvis.hud.plist ~/Library/LaunchAgents/
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.jarvis.hud.plist
 ```
 
 해제:
 ```bash
-launchctl bootout gui/$(id -u) ~/Library/LaunchAgents/com.swxvno.jarvis.hud.plist
-rm ~/Library/LaunchAgents/com.swxvno.jarvis.hud.plist
+launchctl bootout gui/$(id -u) ~/Library/LaunchAgents/com.jarvis.hud.plist
+rm ~/Library/LaunchAgents/com.jarvis.hud.plist
 ```
 
 ## 설계 특징

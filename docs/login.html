@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>JARVIS — 로그인</title>
+<meta name="description" content="자비스 계정 로그인" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Orbitron:wght@500;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+<!--
+  환경변수 (Vercel + 로컬):
+    NEXT_PUBLIC_SUPABASE_URL
+    NEXT_PUBLIC_SUPABASE_ANON_KEY
+  배포 시 Vercel이 자동 주입되며, 정적 사이트는 `<script id="config">`에서 직접 입력 (fallback).
+-->
+
+<style>
+:root {
+  --cyan: #4cc9ff;
+  --cyan-bright: #7de0ff;
+  --cyan-dim: #5fb4d4;
+  --cyan-glow: rgba(76, 201, 255, 0.55);
+  --cyan-soft: rgba(76, 201, 255, 0.10);
+  --cyan-faint: rgba(76, 201, 255, 0.04);
+  --bg-0: #02060d;
+  --bg-1: #050b16;
+  --bg-2: #0a1320;
+  --line: rgba(76, 201, 255, 0.14);
+  --line-strong: rgba(76, 201, 255, 0.32);
+  --text: #d6effa;
+  --text-dim: #7896a4;
+  --error: #ff6b8e;
+  --success: #4ade80;
+  --warn: #ffd166;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body {
+  background: var(--bg-0);
+  color: var(--text);
+  font-family: 'Outfit', 'Pretendard', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+body {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0, 132, 199, 0.18), transparent 60%),
+    radial-gradient(ellipse 50% 50% at 85% 80%, rgba(76, 201, 255, 0.06), transparent 70%),
+    var(--bg-0);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+}
+
+.brand {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.32em;
+  color: var(--cyan);
+  margin-bottom: 28px;
+  opacity: 0.85;
+}
+
+.card {
+  width: 100%;
+  max-width: 420px;
+  background: linear-gradient(180deg, rgba(10, 19, 32, 0.92), rgba(5, 11, 22, 0.92));
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  padding: 40px 36px;
+  box-shadow:
+    0 24px 60px rgba(0, 132, 199, 0.08),
+    0 0 0 1px rgba(76, 201, 255, 0.02) inset;
+  backdrop-filter: blur(8px);
+}
+
+h1 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, var(--text) 0%, var(--cyan-bright) 80%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 6px;
+}
+.sub {
+  color: var(--text-dim);
+  font-size: 14px;
+  margin-bottom: 28px;
+}
+
+.field { margin-bottom: 14px; }
+label {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+input[type="email"], input[type="password"] {
+  width: 100%;
+  padding: 12px 14px;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+input:focus {
+  border-color: var(--cyan-dim);
+  box-shadow: 0 0 0 3px var(--cyan-soft);
+}
+
+.btn {
+  width: 100%;
+  padding: 13px 16px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+  margin-top: 8px;
+  letter-spacing: 0.02em;
+}
+.btn-primary {
+  background: linear-gradient(180deg, var(--cyan-bright) 0%, var(--cyan) 100%);
+  color: #001829;
+  border-color: var(--cyan);
+}
+.btn-primary:hover {
+  box-shadow: 0 0 28px var(--cyan-glow);
+  transform: translateY(-1px);
+}
+.btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+.btn-ghost {
+  background: transparent;
+  color: var(--cyan);
+  border-color: var(--line);
+}
+.btn-ghost:hover { background: var(--cyan-faint); border-color: var(--line-strong); }
+.btn-google {
+  background: var(--bg-1);
+  color: var(--text);
+  border-color: var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.btn-google:hover { border-color: var(--line-strong); background: var(--bg-2); }
+.btn-google::before {
+  content: "G";
+  color: var(--cyan-bright);
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 800;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0;
+  color: var(--text-dim);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.divider::before, .divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+.toggle {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+.toggle a {
+  color: var(--cyan);
+  text-decoration: none;
+  cursor: pointer;
+  font-weight: 500;
+}
+.toggle a:hover { text-decoration: underline; }
+
+.message {
+  margin-top: 14px;
+  padding: 11px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  border: 1px solid transparent;
+  display: none;
+}
+.message.error {
+  display: block;
+  background: rgba(255, 107, 142, 0.08);
+  border-color: rgba(255, 107, 142, 0.32);
+  color: var(--error);
+}
+.message.success {
+  display: block;
+  background: rgba(74, 222, 128, 0.06);
+  border-color: rgba(74, 222, 128, 0.32);
+  color: var(--success);
+}
+.message.info {
+  display: block;
+  background: var(--cyan-soft);
+  border-color: var(--line);
+  color: var(--cyan-bright);
+}
+
+.session-card { text-align: center; }
+.session-card .avatar {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 18px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--cyan-bright) 0%, var(--cyan) 60%, #0084c7 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  font-weight: 700;
+  color: #001829;
+  box-shadow: 0 0 32px var(--cyan-glow);
+}
+.session-card .email {
+  font-size: 16px;
+  margin-bottom: 4px;
+  word-break: break-all;
+}
+.session-card .role {
+  color: var(--text-dim);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  margin-bottom: 26px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+footer {
+  margin-top: 28px;
+  color: var(--text-dim);
+  font-size: 12px;
+  text-align: center;
+}
+footer a { color: var(--cyan); text-decoration: none; }
+footer a:hover { text-decoration: underline; }
+
+.config-warning {
+  max-width: 420px;
+  width: 100%;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: rgba(255, 209, 102, 0.08);
+  border: 1px solid rgba(255, 209, 102, 0.32);
+  border-radius: 10px;
+  color: var(--warn);
+  font-size: 13px;
+  line-height: 1.5;
+  display: none;
+}
+.config-warning.visible { display: block; }
+.config-warning code {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+}
+</style>
+</head>
+<body>
+
+<div class="brand">◈ J · A · R · V · I · S</div>
+
+<div id="configWarning" class="config-warning">
+  <strong>⚠ 설정 필요:</strong> Supabase 환경변수 누락. Vercel 환경변수에
+  <code>NEXT_PUBLIC_SUPABASE_URL</code>, <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code> 입력 필요.
+</div>
+
+<!-- ── 로그인 카드 ────────────────────────── -->
+<div id="authCard" class="card" style="display:none;">
+  <h1 id="title">로그인</h1>
+  <p class="sub" id="subtitle">자비스 계정으로 들어오세요.</p>
+
+  <button id="googleBtn" class="btn btn-google">Google 계정으로 계속</button>
+
+  <div class="divider">또는 이메일</div>
+
+  <form id="authForm">
+    <div class="field">
+      <label for="email">이메일</label>
+      <input type="email" id="email" placeholder="you@example.com" required autocomplete="email" />
+    </div>
+    <div class="field">
+      <label for="password">비밀번호 (8자 이상)</label>
+      <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password" minlength="8" />
+    </div>
+    <button type="submit" id="submitBtn" class="btn btn-primary">로그인</button>
+  </form>
+
+  <button id="magicBtn" class="btn btn-ghost">매직 링크로 받기 (비밀번호 없이)</button>
+
+  <div id="message" class="message"></div>
+
+  <div class="toggle">
+    <span id="toggleText">계정이 없으신가요?</span>
+    <a id="toggleLink">회원가입</a>
+  </div>
+</div>
+
+<!-- ── 로그인된 상태 카드 ─────────────────── -->
+<div id="sessionCard" class="card session-card" style="display:none;">
+  <div class="avatar" id="avatar">?</div>
+  <div class="email" id="userEmail">—</div>
+  <div class="role" id="userRole">SIGNED IN</div>
+  <button id="continueBtn" class="btn btn-primary">자비스로 돌아가기</button>
+  <button id="signOutBtn" class="btn btn-ghost">로그아웃</button>
+  <div id="sessionMessage" class="message"></div>
+</div>
+
+<footer>
+  <p>← <a href="/">자비스 메인으로</a></p>
+</footer>
+
+<!-- ── Config (Vercel 환경변수 또는 로컬 fallback) ── -->
+<script id="config">
+  // Vercel은 NEXT_PUBLIC_* 을 빌드 타임에 정적 site에 주입하지 않음.
+  // 따라서 client에서는 직접 endpoint 사용.
+  // 로컬 테스트 시 여기에 임시 입력 가능.
+  window.SUPABASE_URL      = window.SUPABASE_URL      || "";
+  window.SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || "";
+</script>
+
+<!-- ── env.js: Vercel build 시 주입 (없으면 무시) ── -->
+<script src="/env.js" onerror="void 0"></script>
+
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const URL = window.SUPABASE_URL;
+const KEY = window.SUPABASE_ANON_KEY;
+
+const $ = (id) => document.getElementById(id);
+
+if (!URL || !KEY) {
+  $("configWarning").classList.add("visible");
+}
+
+$("authCard").style.display = "block";
+
+const supabase = (URL && KEY) ? createClient(URL, KEY) : null;
+
+// ── ?next= 쿼리 보존 (로그인 후 복귀 경로) ──
+const params = new URLSearchParams(window.location.search);
+const NEXT = params.get("next") || "/";
+
+let mode = "signin";
+function setMode(next) {
+  mode = next;
+  if (mode === "signin") {
+    $("title").textContent = "로그인";
+    $("subtitle").textContent = "자비스 계정으로 들어오세요.";
+    $("submitBtn").textContent = "로그인";
+    $("toggleText").textContent = "계정이 없으신가요?";
+    $("toggleLink").textContent = "회원가입";
+    $("password").autocomplete = "current-password";
+  } else {
+    $("title").textContent = "회원가입";
+    $("subtitle").textContent = "이메일과 비밀번호로 새 계정을 만듭니다.";
+    $("submitBtn").textContent = "가입하기";
+    $("toggleText").textContent = "이미 계정이 있으신가요?";
+    $("toggleLink").textContent = "로그인";
+    $("password").autocomplete = "new-password";
+  }
+  showMessage("", null);
+}
+$("toggleLink").addEventListener("click", (e) => {
+  e.preventDefault();
+  setMode(mode === "signin" ? "signup" : "signin");
+});
+
+function showMessage(text, kind, target = "message") {
+  const el = $(target);
+  el.textContent = text;
+  el.className = "message" + (kind ? " " + kind : "");
+}
+
+function showSession(user) {
+  $("authCard").style.display = "none";
+  $("sessionCard").style.display = "block";
+  $("userEmail").textContent = user.email || "(no email)";
+  $("avatar").textContent = (user.email || "?")[0].toUpperCase();
+  $("userRole").textContent = user.app_metadata?.provider
+    ? "SIGNED IN · " + user.app_metadata.provider.toUpperCase()
+    : "SIGNED IN";
+}
+function showAuth() {
+  $("authCard").style.display = "block";
+  $("sessionCard").style.display = "none";
+}
+
+// ── Form submit ──
+$("authForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if (!supabase) return showMessage("Supabase 설정이 비어있습니다.", "error");
+  const email = $("email").value.trim();
+  const password = $("password").value;
+  $("submitBtn").disabled = true;
+  showMessage("처리 중…", "info");
+
+  try {
+    let res;
+    if (mode === "signin") {
+      res = await supabase.auth.signInWithPassword({ email, password });
+    } else {
+      res = await supabase.auth.signUp({
+        email, password,
+        options: { emailRedirectTo: window.location.origin + NEXT },
+      });
+    }
+    if (res.error) {
+      showMessage(res.error.message, "error");
+    } else if (mode === "signup" && !res.data.session) {
+      showMessage("이메일 확인 링크를 보냈습니다. 메일함을 확인하세요.", "success");
+    } else if (res.data.user) {
+      showMessage("로그인 성공.", "success");
+      setTimeout(() => { window.location.href = NEXT; }, 500);
+    }
+  } catch (err) {
+    showMessage("네트워크 오류: " + err.message, "error");
+  } finally {
+    $("submitBtn").disabled = false;
+  }
+});
+
+// ── Magic link ──
+$("magicBtn").addEventListener("click", async () => {
+  if (!supabase) return showMessage("Supabase 설정이 비어있습니다.", "error");
+  const email = $("email").value.trim();
+  if (!email) {
+    showMessage("이메일을 먼저 입력하세요.", "error");
+    $("email").focus();
+    return;
+  }
+  showMessage("매직 링크 발송 중…", "info");
+  const { error } = await supabase.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: window.location.origin + NEXT },
+  });
+  if (error) showMessage(error.message, "error");
+  else showMessage(email + " 으로 매직 링크를 보냈습니다.", "success");
+});
+
+// ── Google OAuth ──
+$("googleBtn").addEventListener("click", async () => {
+  if (!supabase) return showMessage("Supabase 설정이 비어있습니다.", "error");
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: window.location.origin + NEXT },
+  });
+  if (error) showMessage(error.message, "error");
+});
+
+// ── Session card actions ──
+$("continueBtn")?.addEventListener("click", () => {
+  window.location.href = NEXT;
+});
+$("signOutBtn")?.addEventListener("click", async () => {
+  if (!supabase) return;
+  await supabase.auth.signOut();
+  showAuth();
+  showMessage("로그아웃됨.", "info");
+});
+
+// ── 초기 세션 + 변화 구독 ──
+if (supabase) {
+  supabase.auth.getSession().then(({ data }) => {
+    if (data.session?.user) showSession(data.session.user);
+  });
+  supabase.auth.onAuthStateChange((_event, session) => {
+    if (session?.user) showSession(session.user);
+    else showAuth();
+  });
+}
+</script>
+
+</body>
+</html>

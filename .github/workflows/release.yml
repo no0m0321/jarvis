@@ -1,0 +1,48 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    name: Build artifacts + GitHub Release
+    runs-on: macos-14
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install build tools
+        run: pip install --upgrade pip build
+
+      - name: System deps
+        run: brew install portaudio
+
+      - name: Build wheel + sdist
+        run: python -m build
+
+      - name: Build JarvisHUD
+        working-directory: hud-overlay
+        run: swift build -c release
+
+      - name: Stage HUD binary
+        run: |
+          mkdir -p release-staging
+          cp hud-overlay/.build/release/JarvisHUD release-staging/JarvisHUD-${{ github.ref_name }}-arm64
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            dist/*.whl
+            dist/*.tar.gz
+            release-staging/JarvisHUD-*

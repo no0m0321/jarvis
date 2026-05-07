@@ -1,22 +1,60 @@
+# ── Python ────────────────────────────────────────────────
 __pycache__/
 *.py[cod]
 *.egg-info/
 .venv/
 venv/
-.env
-.env.local
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
 dist/
 build/
 *.log
-.DS_Store
-.idea/
-.vscode/
+
+# ── Secrets / env (모든 변형 차단, .env.example만 허용) ──
+.env
+.env.*
+!.env.example
+*.bak
+*.swp
+*.tmp
+*~
+
+# ── 정적 사이트 비밀 주입 (gitignored, 로컬에만) ──
+docs/env.js
+landing/env.js
+docs/.vercel/
+.vercel/
+
+# ── Auth tokens / sessions ──
+auth.json
+.credentials
+.session
+tokens.json
+
+# ── Claude worktrees / agent meta (push 절대 금지) ──
+.claude/
+
+# ── Node / Vercel ──
+node_modules/
+docs/node_modules/
+.next/
+package-lock.json.bak
+
+# ── 데이터 ──
 data/
 
-# Swift / Xcode
+# ── IDE ──
+.idea/
+.vscode/
+
+# ── OS ──
+.DS_Store
+**/.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Swift / Xcode ──
 .build/
 *.xcodeproj/
 DerivedData/

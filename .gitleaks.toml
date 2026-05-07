@@ -1,0 +1,57 @@
+# gitleaks 설정 — secret leak 방지
+# 사용:
+#   brew install gitleaks
+#   gitleaks detect --config .gitleaks.toml --source . --verbose
+#
+# pre-commit hook 또는 CI에서 자동 실행됨.
+
+title = "Jarvis secret patterns"
+
+[extend]
+useDefault = true
+
+# 프로젝트별 추가 룰
+[[rules]]
+id = "anthropic-api-key"
+description = "Anthropic API key (sk-ant-...)"
+regex = '''sk-ant-[a-zA-Z0-9_-]{20,}'''
+tags = ["key", "anthropic"]
+
+[[rules]]
+id = "supabase-jwt"
+description = "Supabase JWT (anon or service_role)"
+regex = '''eyJhbGciOi[A-Za-z0-9_-]{20,}\.eyJ[A-Za-z0-9_-]{30,}\.[A-Za-z0-9_-]{20,}'''
+tags = ["key", "supabase"]
+
+[[rules]]
+id = "stripe-secret"
+description = "Stripe secret/restricted/webhook"
+regex = '''(sk_(test|live)_|rk_(test|live)_|whsec_)[a-zA-Z0-9]{20,}'''
+tags = ["key", "stripe"]
+
+[[rules]]
+id = "openai-api-key"
+description = "OpenAI API key"
+regex = '''sk-[a-zA-Z0-9]{20,}T3BlbkFJ[a-zA-Z0-9]{20,}'''
+tags = ["key", "openai"]
+
+[allowlist]
+description = "False positives 제외"
+paths = [
+    '''\.env\.example$''',
+    '''docs/TODO_DEPLOY\.md$''',  # 배포 가이드는 placeholder만
+    '''CHANGELOG\.md$''',
+    '''README\.md$''',
+    '''\.gitleaks\.toml$''',      # 자기 자신
+    '''\.github/workflows/secret-scan\.yml$''',
+]
+regexes = [
+    '''sk-ant-\.\.\.''',                    # placeholder "sk-ant-..."
+    '''YOUR-PROJECT''',
+    '''eyJhbGciOi\.{3,5}''',                # placeholder "eyJhbGciOi...."
+    '''sk_test_\.\.\.''',
+    '''abcd1234''',
+    '''xxx\.supabase''',
+    '''<your-project>''',
+    '''eyJ\.\.\.''',
+]

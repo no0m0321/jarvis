@@ -37,6 +37,11 @@ class Settings(BaseSettings):
     fast_model: str = "claude-haiku-4-5-20251001"
     max_tokens: int = 2048
     log_level: str = "INFO"
+    # 사용자 호칭 — 비면 "주인님" (기본). 예: "민지님", "Boss"
+    owner_name: str = ""
+    # 추가 wake word — 쉼표 구분. 예: "베이비,버디"
+    # 비어있으면 DEFAULT_WAKE_WORDS만 사용.
+    wake_word: str = ""
 
     def model_post_init(self, __context) -> None:
         import os

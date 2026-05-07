@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Test (Python ${{ matrix.python }} / ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-14, ubuntu-latest]
+        python: ["3.9", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+
+      - name: System deps (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y portaudio19-dev libsndfile1
+
+      - name: System deps (macOS)
+        if: runner.os == 'macOS'
+        run: brew install portaudio
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Lint (ruff)
+        run: ruff check src tests
+
+      - name: Type check (mypy, soft)
+        run: mypy src/jarvis --ignore-missing-imports || true
+
+      - name: Tests
+        env:
+          ANTHROPIC_API_KEY: dummy-for-import-only
+        run: pytest -q --maxfail=3
+
+  hud-build:
+    name: Build JarvisHUD (macOS)
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Swift build
+        working-directory: hud-overlay
+        run: swift build -c release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: JarvisHUD-binary
+          path: hud-overlay/.build/release/JarvisHUD
+          retention-days: 7
