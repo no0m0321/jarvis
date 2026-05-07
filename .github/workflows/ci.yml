@@ -56,7 +56,7 @@ jobs:
       - name: Swift build
         working-directory: hud-overlay
         run: swift build -c release
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: JarvisHUD-binary
           path: hud-overlay/.build/release/JarvisHUD
