@@ -16,7 +16,7 @@ jobs:
         os: [macos-14, ubuntu-latest]
         python: ["3.9", "3.11", "3.12"]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up Python ${{ matrix.python }}
         uses: actions/setup-python@v5
@@ -52,7 +52,7 @@ jobs:
     name: Build JarvisHUD (macOS)
     runs-on: macos-14
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Swift build
         working-directory: hud-overlay
         run: swift build -c release
