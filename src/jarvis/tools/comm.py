@@ -9,9 +9,11 @@ import urllib.request
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
+from jarvis.platform import mac_only
 from jarvis.tools.registry import REGISTRY, Tool
 
 
+@mac_only
 def _imessage_send(recipient: str, message: str) -> str:
     """iMessage/SMS 전송 — Messages.app via osascript.
 

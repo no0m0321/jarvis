@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import subprocess
 
+from jarvis.platform import mac_only
 from jarvis.tools.registry import REGISTRY, Tool
 
 
@@ -23,6 +24,7 @@ def _esc(s: str) -> str:
     return s.replace("\\", "\\\\").replace('"', '\\"')
 
 
+@mac_only
 def _window_list() -> str:
     """모든 visible app의 window 제목 + 위치/크기."""
     s = '''
@@ -42,6 +44,7 @@ end tell
     return _osa(s, timeout=10) or "(none)"
 
 
+@mac_only
 def _window_focus(app_name: str) -> str:
     """앱 활성화 + 가장 앞 window를 frontmost로."""
     s = f'tell application "{_esc(app_name)}" to activate'
@@ -49,6 +52,7 @@ def _window_focus(app_name: str) -> str:
     return out if out.startswith("ERROR") else f"OK: focused {app_name}"
 
 
+@mac_only
 def _window_position(app_name: str, x: int, y: int, w: int = 0, h: int = 0) -> str:
     """앞 window 이동/크기조정. w=0이면 크기 유지."""
     if w > 0 and h > 0:
@@ -65,6 +69,7 @@ end tell
     return out if out.startswith("ERROR") else f"OK: moved {app_name} → ({x},{y}){' '+str(w)+'x'+str(h) if w else ''}"
 
 
+@mac_only
 def _window_minimize(app_name: str) -> str:
     s = f'''
 tell application "System Events" to tell process "{_esc(app_name)}"
@@ -75,6 +80,7 @@ end tell
     return out if out.startswith("ERROR") else f"OK: minimized {app_name}"
 
 
+@mac_only
 def _mission_control() -> str:
     try:
         subprocess.run(
@@ -86,6 +92,7 @@ def _mission_control() -> str:
         return f"ERROR: {e}"
 
 
+@mac_only
 def _show_desktop() -> str:
     """F11 / showDesktop"""
     s = '''
@@ -96,6 +103,7 @@ end tell
     return _osa(s) or "OK"
 
 
+@mac_only
 def _hide_app(app_name: str) -> str:
     s = f'tell application "System Events" to set visible of process "{_esc(app_name)}" to false'
     out = _osa(s)

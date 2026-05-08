@@ -186,22 +186,25 @@ def _base64_url_decode(text: str) -> str:
 
 REGISTRY.register(Tool(
     name="qr_generate",
-    description="QR 코드 PNG 생성. output 미지정 시 ~/Desktop/qr_*.png.",
+    description="[DEPRECATED v0.7.0] QR 코드 PNG 생성. 'qrcode' 도구 사용 권장 (동일 기능). 호환성 alias.",
     input_schema={
         "type": "object",
-        "properties": {"text": {"type": "string"}, "output": {"type": "string", "default": ""}},
+        "properties": {
+            "text": {"type": "string", "description": "QR로 인코딩할 텍스트/URL"},
+            "output": {"type": "string", "description": "PNG 파일 경로 (옵션, 비우면 ~/Desktop/qr_*.png)", "default": ""},
+        },
         "required": ["text"],
     },
     handler=_qr_generate,
 ))
 REGISTRY.register(Tool(
     name="password_generate",
-    description="안전한 random password. length 8-128.",
+    description="[DEPRECATED v0.7.0] 안전한 random password. 'password_gen' 도구 사용 권장 (동일 기능). 호환성 alias. length 8-128.",
     input_schema={
         "type": "object",
         "properties": {
-            "length": {"type": "integer", "default": 16},
-            "symbols": {"type": "boolean", "default": True},
+            "length": {"type": "integer", "description": "비밀번호 길이 (8-128)", "default": 16},
+            "symbols": {"type": "boolean", "description": "특수기호 포함 여부", "default": True},
         },
     },
     handler=_password_generate,
@@ -299,8 +302,12 @@ REGISTRY.register(Tool(
 ))
 REGISTRY.register(Tool(
     name="slug",
-    description="URL slug 생성 (영문 소문자 + 하이픈, 한글 보존).",
-    input_schema={"type": "object", "properties": {"text": {"type": "string"}}, "required": ["text"]},
+    description="[DEPRECATED v0.7.0] URL slug 생성. 'slugify' 도구 사용 권장. 호환성 alias.",
+    input_schema={
+        "type": "object",
+        "properties": {"text": {"type": "string", "description": "slug로 변환할 텍스트"}},
+        "required": ["text"],
+    },
     handler=_slug,
 ))
 REGISTRY.register(Tool(

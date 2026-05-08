@@ -1,0 +1,766 @@
+"""Cross-platform 시스템 도구 + Windows 전용 도구.
+
+신규 4개 도구:
+- system_open_path        cross-platform: 파일/폴더 열기 (macOS=open, Windows=startfile, Linux=xdg-open)
+- system_show_in_folder   cross-platform: 파일 위치 reveal (macOS=open -R, Windows=explorer /select, Linux=xdg-open parent)
+- windows_run_powershell  Windows 전용: PowerShell 명령 실행 (apple_script의 Windows 등가물)
+- windows_outlook_compose Windows 전용: Outlook COM으로 메일 초안 (mail_compose의 Windows 등가물)
+
+graceful 분기:
+- Windows-only 핸들러는 @windows_only로 macOS/Linux에서 한국어 ERROR 반환
+- cross-platform 핸들러는 OS별 로직을 직접 분기
+"""
+from __future__ import annotations
+
+import os
+import shlex
+import subprocess
+import webbrowser
+from pathlib import Path
+
+from jarvis.platform import IS_LINUX, IS_MACOS, IS_WINDOWS, windows_only
+from jarvis.tools.registry import REGISTRY, Tool
+
+
+# ──────────────── system_open_path (cross-platform) ────────────────
+def _system_open_path(path: str) -> str:
+    """로컬 파일/폴더를 OS 기본 앱(또는 파일 탐색기)으로 열기.
+
+    URL은 받지 않음 — URL 열기는 기존 `open_url` 도구 사용.
+    """
+    p = Path(path).expanduser()
+    if not p.exists():
+        return f"ERROR: not found: {p}"
+    target = str(p)
+    try:
+        if IS_MACOS:
+            subprocess.run(["open", target], timeout=5, check=True)
+            return f"OK: opened {target}"
+        if IS_WINDOWS:
+            os.startfile(target)  # type: ignore[attr-defined]
+            return f"OK: opened {target}"
+        # Linux
+        if IS_LINUX:
+            subprocess.run(["xdg-open", target], timeout=5, check=True)
+            return f"OK: opened {target}"
+        # 마지막 fallback
+        webbrowser.open(target)
+        return f"OK: opened {target} (webbrowser fallback)"
+    except subprocess.CalledProcessError as e:
+        return f"ERROR: {e}"
+    except Exception as e:
+        return f"ERROR: {type(e).__name__}: {e}"
+
+
+REGISTRY.register(Tool(
+    name="system_open_path",
+    description=(
+        "로컬 파일/폴더를 OS 기본 앱으로 열기 (cross-platform). "
+        "macOS: open, Windows: startfile, Linux: xdg-open. URL은 open_url 사용."
+    ),
+    input_schema={
+        "type": "object",
+        "properties": {
+            "path": {"type": "string", "description": "파일 또는 디렉토리 절대/상대 경로 (예: ~/Downloads)"},
+        },
+        "required": ["path"],
+    },
+    handler=_system_open_path,
+))
+
+
+# ──────────────── system_show_in_folder (cross-platform) ────────────────
+def _system_show_in_folder(path: str) -> str:
+    """파일을 파일 탐색기에서 select 상태로 표시 (포함된 폴더 열고 해당 파일 강조).
+
+    macOS: open -R (Finder reveal)
+    Windows: explorer /select,<path>
+    Linux: 부모 폴더만 xdg-open (대부분 file manager는 select 옵션 미지원)
+    """
+    p = Path(path).expanduser()
+    if not p.exists():
+        return f"ERROR: not found: {p}"
+    target = str(p)
+    try:
+        if IS_MACOS:
+            subprocess.run(["open", "-R", target], timeout=5, check=True)
+            return f"OK: revealed {target} in Finder"
+        if IS_WINDOWS:
+            # explorer /select 는 일반적으로 returncode 1이지만 정상 동작 → check=False
+            subprocess.run(["explorer", f"/select,{target}"], timeout=5, check=False)
+            return f"OK: revealed {target} in Explorer"
+        if IS_LINUX:
+            parent = str(p.parent if p.is_file() else p)
+            subprocess.run(["xdg-open", parent], timeout=5, check=True)
+            return f"OK: opened parent folder {parent} (Linux file manager는 select 미지원)"
+        return "ERROR: unsupported OS"
+    except subprocess.CalledProcessError as e:
+        return f"ERROR: {e}"
+    except Exception as e:
+        return f"ERROR: {type(e).__name__}: {e}"
+
+
+REGISTRY.register(Tool(
+    name="system_show_in_folder",
+    description=(
+        "파일을 파일 탐색기에서 select/reveal (cross-platform). "
+        "macOS: Finder reveal (open -R), Windows: Explorer /select, Linux: 부모 폴더 열기."
+    ),
+    input_schema={
+        "type": "object",
+        "properties": {
+            "path": {"type": "string", "description": "파일 절대/상대 경로"},
+        },
+        "required": ["path"],
+    },
+    handler=_system_show_in_folder,
+))
+
+
+# ──────────────── windows_run_powershell (Windows 전용) ────────────────
+@windows_only
+def _windows_run_powershell(script: str, timeout: int = 30) -> str:
+    """임의 PowerShell 명령 실행 (apple_script의 Windows 등가물).
+
+    NoProfile + ExecutionPolicy Bypass 로 빠르게 실행. stdout 반환.
+    """
+    if not script.strip():
+        return "ERROR: empty script"
+    try:
+        result = subprocess.run(
+            ["powershell", "-NoProfile", "-NonInteractive",
+             "-ExecutionPolicy", "Bypass", "-Command", script],
+            capture_output=True, text=True, timeout=timeout,
+        )
+        if result.returncode != 0:
+            return f"ERROR: {(result.stderr or result.stdout).strip()[:500]}"
+        return result.stdout.strip() or "(empty)"
+    except subprocess.TimeoutExpired:
+        return f"TIMEOUT (>{timeout}s)"
+    except Exception as e:
+        return f"ERROR: {type(e).__name__}: {e}"
+
+
+REGISTRY.register(Tool(
+    name="windows_run_powershell",
+    description=(
+        "임의 PowerShell 명령 실행 (Windows 전용 — apple_script의 Windows 등가물). "
+        "NoProfile + ExecutionPolicy Bypass로 실행. stdout 반환."
+    ),
+    input_schema={
+        "type": "object",
+        "properties": {
+            "script": {"type": "string", "description": "PowerShell 스크립트 내용"},
+            "timeout": {"type": "integer", "description": "초, 기본 30"},
+        },
+        "required": ["script"],
+    },
+    handler=_windows_run_powershell,
+))
+
+
+# ──────────────── windows_outlook_compose (Windows 전용) ────────────────
+@windows_only
+def _windows_outlook_compose(to: str, subject: str = "", body: str = "") -> str:
+    """Outlook 새 메일 초안 창을 띄움 (mail_compose의 Windows 등가물).
+
+    pywin32 + Outlook COM 사용. 발송은 사용자가 직접 (안전).
+    """
+    try:
+        import win32com.client  # type: ignore
+    except ImportError:
+        return "ERROR: pywin32 미설치 — `pip install pywin32`"
+    try:
+        outlook = win32com.client.Dispatch("Outlook.Application")
+        mail = outlook.CreateItem(0)  # 0 = olMailItem
+        mail.To = to
+        mail.Subject = subject
+        mail.Body = body
+        mail.Display()
+        return f"OK: drafted to {to} in Outlook (창 열림, 발송은 직접 ⌘+Enter 또는 Send 버튼)"
+    except Exception as e:
+        # COM 호출 실패 fallback: mailto 스킴 (제한된 본문 길이)
+        try:
+            from urllib.parse import quote
+            url = f"mailto:{to}?subject={quote(subject)}&body={quote(body)}"
+            os.startfile(url)  # type: ignore[attr-defined]
+            return f"OK: opened mailto fallback (Outlook COM 실패: {e})"
+        except Exception as e2:
+            return f"ERROR: Outlook COM 실패: {e}, mailto fallback 실패: {e2}"
+
+
+REGISTRY.register(Tool(
+    name="windows_outlook_compose",
+    description=(
+        "Outlook 새 메일 초안 창 (Windows 전용 — mail_compose의 Windows 등가물). "
+        "발송은 사용자 직접. pywin32 필요. 실패 시 mailto fallback."
+    ),
+    input_schema={
+        "type": "object",
+        "properties": {
+            "to": {"type": "string", "description": "받는 사람 이메일"},
+            "subject": {"type": "string"},
+            "body": {"type": "string"},
+        },
+        "required": ["to"],
+    },
+    handler=_windows_outlook_compose,
+))
+
+
+# ──────────────── system_screenshot_to_file (cross-platform via mss) ────────────────
+def _system_screenshot_to_file(path: str = "", display: int = 0) -> str:
+    """전체 화면을 PNG 파일로 캡처. mss 라이브러리 사용 (mac/win/linux 모두).
+
+    path 미지정 시 ~/.jarvis/screenshots/jarvis-YYYYMMDD-HHMMSS.png 자동 생성.
+    display=0은 모든 모니터, 1+는 특정 모니터.
+    """
+    try:
+        import mss  # type: ignore
+        import mss.tools  # type: ignore
+    except ImportError:
+        return "ERROR: mss 미설치"
+
+    if not path:
+        from datetime import datetime
+        ts = datetime.now().strftime("%Y%m%d-%H%M%S")
+        out_dir = Path.home() / ".jarvis" / "screenshots"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        target_path = out_dir / f"jarvis-{ts}.png"
+    else:
+        target_path = Path(path).expanduser()
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+
+    try:
+        with mss.mss() as sct:
+            mons = sct.monitors  # [0]은 가상 전체, [1]+는 개별 모니터
+            if display < 0 or display >= len(mons):
+                return f"ERROR: display={display} 범위 밖 ({len(mons)-1} 개 모니터)"
+            sshot = sct.grab(mons[display])
+            mss.tools.to_png(sshot.rgb, sshot.size, output=str(target_path))
+        return f"OK: {target_path} ({sshot.size[0]}x{sshot.size[1]})"
+    except Exception as e:
+        return f"ERROR: {type(e).__name__}: {e}"
+
+
+REGISTRY.register(Tool(
+    name="system_screenshot_to_file",
+    description=(
+        "화면을 PNG 파일로 저장 (cross-platform via mss). "
+        "path 미지정 시 ~/.jarvis/screenshots/timestamp.png. display=0은 전체, 1+는 특정 모니터."
+    ),
+    input_schema={
+        "type": "object",
+        "properties": {
+            "path": {"type": "string", "description": "저장 경로 (옵션)"},
+            "display": {"type": "integer", "description": "0=전체, 1+=특정 모니터"},
+        },
+        "required": [],
+    },
+    handler=_system_screenshot_to_file,
+))
+
+
+# ──────────────── system_record_audio (cross-platform via sounddevice) ────────────────
+def _system_record_audio(seconds: int = 5, path: str = "", samplerate: int = 16000) -> str:
+    """마이크로 N초 녹음 → WAV 파일. sounddevice + soundfile 또는 wave 모듈."""
+    if seconds < 1 or seconds > 600:
+        return "ERROR: seconds는 1~600 범위"
+    try:
+        import wave
+
+        import numpy as np  # type: ignore
+        import sounddevice as sd  # type: ignore
+    except ImportError as e:
+        return f"ERROR: {e}"
+
+    if not path:
+        from datetime import datetime
+        ts = datetime.now().strftime("%Y%m%d-%H%M%S")
+        out_dir = Path.home() / ".jarvis" / "recordings"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        target_path = out_dir / f"jarvis-{ts}.wav"
+    else:
+        target_path = Path(path).expanduser()
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+
+    try:
+        recording = sd.rec(int(seconds * samplerate), samplerate=samplerate, channels=1, dtype="int16")
+        sd.wait()
+        with wave.open(str(target_path), "wb") as wf:
+            wf.setnchannels(1)
+            wf.setsampwidth(2)  # int16 = 2 bytes
+            wf.setframerate(samplerate)
+            wf.writeframes(recording.tobytes())
+        return f"OK: {target_path} ({seconds}s @ {samplerate}Hz)"
+    except Exception as e:
+        return f"ERROR: {type(e).__name__}: {e}"
+
+
+REGISTRY.register(Tool(
+    name="system_record_audio",
+    description=(
+        "마이크로 N초 녹음 → WAV 파일 (cross-platform via sounddevice). "
+        "path 미지정 시 ~/.jarvis/recordings/timestamp.wav."
+    ),
+    input_schema={
+        "type": "object",
+        "properties": {
+            "seconds": {"type": "integer", "description": "녹음 시간 (1~600), 기본 5"},
+            "path": {"type": "string", "description": "저장 경로 (옵션)"},
+            "samplerate": {"type": "integer", "description": "샘플레이트, 기본 16000"},
+        },
+        "required": [],
+    },
+    handler=_system_record_audio,
+))
+
+
+# ──────────────── system_env_summary (cross-platform diagnostic) ────────────────
+def _system_env_summary() -> str:
+    """OS / Python / 메모리 / 디스크 / 자비스 환경 종합 진단 (한 번 호출로)."""
+    import platform as _plat
+    import sys as _sys
+
+    out: list[str] = []
+    out.append(f"OS:        {_plat.platform()}")
+    out.append(f"Python:    {_sys.version.split()[0]} ({_plat.python_implementation()})")
+    out.append(f"Arch:      {_plat.machine()}")
+
+    # CPU/메모리 — psutil이 없으면 plat fallback
+    try:
+        import psutil  # type: ignore
+        vm = psutil.virtual_memory()
+        out.append(f"CPU:       {psutil.cpu_count(logical=True)} logical / {psutil.cpu_count(logical=False)} physical")
+        out.append(f"Memory:    {vm.used // 1024**2}MB used / {vm.total // 1024**2}MB total ({vm.percent}%)")
+        d = psutil.disk_usage("/")
+        out.append(f"Disk(/):   {d.used // 1024**3}GB used / {d.total // 1024**3}GB total ({d.percent}%)")
+    except ImportError:
+        out.append("CPU/Memory/Disk: psutil 미설치 (pip install psutil 권장)")
+
+    # Jarvis 환경
+    out.append("")
+    out.append(f"PLATFORM:  IS_MACOS={IS_MACOS}, IS_WINDOWS={IS_WINDOWS}, IS_LINUX={IS_LINUX}")
+    jarvis_dir = Path.home() / ".jarvis"
+    if jarvis_dir.exists():
+        files = list(jarvis_dir.glob("*"))
+        out.append(f"~/.jarvis: {len(files)} files/dirs")
+        for f in files[:8]:
+            sz = f.stat().st_size if f.is_file() else "-"
+            out.append(f"  {f.name:<25} {sz}B")
+    else:
+        out.append("~/.jarvis: 미생성 (jarvis init 권장)")
+
+    # API key / model 환경변수 (값은 마스킹)
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    out.append("")
+    out.append(f"ANTHROPIC_API_KEY: {'set (' + api_key[:8] + '...)' if api_key else 'MISSING'}")
+    out.append(f"JARVIS_VOICE:      {os.environ.get('JARVIS_VOICE', '(default)')}")
+    out.append(f"JARVIS_PERSONA:    {os.environ.get('JARVIS_PERSONA', '(default)')}")
+    return "\n".join(out)
+
+
+REGISTRY.register(Tool(
+    name="system_env_summary",
+    description=(
+        "환경 진단 종합 (cross-platform): OS / Python / CPU / Memory / Disk / ~/.jarvis / API key 상태. "
+        "jarvis doctor의 도구 버전."
+    ),
+    input_schema={"type": "object", "properties": {}, "required": []},
+    handler=_system_env_summary,
+))
+
+
+# ──────────────── system_default_browser_url ────────────────
+def _system_default_browser_url(url: str) -> str:
+    """기본 브라우저로 URL 열기 (cross-platform). open_url과 동일하지만
+    파일 경로가 아닌 URL 전용 — file://, http(s)://, mailto:, magnet: 등 모두."""
+    if not url.strip():
+        return "ERROR: empty url"
+    try:
+        webbrowser.open(url)
+        return f"OK: opened {url[:80]}"
+    except Exception as e:
+        return f"ERROR: {type(e).__name__}: {e}"
+
+
+REGISTRY.register(Tool(
+    name="system_default_browser_url",
+    description="기본 브라우저로 URL 열기 (cross-platform via webbrowser). http/https/mailto/file 모두.",
+    input_schema={
+        "type": "object",
+        "properties": {"url": {"type": "string"}},
+        "required": ["url"],
+    },
+    handler=_system_default_browser_url,
+))
+
+
+# ──────────────── system_open_terminal_at ────────────────
+def _system_open_terminal_at(path: str) -> str:
+    """지정 폴더에서 새 터미널/콘솔 창 열기 (cross-platform).
+
+    macOS: Terminal.app / iTerm
+    Windows: cmd.exe (또는 wt.exe Windows Terminal)
+    Linux: gnome-terminal / xterm
+    """
+    p = Path(path).expanduser()
+    if not p.exists():
+        return f"ERROR: not found: {p}"
+    if not p.is_dir():
+        p = p.parent
+    target = str(p)
+    try:
+        if IS_MACOS:
+            # Terminal.app은 osascript로 열기 (mac_only가 아닌 cross-platform 선언이라 직접 분기)
+            subprocess.run(
+                ["osascript", "-e", f'tell application "Terminal" to do script "cd {target}" activate'],
+                capture_output=True, timeout=5,
+            )
+            return f"OK: opened Terminal.app at {target}"
+        if IS_WINDOWS:
+            # Windows Terminal 우선, 없으면 cmd.exe
+            try:
+                subprocess.Popen(["wt.exe", "-d", target])
+                return f"OK: opened Windows Terminal at {target}"
+            except FileNotFoundError:
+                subprocess.Popen(["cmd.exe", "/K", f"cd /d {target}"])
+                return f"OK: opened cmd.exe at {target}"
+        if IS_LINUX:
+            # gnome-terminal 우선, 없으면 xterm
+            try:
+                subprocess.Popen(["gnome-terminal", "--working-directory", target])
+                return f"OK: opened gnome-terminal at {target}"
+            except FileNotFoundError:
+                subprocess.Popen(["xterm", "-e", f"cd {target}; bash"])
+                return f"OK: opened xterm at {target}"
+        return "ERROR: unsupported OS"
+    except Exception as e:
+        return f"ERROR: {type(e).__name__}: {e}"
+
+
+REGISTRY.register(Tool(
+    name="system_open_terminal_at",
+    description=(
+        "지정 폴더에서 새 터미널/콘솔 창 열기 (cross-platform). "
+        "macOS=Terminal.app, Windows=wt.exe/cmd.exe, Linux=gnome-terminal/xterm."
+    ),
+    input_schema={
+        "type": "object",
+        "properties": {"path": {"type": "string", "description": "터미널을 열 디렉토리"}},
+        "required": ["path"],
+    },
+    handler=_system_open_terminal_at,
+))
+
+
+# ──────────────── system_uptime (cross-platform) ────────────────
+def _system_uptime() -> str:
+    """시스템 uptime + boot 시각 (cross-platform).
+
+    psutil 사용. 없으면 OS별 fallback (macOS=sysctl, Linux=/proc/uptime, Windows=PowerShell).
+    """
+    try:
+        from datetime import datetime
+
+        import psutil  # type: ignore
+        boot_ts = psutil.boot_time()
+        boot_dt = datetime.fromtimestamp(boot_ts)
+        uptime_sec = int(__import__("time").time() - boot_ts)
+        days = uptime_sec // 86400
+        hours = (uptime_sec % 86400) // 3600
+        mins = (uptime_sec % 3600) // 60
+        return f"uptime: {days}d {hours}h {mins}m (booted {boot_dt:%Y-%m-%d %H:%M:%S})"
+    except ImportError:
+        pass
+    # OS별 fallback
+    try:
+        if IS_MACOS:
+            r = subprocess.run(["sysctl", "-n", "kern.boottime"], capture_output=True, text=True, timeout=3)
+            return r.stdout.strip() or "uptime unknown"
+        if IS_LINUX:
+            with open("/proc/uptime") as f:
+                up = float(f.read().split()[0])
+            return f"uptime: {int(up // 86400)}d {int((up % 86400) // 3600)}h {int((up % 3600) // 60)}m"
+        if IS_WINDOWS:
+            r = subprocess.run(
+                ["powershell", "-NoProfile", "-Command",
+                 "(Get-CimInstance Win32_OperatingSystem).LastBootUpTime"],
+                capture_output=True, text=True, timeout=8,
+            )
+            return f"booted: {r.stdout.strip()}"
+        return "ERROR: unsupported OS"
+    except Exception as e:
+        return f"ERROR: {type(e).__name__}: {e}"
+
+
+REGISTRY.register(Tool(
+    name="system_uptime",
+    description="시스템 uptime + boot 시각 (cross-platform via psutil, OS별 fallback).",
+    input_schema={"type": "object", "properties": {}, "required": []},
+    handler=_system_uptime,
+))
+
+
+# ──────────────── system_locale (cross-platform) ────────────────
+def _system_locale() -> str:
+    """시스템 locale / timezone / keyboard layout 정보 (cross-platform)."""
+    import locale as _locale
+    from datetime import datetime, timezone
+
+    out: list[str] = []
+    try:
+        loc = _locale.getlocale()
+        out.append(f"locale: {loc[0] or '?'}.{loc[1] or '?'}")
+    except Exception as e:
+        out.append(f"locale: ERROR {e}")
+    try:
+        # 시스템 기본 인코딩
+        out.append(f"encoding: {_locale.getpreferredencoding(False)}")
+    except Exception:
+        pass
+    # 시스템 시각대 (TZ 또는 OS 기본)
+    tz_env = os.environ.get("TZ", "")
+    out.append(f"TZ env: {tz_env or '(system default)'}")
+    out.append(f"now local: {datetime.now()}")
+    out.append(f"now utc:   {datetime.now(timezone.utc).isoformat()}")
+    # 키보드 레이아웃 (best-effort)
+    if IS_MACOS:
+        try:
+            r = subprocess.run(
+                ["defaults", "read", str(Path.home() / "Library/Preferences/com.apple.HIToolbox.plist"),
+                 "AppleSelectedInputSources"],
+                capture_output=True, text=True, timeout=3,
+            )
+            kb = r.stdout.strip().split("\n")
+            kb_short = [l.strip() for l in kb if "InputSource" in l or "ID =" in l][:3]
+            out.append(f"keyboard: {' '.join(kb_short) or '(unknown)'}")
+        except Exception:
+            pass
+    elif IS_WINDOWS:
+        try:
+            r = subprocess.run(
+                ["powershell", "-NoProfile", "-Command",
+                 "(Get-WinUserLanguageList).LanguageTag -join ','"],
+                capture_output=True, text=True, timeout=5,
+            )
+            out.append(f"keyboard: {r.stdout.strip() or '(unknown)'}")
+        except Exception:
+            pass
+    elif IS_LINUX:
+        try:
+            r = subprocess.run(["setxkbmap", "-query"], capture_output=True, text=True, timeout=3)
+            for line in r.stdout.splitlines():
+                if line.startswith("layout:"):
+                    out.append(f"keyboard: {line.split(':',1)[1].strip()}")
+                    break
+        except Exception:
+            pass
+    return "\n".join(out)
+
+
+REGISTRY.register(Tool(
+    name="system_locale",
+    description="시스템 locale / timezone / 키보드 레이아웃 (cross-platform).",
+    input_schema={"type": "object", "properties": {}, "required": []},
+    handler=_system_locale,
+))
+
+
+# ──────────────── file_compare_dirs (cross-platform) ────────────────
+def _file_compare_dirs(dir1: str, dir2: str, max_results: int = 50) -> str:
+    """두 디렉토리의 파일 차이 비교 (cross-platform).
+
+    출력 형식 — 한국어:
+      ONLY in dir1: ...
+      ONLY in dir2: ...
+      DIFFER (size 또는 mtime 다름): ...
+    재귀 비교, 심볼릭 링크는 그대로 비교 (target은 비교 안 함).
+    """
+    p1 = Path(dir1).expanduser()
+    p2 = Path(dir2).expanduser()
+    if not p1.is_dir():
+        return f"ERROR: dir1 디렉토리 아님: {p1}"
+    if not p2.is_dir():
+        return f"ERROR: dir2 디렉토리 아님: {p2}"
+
+    def _walk(root: Path) -> dict[str, tuple[int, int]]:
+        """root 기준 상대경로 → (size, mtime)."""
+        result: dict[str, tuple[int, int]] = {}
+        for p in root.rglob("*"):
+            if p.is_file():
+                try:
+                    rel = str(p.relative_to(root))
+                    st = p.stat()
+                    result[rel] = (st.st_size, int(st.st_mtime))
+                except Exception:
+                    continue
+        return result
+
+    files1 = _walk(p1)
+    files2 = _walk(p2)
+    only1 = sorted(set(files1) - set(files2))
+    only2 = sorted(set(files2) - set(files1))
+    common = set(files1) & set(files2)
+    differ = sorted(f for f in common if files1[f] != files2[f])
+
+    out: list[str] = [
+        f"# Comparing {p1} ↔ {p2}",
+        f"  total {len(files1)} vs {len(files2)} files",
+        f"  ONLY in {p1.name}: {len(only1)}",
+        f"  ONLY in {p2.name}: {len(only2)}",
+        f"  DIFFER (size/mtime): {len(differ)}",
+        "",
+    ]
+    if only1:
+        out.append(f"--- ONLY in {p1.name} ---")
+        for f in only1[:max_results]:
+            out.append(f"  + {f}")
+        if len(only1) > max_results:
+            out.append(f"  ... +{len(only1) - max_results} more")
+    if only2:
+        out.append(f"--- ONLY in {p2.name} ---")
+        for f in only2[:max_results]:
+            out.append(f"  + {f}")
+        if len(only2) > max_results:
+            out.append(f"  ... +{len(only2) - max_results} more")
+    if differ:
+        out.append("--- DIFFER ---")
+        for f in differ[:max_results]:
+            s1, m1 = files1[f]
+            s2, m2 = files2[f]
+            out.append(f"  ~ {f}  (size {s1}→{s2}, mtime {m1 - m2:+d}s)")
+        if len(differ) > max_results:
+            out.append(f"  ... +{len(differ) - max_results} more")
+    return "\n".join(out)
+
+
+REGISTRY.register(Tool(
+    name="file_compare_dirs",
+    description="두 디렉토리의 파일 차이 비교 (cross-platform). 재귀, ONLY/DIFFER 분리 출력.",
+    input_schema={
+        "type": "object",
+        "properties": {
+            "dir1": {"type": "string"},
+            "dir2": {"type": "string"},
+            "max_results": {"type": "integer", "description": "각 카테고리 최대 표시, 기본 50"},
+        },
+        "required": ["dir1", "dir2"],
+    },
+    handler=_file_compare_dirs,
+))
+
+
+# ──────────────── system_kill_process (cross-platform, safe) ────────────────
+def _system_kill_process(pid: int, force: bool = False) -> str:
+    """PID로 프로세스 종료 (cross-platform). force=False=SIGTERM, True=SIGKILL/F.
+
+    안전을 위해 PID 1, 0, 음수는 거부. 자기 자신(jarvis)도 거부.
+    """
+    pid = int(pid)
+    if pid <= 1:
+        return "ERROR: 시스템 PID(0/1)는 종료 거부"
+    if pid == os.getpid():
+        return "ERROR: 자기 자신(jarvis 프로세스) 종료 거부"
+    try:
+        if IS_WINDOWS:
+            cmd = ["taskkill", "/PID", str(pid), "/T"]
+            if force:
+                cmd.append("/F")
+            r = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+            if r.returncode == 0:
+                return f"OK: terminated PID {pid}"
+            return f"ERROR: {r.stderr.strip() or r.stdout.strip()}"
+        # macOS / Linux — POSIX kill
+        import signal
+        sig = signal.SIGKILL if force else signal.SIGTERM
+        os.kill(pid, sig)
+        return f"OK: sent {'SIGKILL' if force else 'SIGTERM'} to PID {pid}"
+    except ProcessLookupError:
+        return f"ERROR: PID {pid} 존재하지 않음"
+    except PermissionError:
+        return f"ERROR: PID {pid} 종료 권한 없음 (다른 사용자/시스템 프로세스?)"
+    except Exception as e:
+        return f"ERROR: {type(e).__name__}: {e}"
+
+
+REGISTRY.register(Tool(
+    name="system_kill_process",
+    description=(
+        "PID로 프로세스 종료 (cross-platform). force=false=SIGTERM(graceful), "
+        "force=true=SIGKILL(macOS/Linux) 또는 taskkill /F (Windows). "
+        "PID 0/1/자기 자신은 안전상 거부."
+    ),
+    input_schema={
+        "type": "object",
+        "properties": {
+            "pid": {"type": "integer", "description": "종료할 프로세스 ID"},
+            "force": {"type": "boolean", "description": "true=강제 종료, 기본 false=graceful"},
+        },
+        "required": ["pid"],
+    },
+    handler=_system_kill_process,
+))
+
+
+# ──────────────── network_speedtest_simple (cross-platform) ────────────────
+def _network_speedtest_simple(timeout: int = 15) -> str:
+    """간단한 네트워크 속도 테스트. Cloudflare /cdn-cgi/trace + speedtest endpoint.
+
+    full speedtest는 외부 라이브러리 필요 → 여기는 ping latency + 1MB 다운로드 속도만.
+    """
+    import time as _t
+    import urllib.request
+
+    out: list[str] = []
+    # 1) Latency to Cloudflare (HEAD)
+    try:
+        start = _t.time()
+        urllib.request.urlopen("https://1.1.1.1/cdn-cgi/trace", timeout=timeout)
+        latency_ms = int((_t.time() - start) * 1000)
+        out.append(f"latency (1.1.1.1): {latency_ms}ms")
+    except Exception as e:
+        out.append(f"latency: ERROR {e}")
+        return "\n".join(out)
+
+    # 2) Download throughput — Cloudflare 1MB test file
+    try:
+        start = _t.time()
+        with urllib.request.urlopen(
+            "https://speed.cloudflare.com/__down?bytes=1048576", timeout=timeout,
+        ) as r:
+            data = r.read()
+        elapsed = _t.time() - start
+        size_mb = len(data) / 1024 / 1024
+        mbps = (size_mb * 8) / elapsed
+        out.append(f"download: {size_mb:.2f}MB in {elapsed:.2f}s ({mbps:.1f} Mbps)")
+    except Exception as e:
+        out.append(f"download: ERROR {e}")
+
+    # 3) Public IP (간단)
+    try:
+        with urllib.request.urlopen("https://api.ipify.org", timeout=5) as r:
+            out.append(f"public IP: {r.read().decode().strip()}")
+    except Exception:
+        pass
+
+    return "\n".join(out)
+
+
+REGISTRY.register(Tool(
+    name="network_speedtest_simple",
+    description=(
+        "간단한 네트워크 속도 측정 (cross-platform): "
+        "1.1.1.1 latency + Cloudflare 1MB 다운로드 throughput + public IP."
+    ),
+    input_schema={
+        "type": "object",
+        "properties": {"timeout": {"type": "integer", "description": "초, 기본 15"}},
+        "required": [],
+    },
+    handler=_network_speedtest_simple,
+))
+
+
+# 모듈 import 시 무용 — silence linter
+_ = shlex

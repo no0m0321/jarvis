@@ -37,11 +37,14 @@ class Settings(BaseSettings):
     fast_model: str = "claude-haiku-4-5-20251001"
     max_tokens: int = 2048
     log_level: str = "INFO"
-    # 사용자 호칭 — 비면 "주인님" (기본). 예: "민지님", "Boss"
+    # 사용자 호칭 — 비면 i18n.default_title() (언어별 기본). 예: "민지님", "Boss"
     owner_name: str = ""
     # 추가 wake word — 쉼표 구분. 예: "베이비,버디"
     # 비어있으면 DEFAULT_WAKE_WORDS만 사용.
     wake_word: str = ""
+    # 응답 언어 (v0.6.0). 비면 detect_lang() 자동 결정 (env > config.toml > locale > en).
+    # 지원: ko, en, ja, zh, es, fr, de, pt
+    lang: str = ""
 
     def model_post_init(self, __context) -> None:
         import os

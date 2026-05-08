@@ -21,7 +21,7 @@ provider 선택은 JARVIS_PROVIDER 환경변수 (기본 'anthropic'):
 from __future__ import annotations
 
 import os
-from typing import Any, Iterable, Iterator, List, Optional, Protocol
+from typing import Any, Iterable, Iterator, Optional, Protocol
 
 
 class LLMProvider(Protocol):
@@ -30,10 +30,10 @@ class LLMProvider(Protocol):
     name: str
     supports_tools: bool
 
-    def reply(self, messages: List[dict], system: str, model: str, max_tokens: int) -> str:
+    def reply(self, messages: list[dict], system: str, model: str, max_tokens: int) -> str:
         ...
 
-    def stream(self, messages: List[dict], system: str, model: str, max_tokens: int) -> Iterator[str]:
+    def stream(self, messages: list[dict], system: str, model: str, max_tokens: int) -> Iterator[str]:
         ...
 
 
@@ -48,7 +48,7 @@ class AnthropicProvider:
             raise RuntimeError("ANTHROPIC_API_KEY 미설정")
         self.client = Anthropic(api_key=key)
 
-    def reply(self, messages: List[dict], system: str, model: str, max_tokens: int) -> str:
+    def reply(self, messages: list[dict], system: str, model: str, max_tokens: int) -> str:
         msg = self.client.messages.create(
             model=model,
             max_tokens=max_tokens,
@@ -57,7 +57,7 @@ class AnthropicProvider:
         )
         return "".join(b.text for b in msg.content if b.type == "text")
 
-    def stream(self, messages: List[dict], system: str, model: str, max_tokens: int) -> Iterator[str]:
+    def stream(self, messages: list[dict], system: str, model: str, max_tokens: int) -> Iterator[str]:
         with self.client.messages.stream(
             model=model,
             max_tokens=max_tokens,
@@ -82,8 +82,8 @@ class OpenAIProvider:
         self.client = OpenAI(api_key=key)
 
     @staticmethod
-    def _to_openai_messages(messages: List[dict], system: str) -> List[dict]:
-        out: List[dict] = [{"role": "system", "content": system}]
+    def _to_openai_messages(messages: list[dict], system: str) -> list[dict]:
+        out: list[dict] = [{"role": "system", "content": system}]
         for m in messages:
             content = m.get("content", "")
             if isinstance(content, list):
@@ -92,7 +92,7 @@ class OpenAIProvider:
             out.append({"role": m["role"], "content": content})
         return out
 
-    def reply(self, messages: List[dict], system: str, model: str, max_tokens: int) -> str:
+    def reply(self, messages: list[dict], system: str, model: str, max_tokens: int) -> str:
         r = self.client.chat.completions.create(
             model=model,
             max_tokens=max_tokens,
@@ -100,7 +100,7 @@ class OpenAIProvider:
         )
         return r.choices[0].message.content or ""
 
-    def stream(self, messages: List[dict], system: str, model: str, max_tokens: int) -> Iterator[str]:
+    def stream(self, messages: list[dict], system: str, model: str, max_tokens: int) -> Iterator[str]:
         s = self.client.chat.completions.create(
             model=model,
             max_tokens=max_tokens,
@@ -128,7 +128,7 @@ class OllamaProvider:
             raise RuntimeError(f"Ollama 서버 도달 불가 ({self.host}) — {e}")
 
     @staticmethod
-    def _to_ollama_messages(messages: List[dict], system: str) -> List[dict]:
+    def _to_ollama_messages(messages: list[dict], system: str) -> list[dict]:
         out = [{"role": "system", "content": system}]
         for m in messages:
             content = m.get("content", "")
@@ -137,7 +137,7 @@ class OllamaProvider:
             out.append({"role": m["role"], "content": content})
         return out
 
-    def reply(self, messages: List[dict], system: str, model: str, max_tokens: int) -> str:
+    def reply(self, messages: list[dict], system: str, model: str, max_tokens: int) -> str:
         import json
         import urllib.request
         body = json.dumps({
@@ -154,7 +154,7 @@ class OllamaProvider:
             data = json.loads(r.read())
         return data.get("message", {}).get("content", "")
 
-    def stream(self, messages: List[dict], system: str, model: str, max_tokens: int) -> Iterator[str]:
+    def stream(self, messages: list[dict], system: str, model: str, max_tokens: int) -> Iterator[str]:
         import json
         import urllib.request
         body = json.dumps({

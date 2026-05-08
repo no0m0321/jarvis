@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import subprocess
 
+from jarvis.platform import mac_only
 from jarvis.tools.registry import REGISTRY, Tool
 
 
@@ -24,17 +25,20 @@ def _osa(script: str, timeout: int = 8) -> str:
 
 
 # ── Safari ───────────────────────────────────────────────────────────────
+@mac_only
 def _safari_new_tab(url: str) -> str:
     s = f'tell application "Safari" to make new document with properties {{URL:"{_esc(url)}"}}'
     out = _osa(s)
     return out if out.startswith("ERROR") else f"OK: opened {url} in Safari"
 
 
+@mac_only
 def _safari_current_url() -> str:
     s = 'tell application "Safari" to return URL of front document'
     return _osa(s) or "(no front document)"
 
 
+@mac_only
 def _safari_list_tabs() -> str:
     s = '''
 tell application "Safari"
@@ -50,10 +54,12 @@ end tell
     return _osa(s) or "(no tabs)"
 
 
+@mac_only
 def _safari_close_current() -> str:
     return _osa('tell application "Safari" to close current tab of front window') or "OK"
 
 
+@mac_only
 def _safari_reload() -> str:
     return _osa('tell application "Safari" to do JavaScript "location.reload()" in front document') or "OK"
 
@@ -91,6 +97,7 @@ REGISTRY.register(Tool(
 
 
 # ── Chrome ───────────────────────────────────────────────────────────────
+@mac_only
 def _chrome_new_tab(url: str) -> str:
     s = f'''
 tell application "Google Chrome"
@@ -104,10 +111,12 @@ return "OK"
     return out if out.startswith("ERROR") else f"OK: opened {url} in Chrome"
 
 
+@mac_only
 def _chrome_current_url() -> str:
     return _osa('tell application "Google Chrome" to return URL of active tab of front window') or "(no front window)"
 
 
+@mac_only
 def _chrome_list_tabs() -> str:
     s = '''
 tell application "Google Chrome"

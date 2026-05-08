@@ -7,16 +7,23 @@ import sys
 import time
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, Optional, Tuple
+from typing import Any, Optional
 
+from jarvis.platform import IS_MACOS
 from jarvis.voice.recorder import capture_phrase
 from jarvis.voice.transcribe import transcribe
 
 _DEBUG = os.environ.get("JARVIS_WAKE_DEBUG", "0") == "1"
-# JARVIS_HOVER_GATE=0 으로 끄면 항상 마이크 listening (이전 동작)
-# 기본은 hover gate ON — 카메라 영역 마우스 호버 시에만 마이크 사용
-_HOVER_GATE = os.environ.get("JARVIS_HOVER_GATE", "1") == "1"
-_HOVER_FILE = Path.home() / "Library" / "Caches" / "jarvis-hover.json"
+# JARVIS_HOVER_GATE=0 으로 끄면 항상 마이크 listening (이전 동작).
+# 기본은 hover gate ON — 카메라 영역 마우스 호버 시에만 마이크 사용 (JarvisHUD.app이 신호 파일 작성).
+# Windows/Linux에서는 JarvisHUD가 없으므로 hover_gate 자동 OFF (사용자가 명시적으로 1 설정 가능).
+_HOVER_GATE_DEFAULT = "1" if IS_MACOS else "0"
+_HOVER_GATE = os.environ.get("JARVIS_HOVER_GATE", _HOVER_GATE_DEFAULT) == "1"
+# macOS는 JarvisHUD.app 호환을 위해 Library/Caches, 그 외는 ~/.jarvis/cache
+if IS_MACOS:
+    _HOVER_FILE = Path.home() / "Library" / "Caches" / "jarvis-hover.json"
+else:
+    _HOVER_FILE = Path.home() / ".jarvis" / "cache" / "jarvis-hover.json"
 
 
 def _is_hover_active() -> bool:
@@ -31,7 +38,7 @@ def _is_hover_active() -> bool:
 
 # 한국어 tiny/small/base 모델은 "자비스"를 다양하게 전사 — 변종 폭넓게 허용
 # 실측 오인: 사비스, 헤이지알베스, 자비쓰, 차비스, 쟈브스 등
-DEFAULT_WAKE_WORDS: Tuple[str, ...] = (
+DEFAULT_WAKE_WORDS: tuple[str, ...] = (
     # Korean — "자비스" 정변종
     "자비스", "쟈비스", "재비스", "자뷔스", "쟈브스", "자브스",
     "자비쓰", "쟈비쓰", "자뷔쓰",
@@ -47,7 +54,7 @@ DEFAULT_WAKE_WORDS: Tuple[str, ...] = (
 # 'jarvis' substring 매칭이라 "Hey Jarvis"는 자동 인식됨
 
 
-def get_wake_words() -> Tuple[str, ...]:
+def get_wake_words() -> tuple[str, ...]:
     """DEFAULT_WAKE_WORDS + JARVIS_WAKE_WORD 환경변수(쉼표 구분) 합쳐 반환.
 
     예: JARVIS_WAKE_WORD="베이비,버디" → 기본 + 두 단어 추가.
@@ -66,7 +73,7 @@ def detect_wake_word(
     wake_words: Sequence[str] = DEFAULT_WAKE_WORDS,
     detection_model: str = "base",
     language: Optional[str] = None,  # None/auto → ko/en 둘 다 매칭
-) -> Tuple[bool, str]:
+) -> tuple[bool, str]:
     """오디오 → 전사 (약한 initial_prompt) → 매칭. (matched, text).
 
     language=None: Whisper auto-detect (한국어/영어 둘 다 가능).

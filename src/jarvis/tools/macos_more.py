@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import subprocess
 
+from jarvis.platform import mac_only
 from jarvis.tools.registry import REGISTRY, Tool
 
 
@@ -10,6 +11,7 @@ def _esc(s: str) -> str:
     return s.replace("\\", "\\\\").replace('"', '\\"')
 
 
+@mac_only
 def _mail_compose(to: str, subject: str = "", body: str = "") -> str:
     """Mail.app 새 메시지 창을 띄움 (발송은 사용자 직접). 안전을 위해 자동 발송 X."""
     script = f'''
@@ -32,6 +34,7 @@ return "OK"
         return f"ERROR: {(e.stderr or '').strip()}"
 
 
+@mac_only
 def _spotlight_search(query: str, max_results: int = 20) -> str:
     """macOS Spotlight (mdfind) 검색. 파일/문서/앱 위치 list."""
     try:
@@ -48,6 +51,7 @@ def _spotlight_search(query: str, max_results: int = 20) -> str:
         return f"ERROR: {e}"
 
 
+@mac_only
 def _activate_app(name: str) -> str:
     """macOS 앱 활성화 (frontmost). 미실행이면 시작."""
     try:
@@ -57,6 +61,7 @@ def _activate_app(name: str) -> str:
         return f"ERROR: {e}"
 
 
+@mac_only
 def _play_sound(sound: str = "Glass") -> str:
     """macOS 시스템 사운드 재생 (Tink/Glass/Hero/Pop/Submarine 등)."""
     path = f"/System/Library/Sounds/{sound}.aiff"

@@ -7,6 +7,7 @@ import random
 import subprocess
 from datetime import datetime
 
+from jarvis.platform import mac_only
 from jarvis.tools.registry import REGISTRY, Tool
 
 
@@ -90,6 +91,7 @@ def _quote_of_day() -> str:
 
 # ─── Apple Shortcuts ─────────────────────────────────────────────────
 
+@mac_only
 def _shortcuts_list() -> str:
     """등록된 macOS Shortcuts 목록."""
     try:
@@ -99,6 +101,7 @@ def _shortcuts_list() -> str:
         return "shortcuts CLI 없음 (macOS 12+ 필요)"
 
 
+@mac_only
 def _shortcuts_run(name: str, input_text: str = "") -> str:
     """Shortcut 실행."""
     try:
@@ -117,6 +120,7 @@ def _shortcuts_run(name: str, input_text: str = "") -> str:
 
 # ─── Spotify ─────────────────────────────────────────────────────────
 
+@mac_only
 def _spotify_playpause() -> str:
     try:
         subprocess.run(
@@ -128,6 +132,7 @@ def _spotify_playpause() -> str:
         return f"실패: {e}"
 
 
+@mac_only
 def _spotify_next() -> str:
     try:
         subprocess.run(
@@ -139,6 +144,7 @@ def _spotify_next() -> str:
         return f"실패: {e}"
 
 
+@mac_only
 def _spotify_current() -> str:
     """현재 재생 중인 트랙."""
     script = '''
@@ -163,6 +169,7 @@ end tell
         return f"실패: {e}"
 
 
+@mac_only
 def _spotify_search_play(query: str) -> str:
     """검색 후 첫 결과 재생 (Spotify URI 직접 사용은 Premium 필요. 여기선 search URL 열기)."""
     import urllib.parse
@@ -176,6 +183,7 @@ def _spotify_search_play(query: str) -> str:
 
 # ─── macOS 추가 ─────────────────────────────────────────────────────
 
+@mac_only
 def _dnd_toggle() -> str:
     """Do Not Disturb 토글 (Shortcuts 'Toggle DND' 등록 필요)."""
     try:
@@ -190,6 +198,7 @@ def _dnd_toggle() -> str:
     return "Shortcuts에 'Toggle Do Not Disturb' 등록 필요"
 
 
+@mac_only
 def _dock_hide_show(hide: bool = True) -> str:
     """Dock 숨김/표시."""
     val = "true" if hide else "false"
@@ -209,6 +218,7 @@ def _menubar_clock() -> str:
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S %A")
 
 
+@mac_only
 def _trash_count() -> str:
     """휴지통 항목 수."""
     try:

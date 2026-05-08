@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>J.A.R.V.I.S — Download · Choose Your Language</title>
+<meta name="description" content="Download Jarvis in your language: Korean, English, Japanese, Chinese, Spanish, French, German, Portuguese." />
+<meta property="og:title" content="J.A.R.V.I.S — Download in 8 languages" />
+<meta property="og:description" content="자비스를 모국어로 사용하세요. Pick your language. Run one command. Done." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Orbitron:wght@400;500;700;900&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --cyan: #4cc9ff;
+  --cyan-bright: #7de0ff;
+  --cyan-dim: #5fb4d4;
+  --cyan-deep: #0084c7;
+  --cyan-glow: rgba(76, 201, 255, 0.55);
+  --cyan-soft: rgba(76, 201, 255, 0.10);
+  --cyan-faint: rgba(76, 201, 255, 0.04);
+  --bg-0: #02060d;
+  --bg-1: #050b16;
+  --bg-2: #0a1320;
+  --line: rgba(76, 201, 255, 0.12);
+  --line-strong: rgba(76, 201, 255, 0.32);
+  --text: #d6effa;
+  --text-dim: #7896a4;
+  --gold: #ffd56a;
+  --red: #ff5f57;
+  --green: #28c93b;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--bg-0);
+  color: var(--text);
+  font-family: 'Outfit', -apple-system, system-ui, sans-serif;
+  font-weight: 400;
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Sci-fi background */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(76, 201, 255, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 100%, rgba(76, 201, 255, 0.05) 0%, transparent 50%),
+    linear-gradient(180deg, var(--bg-0) 0%, var(--bg-1) 100%);
+  z-index: -2;
+  pointer-events: none;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-image:
+    linear-gradient(var(--line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line) 1px, transparent 1px);
+  background-size: 60px 60px;
+  background-position: 0 0;
+  opacity: 0.35;
+  z-index: -1;
+  pointer-events: none;
+  mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+}
+
+/* Header */
+header {
+  position: sticky;
+  top: 0;
+  background: rgba(2, 6, 13, 0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--line);
+  padding: 16px 32px;
+  z-index: 100;
+}
+
+.header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.logo {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size: 22px;
+  letter-spacing: 4px;
+  color: var(--cyan-bright);
+  text-shadow: 0 0 20px var(--cyan-glow);
+  text-decoration: none;
+}
+
+.logo .dot { color: var(--cyan-dim); }
+
+.nav-links {
+  display: flex;
+  gap: 24px;
+}
+
+.nav-links a {
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.nav-links a:hover { color: var(--cyan-bright); }
+
+/* Main */
+main {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 80px 32px 120px;
+}
+
+.hero {
+  text-align: center;
+  margin-bottom: 80px;
+}
+
+.hero-eyebrow {
+  display: inline-block;
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--cyan-dim);
+  border: 1px solid var(--line-strong);
+  padding: 6px 16px;
+  border-radius: 100px;
+  font-family: 'JetBrains Mono', monospace;
+  margin-bottom: 24px;
+}
+
+.hero h1 {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size: clamp(36px, 5vw, 64px);
+  letter-spacing: -1px;
+  margin-bottom: 16px;
+  background: linear-gradient(135deg, var(--cyan-bright) 0%, var(--cyan) 50%, var(--cyan-deep) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 40px var(--cyan-glow);
+}
+
+.hero p {
+  font-size: 18px;
+  color: var(--text-dim);
+  max-width: 720px;
+  margin: 0 auto 8px;
+  line-height: 1.7;
+}
+
+.hero p.tagline {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--cyan-dim);
+  margin-top: 16px;
+  letter-spacing: 1px;
+}
+
+/* Language grid */
+.lang-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  margin-bottom: 80px;
+}
+
+.lang-card {
+  position: relative;
+  background: linear-gradient(145deg, var(--bg-2) 0%, var(--bg-1) 100%);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 28px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+.lang-card:hover {
+  border-color: var(--cyan);
+  transform: translateY(-4px);
+  box-shadow:
+    0 12px 40px rgba(76, 201, 255, 0.15),
+    0 0 0 1px var(--cyan-soft);
+}
+
+.lang-card:hover::before {
+  opacity: 1;
+}
+
+.lang-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.lang-card.active {
+  border-color: var(--cyan);
+  background: linear-gradient(145deg, rgba(76, 201, 255, 0.08), var(--bg-1));
+}
+
+.lang-card.active::after {
+  content: 'SELECTED';
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--cyan-bright);
+  background: rgba(76, 201, 255, 0.15);
+  padding: 4px 8px;
+  border-radius: 2px;
+}
+
+.lang-flag {
+  font-size: 48px;
+  margin-bottom: 16px;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
+}
+
+.lang-name {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 24px;
+  color: var(--cyan-bright);
+  margin-bottom: 4px;
+  letter-spacing: 1px;
+}
+
+.lang-english {
+  font-size: 13px;
+  color: var(--text-dim);
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+.lang-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.lang-meta-row {
+  display: flex;
+  justify-content: space-between;
+}
+
+.lang-meta-row span:first-child {
+  color: var(--text-dim);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 1px;
+}
+
+.lang-meta-row span:last-child {
+  color: var(--cyan-bright);
+  font-weight: 500;
+}
+
+/* Install panel */
+.install-panel {
+  background: linear-gradient(145deg, var(--bg-2) 0%, var(--bg-1) 100%);
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  padding: 40px;
+  margin-bottom: 60px;
+  position: relative;
+  overflow: hidden;
+}
+
+.install-panel::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+}
+
+.install-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.install-title {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--cyan-bright);
+  letter-spacing: 2px;
+}
+
+.install-selected {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.install-selected strong {
+  color: var(--cyan-bright);
+  font-weight: 700;
+}
+
+.os-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 24px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  overflow: hidden;
+  width: fit-content;
+}
+
+.os-tab {
+  padding: 10px 24px;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  letter-spacing: 1px;
+  transition: all 0.2s;
+  border-right: 1px solid var(--line);
+}
+
+.os-tab:last-child { border-right: none; }
+
+.os-tab.active {
+  background: var(--cyan-soft);
+  color: var(--cyan-bright);
+}
+
+.os-tab:hover:not(.active) {
+  background: var(--cyan-faint);
+  color: var(--text);
+}
+
+.code-block {
+  position: relative;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 20px 24px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-all;
+  margin-bottom: 16px;
+}
+
+.code-block::before {
+  content: '$';
+  position: absolute;
+  left: 8px;
+  top: 20px;
+  color: var(--cyan-dim);
+  font-weight: 700;
+}
+
+.code-block-content {
+  padding-left: 16px;
+}
+
+.copy-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: var(--cyan-soft);
+  border: 1px solid var(--line-strong);
+  color: var(--cyan-bright);
+  padding: 6px 14px;
+  border-radius: 3px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.2s;
+}
+
+.copy-btn:hover {
+  background: var(--cyan);
+  color: var(--bg-0);
+}
+
+.copy-btn.copied {
+  background: var(--green);
+  color: var(--bg-0);
+  border-color: var(--green);
+}
+
+.install-note {
+  font-size: 12px;
+  color: var(--text-dim);
+  font-family: 'JetBrains Mono', monospace;
+  line-height: 1.7;
+  padding: 12px 16px;
+  background: rgba(255, 213, 106, 0.05);
+  border-left: 2px solid var(--gold);
+  border-radius: 2px;
+}
+
+/* After install */
+.after-install {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
+
+.after-install h3 {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--cyan-dim);
+  letter-spacing: 3px;
+  margin-bottom: 16px;
+  text-transform: uppercase;
+}
+
+.after-cmds {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.after-cmd {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--text);
+  padding: 10px 16px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+}
+
+.after-cmd .comment {
+  color: var(--text-dim);
+  display: block;
+  margin-bottom: 4px;
+}
+
+/* FAQ */
+.faq {
+  margin-top: 80px;
+}
+
+.faq h2 {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 28px;
+  color: var(--cyan-bright);
+  letter-spacing: 2px;
+  margin-bottom: 32px;
+}
+
+.faq-item {
+  margin-bottom: 24px;
+  padding: 20px 24px;
+  background: rgba(76, 201, 255, 0.03);
+  border-left: 2px solid var(--cyan-dim);
+  border-radius: 0 4px 4px 0;
+}
+
+.faq-item h4 {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--cyan-bright);
+  margin-bottom: 8px;
+}
+
+.faq-item p {
+  font-size: 14px;
+  color: var(--text-dim);
+  line-height: 1.7;
+}
+
+/* Footer */
+footer {
+  border-top: 1px solid var(--line);
+  padding: 32px;
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 1px;
+}
+
+footer a { color: var(--cyan-dim); text-decoration: none; }
+footer a:hover { color: var(--cyan-bright); }
+
+@media (max-width: 720px) {
+  main { padding: 40px 16px 80px; }
+  .install-panel { padding: 24px; }
+  .after-cmds { grid-template-columns: 1fr; }
+  .install-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-row">
+    <a href="/" class="logo">J<span class="dot">.</span>A<span class="dot">.</span>R<span class="dot">.</span>V<span class="dot">.</span>I<span class="dot">.</span>S</a>
+    <nav class="nav-links">
+      <a href="/">Home</a>
+      <a href="https://github.com/no0m0321/jarvis" target="_blank">GitHub</a>
+      <a href="https://github.com/no0m0321/jarvis/blob/main/README.md" target="_blank">Docs</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <span class="hero-eyebrow">v0.6.0 · MULTILINGUAL</span>
+    <h1>Choose Your Language</h1>
+    <p>Jarvis speaks 8 languages natively. Pick yours below — Jarvis will respond, address you, and use voice (TTS) in that language.</p>
+    <p class="tagline">// 자비스를 모국어로 사용하세요. Habla con Jarvis en español. Sprich mit Jarvis auf Deutsch.</p>
+  </section>
+
+  <!-- Language grid -->
+  <section class="lang-grid" id="langGrid">
+    <!-- Cards rendered by JS -->
+  </section>
+
+  <!-- Install panel (sticky after selection) -->
+  <section class="install-panel" id="installPanel" style="display:none;">
+    <div class="install-header">
+      <div class="install-title">▶ INSTALL JARVIS</div>
+      <div class="install-selected">
+        Selected: <strong id="selectedLangLabel">—</strong>
+      </div>
+    </div>
+
+    <div class="os-tabs">
+      <button class="os-tab active" data-os="macos">macOS / Linux</button>
+      <button class="os-tab" data-os="windows">Windows</button>
+    </div>
+
+    <div class="code-block" id="installCmd">
+      <span class="copy-btn" id="copyBtn">Copy</span>
+      <div class="code-block-content" id="installCmdText">curl -fsSL https://raw.githubusercontent.com/no0m0321/jarvis/main/install.sh | JARVIS_LANG=en bash</div>
+    </div>
+
+    <div class="install-note">
+      ℹ Run this in your terminal. Jarvis will install with <strong id="noteLang">English</strong> pre-configured. <br>
+      You can change language anytime: <span style="color: var(--cyan-bright)">jarvis lang &lt;code&gt;</span>
+    </div>
+
+    <div class="after-install">
+      <h3>After install</h3>
+      <div class="after-cmds">
+        <div class="after-cmd">
+          <span class="comment"># Verify version</span>
+          jarvis version
+        </div>
+        <div class="after-cmd">
+          <span class="comment"># See your language settings</span>
+          jarvis lang
+        </div>
+        <div class="after-cmd">
+          <span class="comment"># Set API key (.env)</span>
+          $EDITOR ~/jarvis/.env
+        </div>
+        <div class="after-cmd">
+          <span class="comment"># Talk to Jarvis (first meeting)</span>
+          jarvis ask "hello"
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="faq">
+    <h2>FAQ</h2>
+
+    <div class="faq-item">
+      <h4>How does Jarvis know which language to use?</h4>
+      <p>Priority: <code>JARVIS_LANG</code> env > <code>~/.jarvis/config.toml</code> language key > system locale > English fallback. The install command pre-sets <code>language</code> in your config.toml.</p>
+    </div>
+
+    <div class="faq-item">
+      <h4>Can I change language later?</h4>
+      <p>Yes. <code>jarvis lang ko</code> sets to Korean, <code>jarvis lang ja</code> to Japanese, etc. Setting takes effect from the next <code>jarvis ask/do</code> call.</p>
+    </div>
+
+    <div class="faq-item">
+      <h4>Are all languages equally fluent?</h4>
+      <p>Korean and English have native system prompts (most natural responses). Other languages use the English persona base + a strong "always respond in X" directive — Claude handles the language perfectly, but the persona quirks may feel slightly Anglo-centric.</p>
+    </div>
+
+    <div class="faq-item">
+      <h4>What about voice (TTS)?</h4>
+      <p>On macOS, Jarvis automatically picks the best voice for your language (Yuna for Korean, Reed for English, Kyoko for Japanese, etc.). On Windows, it uses SAPI5 voices (Heami, David, Haruka, etc.).</p>
+    </div>
+
+    <div class="faq-item">
+      <h4>What if my language isn't listed?</h4>
+      <p>Open an issue on <a href="https://github.com/no0m0321/jarvis/issues" style="color: var(--cyan)">GitHub</a> with your language code (ISO 639-1). Adding new languages is straightforward — just add an entry to <code>i18n.LANGUAGES</code>.</p>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <p>JARVIS v0.6.0 · MIT License · <a href="https://github.com/no0m0321/jarvis">github.com/no0m0321/jarvis</a></p>
+</footer>
+
+<script>
+const LANGUAGES = [
+  { code: 'ko', flag: '🇰🇷', name: '한국어', english: 'Korean',     title: '주인님',   voice_macos: 'Yuna',     voice_windows: 'Heami',  greeting: '주인님 반갑습니다' },
+  { code: 'en', flag: '🇺🇸', name: 'English',  english: 'English',    title: 'Sir',      voice_macos: 'Reed',     voice_windows: 'David',  greeting: 'Greetings, Sir' },
+  { code: 'ja', flag: '🇯🇵', name: '日本語',   english: 'Japanese',   title: 'ご主人様', voice_macos: 'Kyoko',    voice_windows: 'Haruka', greeting: 'ご主人様、はじめまして' },
+  { code: 'zh', flag: '🇨🇳', name: '中文',     english: 'Chinese',    title: '主人',     voice_macos: 'Tingting', voice_windows: 'Huihui', greeting: '主人,您好' },
+  { code: 'es', flag: '🇪🇸', name: 'Español',  english: 'Spanish',    title: 'Señor',    voice_macos: 'Mónica',   voice_windows: 'Helena', greeting: 'Bienvenido, Señor' },
+  { code: 'fr', flag: '🇫🇷', name: 'Français', english: 'French',     title: 'Monsieur', voice_macos: 'Thomas',   voice_windows: 'Hortense', greeting: 'Bonjour, Monsieur' },
+  { code: 'de', flag: '🇩🇪', name: 'Deutsch',  english: 'German',     title: 'Herr',     voice_macos: 'Anna',     voice_windows: 'Hedda',  greeting: 'Guten Tag, Herr' },
+  { code: 'pt', flag: '🇵🇹', name: 'Português',english: 'Portuguese', title: 'Senhor',   voice_macos: 'Joana',    voice_windows: 'Helia',  greeting: 'Bem-vindo, Senhor' },
+];
+
+let selectedLang = null;
+let selectedOs = 'macos';
+
+const grid = document.getElementById('langGrid');
+const panel = document.getElementById('installPanel');
+const cmdText = document.getElementById('installCmdText');
+const noteLang = document.getElementById('noteLang');
+const selectedLabel = document.getElementById('selectedLangLabel');
+const copyBtn = document.getElementById('copyBtn');
+
+function renderGrid() {
+  grid.innerHTML = LANGUAGES.map(L => `
+    <div class="lang-card ${selectedLang === L.code ? 'active' : ''}" data-code="${L.code}">
+      <div class="lang-flag">${L.flag}</div>
+      <div class="lang-name">${L.name}</div>
+      <div class="lang-english">${L.english}</div>
+      <div class="lang-meta">
+        <div class="lang-meta-row"><span>FIRST GREETING</span><span style="font-size:11px;">${L.greeting}</span></div>
+        <div class="lang-meta-row"><span>HONORIFIC</span><span>${L.title}</span></div>
+        <div class="lang-meta-row"><span>TTS (macOS)</span><span>${L.voice_macos}</span></div>
+        <div class="lang-meta-row"><span>TTS (Windows)</span><span>${L.voice_windows}</span></div>
+      </div>
+    </div>
+  `).join('');
+
+  // attach click handlers
+  document.querySelectorAll('.lang-card').forEach(card => {
+    card.addEventListener('click', () => {
+      selectedLang = card.dataset.code;
+      renderGrid();
+      updatePanel();
+      panel.style.display = 'block';
+      panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+}
+
+function updatePanel() {
+  const L = LANGUAGES.find(x => x.code === selectedLang);
+  if (!L) return;
+  selectedLabel.textContent = `${L.flag} ${L.name} (${L.english})`;
+  noteLang.textContent = L.english;
+
+  if (selectedOs === 'macos') {
+    cmdText.textContent =
+      `curl -fsSL https://raw.githubusercontent.com/no0m0321/jarvis/main/install.sh | JARVIS_LANG=${L.code} bash`;
+  } else {
+    cmdText.textContent =
+      `$env:JARVIS_LANG="${L.code}"; iwr https://raw.githubusercontent.com/no0m0321/jarvis/main/install.ps1 -UseBasicParsing | iex`;
+  }
+}
+
+document.querySelectorAll('.os-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.os-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    selectedOs = tab.dataset.os;
+    updatePanel();
+  });
+});
+
+copyBtn.addEventListener('click', async () => {
+  const text = cmdText.textContent;
+  try {
+    await navigator.clipboard.writeText(text);
+    copyBtn.textContent = 'Copied ✓';
+    copyBtn.classList.add('copied');
+    setTimeout(() => {
+      copyBtn.textContent = 'Copy';
+      copyBtn.classList.remove('copied');
+    }, 2000);
+  } catch (e) {
+    // Fallback for older browsers
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    copyBtn.textContent = 'Copied ✓';
+    copyBtn.classList.add('copied');
+    setTimeout(() => {
+      copyBtn.textContent = 'Copy';
+      copyBtn.classList.remove('copied');
+    }, 2000);
+  }
+});
+
+// Auto-detect browser language and pre-select if supported
+const browserLang = (navigator.language || 'en').split('-')[0].toLowerCase();
+const supportedCodes = LANGUAGES.map(L => L.code);
+if (supportedCodes.includes(browserLang)) {
+  selectedLang = browserLang;
+  setTimeout(() => {
+    updatePanel();
+    panel.style.display = 'block';
+  }, 300);
+}
+
+renderGrid();
+</script>
+
+</body>
+</html>

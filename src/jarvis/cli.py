@@ -430,11 +430,22 @@ def timer(
     except KeyboardInterrupt:
         console.print("\n[yellow]타이머 취소[/yellow]")
         return
-    subprocess.run(["afplay", "/System/Library/Sounds/Glass.aiff"], check=False)
-    subprocess.run(
-        ["osascript", "-e", f'display notification "{message}" with title "자비스 타이머"'],
-        check=False,
-    )
+    # 종료 알림 — cross-platform via tools/macos._notify (OS 분기 내장)
+    try:
+        from jarvis.tools.macos import _notify
+        _notify("자비스 타이머", message)
+    except Exception:
+        pass
+    # 사운드: macOS=afplay, Windows=winsound, Linux=skip
+    from jarvis.platform import IS_MACOS as _IS_MAC, IS_WINDOWS as _IS_WIN
+    if _IS_MAC:
+        subprocess.run(["afplay", "/System/Library/Sounds/Glass.aiff"], check=False)
+    elif _IS_WIN:
+        try:
+            import winsound  # type: ignore
+            winsound.MessageBeep(winsound.MB_ICONASTERISK)
+        except Exception:
+            pass
     console.print(f"[bold green]⏰ {message}[/bold green]")
 
 
@@ -627,6 +638,141 @@ def config_cmd(
             console.print(path.read_text(encoding="utf-8") or "(empty)")
         else:
             console.print(f"(no config at {path}) — `jarvis config --init` 으로 생성")
+
+
+@app.command("lang")
+def lang_cmd(
+    code: str = typer.Argument("", help="설정할 언어 코드 (예: ko, en, ja, zh, es, fr, de, pt). 비우면 현재 언어 표시."),
+    list_all: bool = typer.Option(False, "--list", "-l", help="지원 언어 목록 표시"),
+) -> None:
+    """언어 설정 — 자비스 응답 언어 (cross-session, ~/.jarvis/config.toml)."""
+    from jarvis import i18n, user_config
+
+    if list_all:
+        cur = i18n.detect_lang()
+        msg = i18n.msg("lang_supported_list")
+        console.print(f"[bold cyan]{msg}[/bold cyan]")
+        for c in i18n.SUPPORTED_LANGS:
+            meta = i18n.lang_meta(c)
+            marker = "[green]●[/green]" if c == cur else "[dim]○[/dim]"
+            console.print(
+                f"  {marker} [yellow]{c}[/yellow]  {meta['flag']} {meta['name']:<10} ({meta['english_name']:<22}) "
+                f"호칭={meta['default_title']}"
+            )
+        return
+
+    if not code:
+        # 현재 언어 표시
+        cur = i18n.detect_lang()
+        meta = i18n.lang_meta(cur)
+        console.print(f"[bold cyan]{i18n.msg('lang_current')}[/bold cyan]: "
+                      f"[yellow]{cur}[/yellow] {meta['flag']} {meta['name']} ({meta['english_name']})")
+        # 결정 우선순위 표시
+        if os.environ.get("JARVIS_LANG"):
+            console.print(f"  [dim]source: env JARVIS_LANG={os.environ['JARVIS_LANG']}[/dim]")
+        else:
+            cfg = user_config.load()
+            if cfg.get("language"):
+                console.print(f"  [dim]source: ~/.jarvis/config.toml language = '{cfg['language']}'[/dim]")
+            else:
+                console.print("  [dim]source: 시스템 locale 또는 fallback (en)[/dim]")
+        return
+
+    code = code.strip().lower()
+    if not i18n.is_supported(code):
+        console.print(f"[red]ERROR: {i18n.msg('lang_unsupported')}: '{code}'[/red]")
+        console.print(f"[dim]지원 언어: {', '.join(i18n.SUPPORTED_LANGS)}[/dim]")
+        raise typer.Exit(1)
+
+    user_config.set_value("language", code)
+    meta = i18n.lang_meta(code)
+    console.print(f"[green]✔ {i18n.msg('lang_set_ok', code)}[/green]: "
+                  f"{meta['flag']} {meta['name']} ({meta['english_name']})")
+    console.print(f"  [dim]저장 위치: {user_config.path()}[/dim]")
+    console.print(f"  [dim]다음 jarvis ask/do 호출부터 적용됨[/dim]")
+
+
+@app.command("profile")
+def profile_cmd(
+    show: bool = typer.Option(False, "--show", "-s"),
+    title: str = typer.Option("", "--title", help="호칭 설정 (예: --title '주인님' / '보스' / '혁수님')"),
+    name: str = typer.Option("", "--name", help="사용자 이름 설정"),
+    pref: str = typer.Option("", "--pref", help="선호 key=value 추가 (예: --pref 'tone=formal')"),
+    reset: bool = typer.Option(False, "--reset", help="프로필 완전 초기화 (다음 호출에서 첫 만남)"),
+    observations_show: int = typer.Option(0, "--observations", help="최근 N개 관찰 표시 (0=비표시)"),
+    observations_clear: bool = typer.Option(False, "--clear-observations", help="모든 관찰 기록 삭제"),
+) -> None:
+    """사용자 프로필 — 호칭, 첫 만남, 선호도, 관찰 기록 관리."""
+    from jarvis import observations as _obs
+    from jarvis import profile as _prof
+
+    if reset:
+        confirm = typer.confirm("프로필을 정말 초기화하시겠습니까? (다음 호출에서 첫 만남으로 인식)")
+        if confirm:
+            _prof.reset()
+            console.print("[green]OK: profile 초기화됨[/green]")
+        else:
+            console.print("[yellow]취소됨[/yellow]")
+        return
+
+    if observations_clear:
+        confirm = typer.confirm("모든 관찰 기록을 삭제하시겠습니까?")
+        if confirm:
+            n = _obs.clear()
+            console.print(f"[green]OK: {n}건 삭제[/green]")
+        return
+
+    changed = False
+    if title:
+        _prof.set_title(title)
+        console.print(f"[green]OK: title = '{title}'[/green]")
+        changed = True
+    if name:
+        p = _prof.read()
+        p["owner_name"] = name
+        _prof.write(p)
+        console.print(f"[green]OK: owner_name = '{name}'[/green]")
+        changed = True
+    if pref:
+        if "=" not in pref:
+            console.print("[red]ERROR: --pref 형식은 'key=value'[/red]")
+            return
+        k, v = pref.split("=", 1)
+        _prof.set_preference(k.strip(), v.strip())
+        console.print(f"[green]OK: preference[{k.strip()}] = '{v.strip()}'[/green]")
+        changed = True
+
+    if observations_show > 0:
+        obs = _obs.recent(observations_show)
+        if not obs:
+            console.print("[dim](no observations yet)[/dim]")
+        else:
+            console.print(f"[bold cyan]▣ Observations (최근 {len(obs)}건 / 총 {_obs.count()}건)[/bold cyan]")
+            for rec in obs:
+                ts = rec.get("ts", "")[:19]
+                cat = rec.get("category", "")
+                content = rec.get("content", "")
+                console.print(f"  [dim]{ts}[/dim] [yellow]{cat:<14}[/yellow] {content}")
+        return
+
+    if changed:
+        return
+
+    # default: show profile
+    p = _prof.read()
+    console.print("[bold cyan]▣ Jarvis Profile[/bold cyan]")
+    console.print(f"  title:       [yellow]{p.get('title') or '(미정)'}[/yellow]")
+    console.print(f"  owner_name:  {p.get('owner_name') or '(미정)'}")
+    console.print(f"  first_met:   {p.get('first_met_at') or '(아직 만난 적 없음)'}")
+    console.print(f"  interactions: {p.get('interactions', 0)}회")
+    prefs = p.get("preferences", {})
+    if prefs:
+        console.print(f"  preferences:")
+        for k, v in prefs.items():
+            console.print(f"    {k}: {v}")
+    obs_count = _obs.count()
+    console.print(f"  observations: {obs_count}건 (--observations N 으로 조회)")
+    console.print(f"\n  파일: ~/.jarvis/profile.json, ~/.jarvis/observations.jsonl")
 
 
 @app.command()
@@ -906,33 +1052,51 @@ def doctor() -> None:
     except Exception as e:
         bad(f"마이크 query 실패: {e}")
 
-    # 4) launchd daemon
-    try:
-        out = _sp.run(
-            ["launchctl", "list"], capture_output=True, text=True, timeout=3
-        ).stdout
-        if "com.swxvno.jarvis" in out or "jarvis.wake" in out:
-            ok("launchd daemon 등록됨")
-        else:
-            bad("launchd daemon 미등록 — jarvis daemon install")
-    except Exception:
-        bad("launchctl 실행 실패")
+    # 4) wake daemon — OS 분기 (macOS launchd / Windows Task Scheduler)
+    from jarvis.platform import IS_MACOS as _IS_MAC, IS_WINDOWS as _IS_WIN
+    if _IS_MAC:
+        try:
+            out = _sp.run(
+                ["launchctl", "list"], capture_output=True, text=True, timeout=3
+            ).stdout
+            if "com.swxvno.jarvis" in out or "jarvis.wake" in out:
+                ok("launchd daemon 등록됨")
+            else:
+                bad("launchd daemon 미등록 — jarvis daemon install")
+        except Exception:
+            bad("launchctl 실행 실패")
+    elif _IS_WIN:
+        try:
+            out = _sp.run(
+                ["schtasks", "/query", "/tn", "JarvisWake"],
+                capture_output=True, text=True, timeout=5,
+            )
+            if out.returncode == 0:
+                ok("Windows Task Scheduler에 JarvisWake 등록됨")
+            else:
+                bad("Task Scheduler 미등록 — jarvis daemon install")
+        except Exception:
+            bad("schtasks 실행 실패")
+    else:
+        bad("Linux daemon은 미지원 — systemd unit 수동 작성 필요")
 
-    # 5) HUD
-    if shutil.which("swift"):
-        ok("swift toolchain 발견")
-    else:
-        bad("swift 없음 — Xcode Command Line Tools 설치")
-    hud_bin = Path.home() / "jarvis" / "hud-overlay" / ".build" / "release" / "JarvisHUD"
-    if hud_bin.exists():
-        ok(f"JarvisHUD 빌드됨: {hud_bin}")
-    else:
-        # 다른 위치 시도
-        proj_hud = Path(__file__).resolve().parents[2] / "hud-overlay" / ".build" / "release" / "JarvisHUD"
-        if proj_hud.exists():
-            ok(f"JarvisHUD 빌드됨: {proj_hud}")
+    # 5) HUD — macOS only feature (Swift overlay)
+    if _IS_MAC:
+        if shutil.which("swift"):
+            ok("swift toolchain 발견")
         else:
-            bad("JarvisHUD 미빌드 — cd hud-overlay && swift build -c release")
+            bad("swift 없음 — Xcode Command Line Tools 설치")
+        hud_bin = Path.home() / "jarvis" / "hud-overlay" / ".build" / "release" / "JarvisHUD"
+        if hud_bin.exists():
+            ok(f"JarvisHUD 빌드됨: {hud_bin}")
+        else:
+            proj_hud = Path(__file__).resolve().parents[2] / "hud-overlay" / ".build" / "release" / "JarvisHUD"
+            if proj_hud.exists():
+                ok(f"JarvisHUD 빌드됨: {proj_hud}")
+            else:
+                bad("JarvisHUD 미빌드 — cd hud-overlay && swift build -c release")
+    else:
+        ok("HUD overlay는 macOS 전용 — 현재 OS에서는 skip (P3 작업 후 지원)")
 
     # 6) memory.md
     memo = Path.home() / ".jarvis" / "memory.md"
@@ -948,6 +1112,12 @@ def doctor() -> None:
 def permissions() -> None:
     """macOS 자동화 권한 다이얼로그 일괄 트리거 (Calendar/Reminders/Music/Mail)."""
     import subprocess as _sp
+
+    from jarvis.platform import IS_MACOS as _IS_MAC, os_label
+    if not _IS_MAC:
+        console.print(f"[yellow]권한 트리거는 macOS 전용 — 현재 OS({os_label()})에서는 미지원.[/yellow]")
+        console.print("[dim]Windows: 마이크 권한은 설정 > 개인정보 보호 및 보안 > 마이크에서 수동 허용.[/dim]")
+        return
 
     console.print("[bold cyan]macOS 자동화 권한 트리거[/bold cyan]")
     console.print("[dim]각 앱에 대한 권한 다이얼로그가 뜸. 모두 '허용' 누르시오.[/dim]\n")

@@ -82,8 +82,16 @@ def _notify(title: str, message: str, subtitle: str = "") -> str:
 
 # ──────────────── say (TTS) ────────────────
 def _say_macos(text: str, voice: str = "", rate: int = 180) -> str:
-    """macOS `say` 명령. 한국어 native voice (Yuna/Sandy/Eddy/Reed)."""
-    voice = voice or _os.environ.get("JARVIS_VOICE", "Yuna")
+    """macOS `say` 명령. JARVIS_LANG 기반 voice 자동 선택, JARVIS_VOICE env로 override."""
+    if not voice:
+        voice = _os.environ.get("JARVIS_VOICE", "")
+    if not voice:
+        # 언어별 권장 voice
+        try:
+            from jarvis import i18n
+            voice = i18n.tts_voice(platform="macos")
+        except Exception:
+            voice = "Yuna"
     try:
         subprocess.run(
             ["say", "-v", voice, "-r", str(rate), text],
