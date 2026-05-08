@@ -229,6 +229,9 @@ class TestSystemPromptIntegration:
         if profile.PROFILE_PATH.exists():
             profile.reset()
 
+        # i18n: 한국어로 강제 (이 테스트는 한국어 인사 검증)
+        monkeypatch.setenv("JARVIS_LANG", "ko")
+
         # SYSTEM_PROMPT는 매번 _build_system_prompt 재호출
         from jarvis.assistant import _build_system_prompt
         sp = _build_system_prompt()
@@ -236,8 +239,9 @@ class TestSystemPromptIntegration:
         assert "자비스입니다" in sp
         assert "어떻게 호칭" in sp
 
-    def test_after_first_meeting_no_introduction_block(self) -> None:
+    def test_after_first_meeting_no_introduction_block(self, monkeypatch) -> None:
         """첫 만남 후에는 인사 블록 사라지고 사용자 정보 블록 표시."""
+        monkeypatch.setenv("JARVIS_LANG", "ko")
         profile.set_title("보스")
         profile.increment_interactions()  # 누적 1회
         from jarvis.assistant import _build_system_prompt

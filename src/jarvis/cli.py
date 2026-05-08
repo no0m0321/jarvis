@@ -640,6 +640,58 @@ def config_cmd(
             console.print(f"(no config at {path}) — `jarvis config --init` 으로 생성")
 
 
+@app.command("lang")
+def lang_cmd(
+    code: str = typer.Argument("", help="설정할 언어 코드 (예: ko, en, ja, zh, es, fr, de, pt). 비우면 현재 언어 표시."),
+    list_all: bool = typer.Option(False, "--list", "-l", help="지원 언어 목록 표시"),
+) -> None:
+    """언어 설정 — 자비스 응답 언어 (cross-session, ~/.jarvis/config.toml)."""
+    from jarvis import i18n, user_config
+
+    if list_all:
+        cur = i18n.detect_lang()
+        msg = i18n.msg("lang_supported_list")
+        console.print(f"[bold cyan]{msg}[/bold cyan]")
+        for c in i18n.SUPPORTED_LANGS:
+            meta = i18n.lang_meta(c)
+            marker = "[green]●[/green]" if c == cur else "[dim]○[/dim]"
+            console.print(
+                f"  {marker} [yellow]{c}[/yellow]  {meta['flag']} {meta['name']:<10} ({meta['english_name']:<22}) "
+                f"호칭={meta['default_title']}"
+            )
+        return
+
+    if not code:
+        # 현재 언어 표시
+        cur = i18n.detect_lang()
+        meta = i18n.lang_meta(cur)
+        console.print(f"[bold cyan]{i18n.msg('lang_current')}[/bold cyan]: "
+                      f"[yellow]{cur}[/yellow] {meta['flag']} {meta['name']} ({meta['english_name']})")
+        # 결정 우선순위 표시
+        if os.environ.get("JARVIS_LANG"):
+            console.print(f"  [dim]source: env JARVIS_LANG={os.environ['JARVIS_LANG']}[/dim]")
+        else:
+            cfg = user_config.load()
+            if cfg.get("language"):
+                console.print(f"  [dim]source: ~/.jarvis/config.toml language = '{cfg['language']}'[/dim]")
+            else:
+                console.print("  [dim]source: 시스템 locale 또는 fallback (en)[/dim]")
+        return
+
+    code = code.strip().lower()
+    if not i18n.is_supported(code):
+        console.print(f"[red]ERROR: {i18n.msg('lang_unsupported')}: '{code}'[/red]")
+        console.print(f"[dim]지원 언어: {', '.join(i18n.SUPPORTED_LANGS)}[/dim]")
+        raise typer.Exit(1)
+
+    user_config.set_value("language", code)
+    meta = i18n.lang_meta(code)
+    console.print(f"[green]✔ {i18n.msg('lang_set_ok', code)}[/green]: "
+                  f"{meta['flag']} {meta['name']} ({meta['english_name']})")
+    console.print(f"  [dim]저장 위치: {user_config.path()}[/dim]")
+    console.print(f"  [dim]다음 jarvis ask/do 호출부터 적용됨[/dim]")
+
+
 @app.command("profile")
 def profile_cmd(
     show: bool = typer.Option(False, "--show", "-s"),

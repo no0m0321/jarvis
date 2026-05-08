@@ -21,13 +21,18 @@ def test_total_tool_count() -> None:
     assert len(REGISTRY.names()) >= 30
 
 
-def test_persona_module() -> None:
+def test_persona_module(monkeypatch) -> None:
     from jarvis import persona
 
     assert "jarvis" in persona.PERSONAS
     assert "casual" in persona.PERSONAS
-    prompt = persona.get_active()
-    assert "자비스" in prompt or "JARVIS" in prompt
+    # 언어 무관 — 'jarvis'/'JARVIS'/'자비스' 중 하나는 반드시 있음 (i18n 적용 후)
+    monkeypatch.setenv("JARVIS_LANG", "ko")
+    prompt_ko = persona.get_active()
+    assert "자비스" in prompt_ko
+    monkeypatch.setenv("JARVIS_LANG", "en")
+    prompt_en = persona.get_active()
+    assert "JARVIS" in prompt_en or "Jarvis" in prompt_en
 
 
 def test_history_module() -> None:

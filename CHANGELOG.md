@@ -1,5 +1,97 @@
 # Changelog
 
+## v0.6.0 — 2026-05-08 (다국어 지원 + 다운로드 사이트)
+
+### 추가 — 8개 언어 i18n 시스템
+
+**🌍 src/jarvis/i18n.py 신규** — 8개 언어 정의 + helpers:
+- 지원 언어: ko / en / ja / zh / es / fr / de / pt
+- 각 언어 메타데이터: name, english_name, native, flag, default_title, tts_voice_macos/windows
+- 첫 만남 인사 (4단계 인사 명세) — 8개 언어 모두
+- 응답 강제 directive — non-native 언어를 위한 "ALWAYS respond in X" suffix
+- `detect_lang()` — env JARVIS_LANG > config.toml language > locale > "en" fallback
+- CLI 메시지 8개 언어 (lang_current/set_ok/unsupported/supported_list)
+- API: `lang_meta(code)`, `default_title(code)`, `tts_voice(code, platform)`, `is_supported(code)`,
+  `first_meeting_greeting(code)`, `respond_in_lang_suffix(code)`, `msg(key, lang)`
+
+**🎭 src/jarvis/persona.py 변경** — 언어 분기:
+- `PERSONAS_KO` (한국어 native) + `PERSONAS_EN` (영어 native) 분리
+- `get_active()`가 `JARVIS_LANG` 인식 → 네이티브 prompt 또는 영어 base + i18n directive
+- `PERSONAS` (기존 backward-compat) = `PERSONAS_KO`
+
+**🤖 src/jarvis/assistant.py 변경**:
+- 첫 만남 인사 블록을 `i18n.first_meeting_greeting()` 사용 → 언어별 자동 적용
+- 한국어 hardcoded 제거, 모든 언어에서 동일한 4단계 인사 + personalization_observe + memory_save 안내
+
+**🔊 src/jarvis/tools/macos.py 변경**:
+- `_say_macos`가 JARVIS_VOICE env → `i18n.tts_voice()` → 'Yuna' fallback 우선순위로 voice 선택
+- 한국어=Yuna, English=Reed, 日本語=Kyoko 등 자동
+
+**📋 src/jarvis/config.py + user_config.py**:
+- `Settings.lang` 필드 추가 (env JARVIS_LANG 자동 매핑)
+- `apply_to_env()`에 `language: JARVIS_LANG` 매핑 추가
+- `user_config.set_value(key, value)` 신규 — config.toml에 atomic update/append
+  - 기존 [section] 헤더 보존, root-level 키만 update
+  - 새 키는 첫 [section] 앞 (또는 끝)에 추가
+
+**💻 src/jarvis/cli.py — `jarvis lang` 서브커맨드 신규**:
+- `jarvis lang` (인자 없음) — 현재 언어 + 결정 source 표시
+- `jarvis lang --list` — 8개 언어 목록 (현재 ●, 다른 ○ 마커)
+- `jarvis lang <code>` — 언어 설정 (~/.jarvis/config.toml에 영구 저장)
+- 미지원 언어 입력 시 한국어 ERROR + exit 1
+
+**🚀 install.sh / install.ps1 — JARVIS_LANG 자동 사전 저장**:
+- `JARVIS_LANG=ja curl ... | bash` 또는 `$env:JARVIS_LANG="ja"; iwr ... | iex`
+- 설치 시점에 `~/.jarvis/config.toml`에 `language = "ja"` 자동 작성
+- 기존 config.toml이면 language 라인만 update (다른 키 보존)
+- 미지원 코드 입력 시 warning만 표시 (설치 자체는 진행)
+
+**🌐 docs/download.html 신규 — 사이트에서 언어 선택 → 다운로드**:
+- 8개 언어 카드 그리드 (깃발, 네이티브 이름, 영어 이름, 호칭, TTS voice)
+- 클릭하면 install panel 펼쳐짐 + macOS/Linux vs Windows OS 탭
+- 언어별 install 명령 자동 생성 (curl + JARVIS_LANG=xx)
+- "Copy" 버튼 → clipboard에 복사
+- 브라우저 언어 자동 감지 (navigator.language) → 사용자 언어 미리 선택
+- FAQ 섹션 (언어 결정 우선순위, 변경 방법, TTS voice, 새 언어 추가)
+- 톤 일관성: index.html과 동일한 cyan/black sci-fi theme
+
+### 테스트 — +34 (총 181)
+
+- `tests/test_i18n.py` (34) — 6개 클래스로 구성:
+  - `TestI18nCore` (8) — 8개 언어 메타데이터 / 인사 / suffix / 호칭 / TTS / supported / fallback
+  - `TestDetectLang` (5) — env / config.toml / locale / 정규화 / fallback 우선순위
+  - `TestPersonaLanguageBranch` (4) — ko/en native, 그 외 영어+directive, 모드별
+  - `TestAssistantFirstMeetingI18n` (8) — 8개 언어 모두 첫 만남 prompt 검증 (인사/호칭/도구 안내)
+  - `TestCliLangCommand` (2) — `jarvis lang --list` / 미지원 언어 exit 1
+  - `TestI18nMessages` (3) — msg() 다국어 lookup + fallback
+  - `TestUserConfigSetValue` (4) — create / update / append / [section] 헤더 보존
+- 회귀 fix: `test_extras.test_persona_module` + `test_profile_observations.TestSystemPromptIntegration` —
+  i18n 적용 후 시스템 locale fallback이 영어로 가는 환경에서 한국어 명시 monkeypatch 추가
+
+### 변경 요약
+
+- 도구 카운트: **350 (변동 없음)** — i18n은 시스템 인프라이지 도구 추가 아님
+- pyproject 0.5.0 → 0.6.0
+- README: 8개 언어 지원 안내 + download.html link
+- pytest 181/181 통과 (이전 147 + i18n 34)
+
+### 사용 예시
+
+```bash
+# 한국어로 설치 (URL 한 줄)
+curl -fsSL https://raw.githubusercontent.com/no0m0321/jarvis/main/install.sh | JARVIS_LANG=ko bash
+
+# 일본어로 설치 (Windows)
+$env:JARVIS_LANG="ja"; iwr https://raw.githubusercontent.com/no0m0321/jarvis/main/install.ps1 -UseBasicParsing | iex
+
+# 설치 후 언어 변경
+jarvis lang fr           # → 프랑스어
+jarvis lang --list       # → 8개 언어 목록
+jarvis lang              # → 현재 언어 + source 표시
+```
+
+---
+
 ## v0.5.0 — 2026-05-08 (cross-platform 대규모 확장 + 개인화)
 
 ### 추가 — 도구 301 → **350 (+49)**

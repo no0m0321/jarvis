@@ -1,12 +1,20 @@
-# 자비스 (JARVIS) v0.5.0
+# 자비스 (JARVIS) v0.6.0
 
 [![CI](https://github.com/no0m0321/jarvis/actions/workflows/ci.yml/badge.svg)](https://github.com/no0m0321/jarvis/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 
-> Voice-first personal AI assistant — Claude-powered, autonomous, holographic HUD
+> Voice-first personal AI assistant — Claude-powered, autonomous, holographic HUD · 8 languages
 
-macOS 우선 / **Windows 베타 / Linux 베타** 지원 개인 AI 비서. 한국어 우선, "자비스" wake word 음성 대화 + **350개 도구** (cross-platform 약 245개 + macOS 99개 + Windows 17개 + Linux 13개) + 시네마틱 데스크톱 HUD(macOS) + plugin/config 시스템 + **첫 만남/호칭 시스템** + **Passive Learning**.
+**8개 언어 지원** (🇰🇷 한국어 · 🇺🇸 English · 🇯🇵 日本語 · 🇨🇳 中文 · 🇪🇸 Español · 🇫🇷 Français · 🇩🇪 Deutsch · 🇵🇹 Português) — macOS 우선 / Windows 베타 / Linux 베타 개인 AI 비서. wake word 음성 대화 + **350개 도구** (cross-platform 245 + macOS 99 + Windows 17 + Linux 13) + 시네마틱 데스크톱 HUD(macOS) + 첫 만남/호칭 시스템 + Passive Learning.
+
+**v0.6.0 신규 — 다국어 지원**:
+- 🌍 [`src/jarvis/i18n.py`](src/jarvis/i18n.py) — 8개 언어 첫 만남 인사 + 호칭 + TTS voice 자동 매칭
+- 📦 [`docs/download.html`](docs/download.html) — 언어 선택 → 언어 사전 설정된 install 명령 자동 생성 (사이트에서 다운로드)
+- 🎙 한국어/영어 native system prompt; 그 외 6개 언어는 영어 base + "ALWAYS respond in X" directive
+- 🔧 `jarvis lang [code|--list]` CLI — 언어 조회/설정/목록
+- 🌐 install.sh / install.ps1 — `JARVIS_LANG=ja` 같이 export 후 실행하면 `~/.jarvis/config.toml`에 자동 사전 저장
+- 🔊 macOS `say` 자동 voice 선택: ko=Yuna, en=Reed, ja=Kyoko, zh=Tingting, es=Mónica, fr=Thomas, de=Anna, pt=Joana
 
 **v0.5.0 신규 — cross-platform 대규모 확장 + 개인화 (+49 도구)**:
 

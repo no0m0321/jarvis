@@ -67,6 +67,7 @@ def apply_to_env() -> None:
     mapping = {
         "voice": "JARVIS_VOICE",
         "persona": "JARVIS_PERSONA",
+        "language": "JARVIS_LANG",        # i18n v0.6.0: ko/en/ja/zh/es/fr/de/pt
         "hud_sounds": "JARVIS_HUD_SOUNDS",
         "health_port": "JARVIS_HEALTH_PORT",
         "wake_debug": "JARVIS_WAKE_DEBUG",
@@ -82,3 +83,52 @@ def apply_to_env() -> None:
 
 def path() -> Path:
     return _CONFIG_PATH
+
+
+def set_value(key: str, value: Any) -> None:
+    """config.toml에 key=value 저장. 기존 키는 update, 없으면 append.
+
+    간단한 line-based 구현 — 기존 [section] 헤더는 보존, root-level 키만 update/append.
+    """
+    _CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    if isinstance(value, bool):
+        line_value = "true" if value else "false"
+    elif isinstance(value, (int, float)):
+        line_value = str(value)
+    else:
+        # string은 quote
+        line_value = '"' + str(value).replace('"', '\\"') + '"'
+    new_line = f"{key} = {line_value}"
+
+    # 기존 파일 읽기
+    if _CONFIG_PATH.exists():
+        lines = _CONFIG_PATH.read_text(encoding="utf-8").splitlines()
+    else:
+        lines = []
+
+    # root-level (section 헤더 이전)에서 같은 키 찾기
+    found = False
+    out_lines: list[str] = []
+    in_root = True
+    for ln in lines:
+        stripped = ln.strip()
+        if stripped.startswith("[") and stripped.endswith("]"):
+            in_root = False
+        if in_root and stripped and not stripped.startswith("#") and "=" in stripped:
+            existing_key = stripped.split("=", 1)[0].strip()
+            if existing_key == key:
+                out_lines.append(new_line)
+                found = True
+                continue
+        out_lines.append(ln)
+
+    if not found:
+        # 첫 [section] 앞에 삽입, 없으면 끝에 append
+        insert_idx = len(out_lines)
+        for i, ln in enumerate(out_lines):
+            if ln.strip().startswith("["):
+                insert_idx = i
+                break
+        out_lines.insert(insert_idx, new_line)
+
+    _CONFIG_PATH.write_text("\n".join(out_lines) + "\n", encoding="utf-8")

@@ -1,6 +1,6 @@
 [project]
 name = "jarvis-voice"
-version = "0.5.0"
+version = "0.6.0"
 description = "Voice-first personal AI assistant — Claude-powered, autonomous, holographic HUD (Korean/English wake word)"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -102,7 +102,7 @@ asyncio_mode = "auto"
 #        cz changelog
 [tool.commitizen]
 name = "cz_conventional_commits"
-version = "0.5.0"
+version = "0.6.0"
 version_files = [
     "pyproject.toml:version",
     "src/jarvis/__init__.py:__version__",

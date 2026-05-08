@@ -4,7 +4,7 @@ import os
 from collections.abc import Iterable
 from typing import Optional
 
-from jarvis import hud, observations, persona
+from jarvis import hud, i18n, observations, persona
 from jarvis import profile as user_profile
 from jarvis.config import settings
 
@@ -54,18 +54,9 @@ def _build_system_prompt() -> str:
     base = persona.get_active()
 
     # 1) 첫 만남 — profile.json이 없거나 first_met_at 비어있으면 자비스가 자기소개 + 호칭 질문
+    #    언어별 첫 만남 인사를 i18n.first_meeting_greeting()으로 가져온다.
     if user_profile.is_first_meeting():
-        base += (
-            "\n\n# 첫 만남 (CRITICAL)\n"
-            "사용자가 자비스를 처음 부르는 상황입니다. 첫 응답에서 반드시 다음 4가지를 모두 포함:\n"
-            "  1) '주인님 반갑습니다.' (정중한 첫 인사)\n"
-            "  2) '저는 당신의 일상을 보조할 자비스입니다.' (자기소개)\n"
-            "  3) '제가 당신을 어떻게 호칭하면 좋을까요?' (호칭 묻기)\n"
-            "  4) 호칭 듣고 나면 personalization_observe 도구로 "
-            "category='preference', content='호칭은 ___' 기록 + memory_save로 영구 저장.\n"
-            "  5) 사용자가 호칭 알려주면 다음 응답부터는 그 호칭으로 부른다.\n"
-            "이후 대화에서는 이 첫 만남 안내가 자동으로 사라집니다."
-        )
+        base += "\n\n# First meeting (CRITICAL)\n" + i18n.first_meeting_greeting()
     else:
         p = user_profile.read()
         title = (p.get("title") or "").strip()

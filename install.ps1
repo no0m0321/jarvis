@@ -67,6 +67,32 @@ if (-not (Test-Path ".env")) {
     }
 }
 
+# 4b) JARVIS_LANG env로 들어왔으면 ~/.jarvis/config.toml에 language 사전 저장
+$JarvisLang = $env:JARVIS_LANG
+if ($JarvisLang) {
+    $JarvisLang = $JarvisLang.ToLower().Trim()
+    if ($JarvisLang -in @("ko","en","ja","zh","es","fr","de","pt")) {
+        $JarvisHome = Join-Path $env:USERPROFILE ".jarvis"
+        if (-not (Test-Path $JarvisHome)) { New-Item -ItemType Directory -Force -Path $JarvisHome | Out-Null }
+        $CfgPath = Join-Path $JarvisHome "config.toml"
+        $newLine = "language = `"$JarvisLang`""
+        if (-not (Test-Path $CfgPath)) {
+            $newLine | Out-File -FilePath $CfgPath -Encoding UTF8
+            Write-Info "언어 사전 설정: language = `"$JarvisLang`" → $CfgPath"
+        } else {
+            $content = Get-Content $CfgPath
+            if ($content -match '^language') {
+                $content -replace '^language.*', $newLine | Set-Content $CfgPath -Encoding UTF8
+            } else {
+                @($newLine) + $content | Set-Content $CfgPath -Encoding UTF8
+            }
+            Write-Info "언어 갱신: language = `"$JarvisLang`""
+        }
+    } else {
+        Write-Warn "지원되지 않는 JARVIS_LANG='$JarvisLang' (지원: ko/en/ja/zh/es/fr/de/pt)"
+    }
+}
+
 # 5) HUD 빌드 — Windows에서는 skip
 if (Test-Path "hud-overlay") {
     Write-Warn "HUD overlay (Swift)는 Windows 미지원 — skip. (P3 cross-platform 작업 후 지원)"

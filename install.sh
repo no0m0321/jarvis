@@ -64,6 +64,32 @@ if [[ ! -f ".env" ]]; then
   warn ".env 생성됨 — ANTHROPIC_API_KEY를 채우시오: $REPO_DIR/.env"
 fi
 
+# 4b) JARVIS_LANG env로 들어왔으면 ~/.jarvis/config.toml에 language 사전 저장
+#     (사이트의 언어 선택 → install 명령에 JARVIS_LANG=ko 같이 export 후 실행)
+if [[ -n "${JARVIS_LANG:-}" ]]; then
+  case "$JARVIS_LANG" in
+    ko|en|ja|zh|es|fr|de|pt)
+      mkdir -p "$HOME/.jarvis"
+      cfg="$HOME/.jarvis/config.toml"
+      if [[ ! -f "$cfg" ]]; then
+        echo "language = \"$JARVIS_LANG\"" > "$cfg"
+        say "언어 사전 설정: language = \"$JARVIS_LANG\" → $cfg"
+      else
+        # 기존 language 라인 update 또는 첫 줄에 추가
+        if grep -q '^language' "$cfg" 2>/dev/null; then
+          sed -i.bak "s/^language.*/language = \"$JARVIS_LANG\"/" "$cfg" && rm -f "$cfg.bak"
+        else
+          (echo "language = \"$JARVIS_LANG\""; cat "$cfg") > "$cfg.tmp" && mv "$cfg.tmp" "$cfg"
+        fi
+        say "언어 갱신: language = \"$JARVIS_LANG\""
+      fi
+      ;;
+    *)
+      warn "지원되지 않는 JARVIS_LANG='$JARVIS_LANG' (지원: ko/en/ja/zh/es/fr/de/pt)"
+      ;;
+  esac
+fi
+
 # 5) JarvisHUD 빌드 (Swift) — macOS 전용
 if [[ $IS_MAC -eq 1 && -d "hud-overlay" ]]; then
   say "JarvisHUD overlay 빌드 (Swift release)"
