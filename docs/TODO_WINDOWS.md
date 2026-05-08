@@ -11,8 +11,10 @@
 | TTS | ✅ Reed/Yuna native | ✅ pyttsx3 + SAPI5 한국어 Heami | ✅ pyttsx3 + espeak |
 | 클립보드 / 화면 캡처 / 웹캠 | ✅ | ✅ | ✅ |
 | 알림 | ✅ Notification Center | ✅ win10toast/PowerShell | ✅ notify-send |
-| 도구 명단 (REGISTRY 카운트) | 344 | 344 (+windows_*) | 344 (+linux_*) |
-| cross-platform 도구 (240개) | ✅ | ✅ | ✅ |
+| 도구 명단 (REGISTRY 카운트) | 350 | 350 (+windows_*) | 350 (+linux_*) |
+| cross-platform 도구 (245개) | ✅ | ✅ | ✅ |
+| 첫 만남/호칭/Passive Learning | ✅ | ✅ | ✅ |
+| `personalization_observe` 도구 | ✅ | ✅ | ✅ |
 | AI 헬퍼 도구 10개 (ai_helpers.py) | ✅ | ✅ | ✅ |
 | macOS 전용 도구 99개 | ✅ native | ⚠️ `@mac_only` graceful ERROR | ⚠️ 동일 |
 | Windows 전용 도구 17개 (windows_extras + system_xp) | ⚠️ ERROR | ✅ | ⚠️ ERROR |

@@ -31,6 +31,7 @@ from jarvis.tools import (  # noqa: F401  (sideeffect imports)
     network,
     network_extra,
     personal,
+    personalization,  # 신규 v0.5.0: passive learning observe 도구
     shell,
     system_xp,     # cross-platform: open_path/show_in_folder/screenshot/audio_record/env_summary
     util_extra,

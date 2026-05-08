@@ -640,6 +640,89 @@ def config_cmd(
             console.print(f"(no config at {path}) — `jarvis config --init` 으로 생성")
 
 
+@app.command("profile")
+def profile_cmd(
+    show: bool = typer.Option(False, "--show", "-s"),
+    title: str = typer.Option("", "--title", help="호칭 설정 (예: --title '주인님' / '보스' / '혁수님')"),
+    name: str = typer.Option("", "--name", help="사용자 이름 설정"),
+    pref: str = typer.Option("", "--pref", help="선호 key=value 추가 (예: --pref 'tone=formal')"),
+    reset: bool = typer.Option(False, "--reset", help="프로필 완전 초기화 (다음 호출에서 첫 만남)"),
+    observations_show: int = typer.Option(0, "--observations", help="최근 N개 관찰 표시 (0=비표시)"),
+    observations_clear: bool = typer.Option(False, "--clear-observations", help="모든 관찰 기록 삭제"),
+) -> None:
+    """사용자 프로필 — 호칭, 첫 만남, 선호도, 관찰 기록 관리."""
+    from jarvis import observations as _obs
+    from jarvis import profile as _prof
+
+    if reset:
+        confirm = typer.confirm("프로필을 정말 초기화하시겠습니까? (다음 호출에서 첫 만남으로 인식)")
+        if confirm:
+            _prof.reset()
+            console.print("[green]OK: profile 초기화됨[/green]")
+        else:
+            console.print("[yellow]취소됨[/yellow]")
+        return
+
+    if observations_clear:
+        confirm = typer.confirm("모든 관찰 기록을 삭제하시겠습니까?")
+        if confirm:
+            n = _obs.clear()
+            console.print(f"[green]OK: {n}건 삭제[/green]")
+        return
+
+    changed = False
+    if title:
+        _prof.set_title(title)
+        console.print(f"[green]OK: title = '{title}'[/green]")
+        changed = True
+    if name:
+        p = _prof.read()
+        p["owner_name"] = name
+        _prof.write(p)
+        console.print(f"[green]OK: owner_name = '{name}'[/green]")
+        changed = True
+    if pref:
+        if "=" not in pref:
+            console.print("[red]ERROR: --pref 형식은 'key=value'[/red]")
+            return
+        k, v = pref.split("=", 1)
+        _prof.set_preference(k.strip(), v.strip())
+        console.print(f"[green]OK: preference[{k.strip()}] = '{v.strip()}'[/green]")
+        changed = True
+
+    if observations_show > 0:
+        obs = _obs.recent(observations_show)
+        if not obs:
+            console.print("[dim](no observations yet)[/dim]")
+        else:
+            console.print(f"[bold cyan]▣ Observations (최근 {len(obs)}건 / 총 {_obs.count()}건)[/bold cyan]")
+            for rec in obs:
+                ts = rec.get("ts", "")[:19]
+                cat = rec.get("category", "")
+                content = rec.get("content", "")
+                console.print(f"  [dim]{ts}[/dim] [yellow]{cat:<14}[/yellow] {content}")
+        return
+
+    if changed:
+        return
+
+    # default: show profile
+    p = _prof.read()
+    console.print("[bold cyan]▣ Jarvis Profile[/bold cyan]")
+    console.print(f"  title:       [yellow]{p.get('title') or '(미정)'}[/yellow]")
+    console.print(f"  owner_name:  {p.get('owner_name') or '(미정)'}")
+    console.print(f"  first_met:   {p.get('first_met_at') or '(아직 만난 적 없음)'}")
+    console.print(f"  interactions: {p.get('interactions', 0)}회")
+    prefs = p.get("preferences", {})
+    if prefs:
+        console.print(f"  preferences:")
+        for k, v in prefs.items():
+            console.print(f"    {k}: {v}")
+    obs_count = _obs.count()
+    console.print(f"  observations: {obs_count}건 (--observations N 으로 조회)")
+    console.print(f"\n  파일: ~/.jarvis/profile.json, ~/.jarvis/observations.jsonl")
+
+
 @app.command()
 def stats() -> None:
     """자비스 자체 상태 + 등록 도구 list + 최근 history."""

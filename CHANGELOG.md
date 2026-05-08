@@ -1,8 +1,26 @@
 # Changelog
 
-## v0.5.0 — 2026-05-08 (cross-platform 대규모 확장)
+## v0.5.0 — 2026-05-08 (cross-platform 대규모 확장 + 개인화)
 
-### 추가 — 도구 301 → **344 (+43)**
+### 추가 — 도구 301 → **350 (+49)**
+
+**🎭 첫 만남 / 호칭 / Passive Learning 시스템** — "관찰을 통한 사후 개인화":
+- `src/jarvis/profile.py` 신규 — `~/.jarvis/profile.json` (title, owner_name, first_met_at, interactions, preferences)
+  - `is_first_meeting()`, `mark_first_meeting()`, `set_title()`, `get_preference()`, `reset()` API
+- `src/jarvis/observations.py` 신규 — `~/.jarvis/observations.jsonl` (append-only, 최대 10000줄 후 자동 archive)
+  - `append(category, content, source, weight, extra)`, `recent(n)`, `by_category(cat)`, `clear()`
+  - `format_for_system_prompt(n)` — 시스템 프롬프트에 첨부할 형태로 포맷
+- `src/jarvis/tools/personalization.py` 신규 — `personalization_observe` 도구 1개
+  - agent가 사용자 패턴(반복 검색/명시 선호) 발견 시 즉시 기록 → 다음 대화의 시스템 프롬프트에 자동 첨부
+- `src/jarvis/assistant.py` 변경 — `_build_system_prompt()`에 첫 만남/호칭/관찰 자동 첨부 로직
+  - 첫 만남이면 → "주인님 반갑습니다. 저는 자비스입니다. 호칭 알려주세요" 4단계 인사 명시
+  - 첫 만남 후엔 → 사용자 정보 블록 (호칭/첫 만남일/누적 대화)
+  - 매 reply/stream/agent 호출마다 prompt rebuild (첫 만남 → 이후 분기 즉시 반영)
+- `src/jarvis/agent.py` 변경 — `_build_system_prompt()` 매 agent 실행 호출, finally에서 `increment_interactions()`
+- `src/jarvis/persona.py` 변경 — jarvis persona의 도구 list에 windows/linux/cross-platform/AI 헬퍼/personalization_observe 안내 추가, "Passive Learning" 행동 원칙 명시
+- `src/jarvis/cli.py` 변경 — `jarvis profile` 서브커맨드 신규 (--title, --name, --pref, --reset, --observations N, --clear-observations)
+
+**🪟 windows_extras.py — Windows 등가물 14개**:
 
 **🪟 windows_extras.py — Windows 등가물 14개**:
 - 다크모드: `windows_dark_mode_status` / `windows_dark_mode_set` / `windows_dark_mode_toggle` (registry HKCU)
@@ -34,12 +52,17 @@
 - `task_decompose` — 큰 작업을 단계별 분해 (depth 1/2/3)
 - `meeting_notes_format` — 자유 메모 → 구조화된 회의록
 
-**🔧 system_xp.py 확장 5개**:
+**🔧 system_xp.py 확장 +10개**:
 - `system_screenshot_to_file` — 화면 캡처 → PNG 파일 (mss, cross-platform)
 - `system_record_audio` — 마이크 녹음 → WAV 파일 (sounddevice)
 - `system_env_summary` — OS / Python / CPU / Memory / Disk / ~/.jarvis / API key 종합 진단
 - `system_default_browser_url` — 기본 브라우저로 URL 열기
 - `system_open_terminal_at` — 지정 폴더에서 새 터미널 (Terminal.app / wt.exe / gnome-terminal)
+- `system_uptime` — 시스템 uptime + boot 시각 (psutil 우선, OS별 fallback)
+- `system_locale` — locale / timezone / 키보드 레이아웃 (cross-platform)
+- `file_compare_dirs` — 두 디렉토리 파일 차이 비교 (재귀, ONLY/DIFFER 분리, size+mtime 비교)
+- `system_kill_process` — PID로 프로세스 종료 (graceful SIGTERM 또는 force SIGKILL/taskkill /F, PID 0/1/자기 자신 거부)
+- `network_speedtest_simple` — 1.1.1.1 latency + Cloudflare 1MB 다운로드 throughput + public IP
 
 ### 변경
 
@@ -48,18 +71,24 @@
 - `.github/workflows/ci.yml` — `windows-latest` runner 추가 (Python 3.11/3.12, 3.9는 sounddevice wheel 안정성 이슈로 exclude). lint/type check는 Linux runner에서만 실행 (CI 시간 단축).
 - README/CHANGELOG/TODO_WINDOWS — 도구 카운트 갱신, 신규 모듈 안내
 
-### 테스트 — +33 (총 81개)
+### 테스트 — +99 (총 147개)
 
-- `tests/test_system_xp.py` — system_xp 9개 도구 동작 + windows_only graceful 분기
-- `tests/test_platform_branching.py` — `mac_only`/`windows_only` 데코레이터 동작, mock OS spoof
-- `tests/test_xp_modules.py` — windows_extras / linux_extras / ai_helpers 등록 + 분기 + input validation
-- `tests/test_daemon_windows.py` — schtasks mock 검증 (install/uninstall/status/tail_log)
+- `tests/test_system_xp.py` (9) — system_xp 9개 도구 동작 + windows_only graceful 분기
+- `tests/test_platform_branching.py` (7) — `mac_only`/`windows_only` 데코레이터 동작, mock OS spoof
+- `tests/test_xp_modules.py` (9) — windows_extras / linux_extras / ai_helpers 등록 + 분기 + input validation
+- `tests/test_daemon_windows.py` (8) — schtasks subprocess mock 검증 (install/uninstall/status/tail_log)
+- `tests/test_xp_extra.py` (22) — system_xp 추가 5개 도구 + 모든 v0.5.0 신규 도구 일괄 dispatch smoke + 도구 카운트=350 가드 + description/schema 검증 + regression 가드
+- `tests/test_profile_observations.py` (33) — profile/observations 단위 테스트 + personalization_observe 도구 + 시스템 프롬프트 통합 (첫 만남/호칭/관찰 자동 첨부)
+- `tests/test_cli_integration.py` (11) — subprocess로 jarvis CLI 직접 호출: version/profile/stats/tools-list/daemon status/help/한국어 출력 정상 검증
+
+검증 결과: pytest 147/147 통과. mypy clean (신규 3개 파일). ruff: 안전한 fix 적용, 한국어 description의 라인-길이 경고는 기존 스타일과 일치.
 
 ### 기존 동작 유지
 
 - macOS native 동작 unchanged (mac_only는 macOS에선 그대로 통과)
 - v0.4.0 graceful 분기 정책 유지 (모든 OS에서 도구 명단 일관 노출)
-- Windows에서 cross-platform 도구 약 240개 정상 동작 (이전 200개 → 240개로 증가)
+- Windows에서 cross-platform 도구 약 245개 정상 동작 (이전 200개 → 245개로 증가)
+- 기존 사용자 (~/.jarvis/profile.json 없음): 다음 호출에서 첫 만남 인사 → 호칭 묻기 → 답변 받으면 영구 저장
 
 ---
 

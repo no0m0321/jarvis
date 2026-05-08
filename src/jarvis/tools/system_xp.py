@@ -454,5 +454,313 @@ REGISTRY.register(Tool(
 ))
 
 
+# ──────────────── system_uptime (cross-platform) ────────────────
+def _system_uptime() -> str:
+    """시스템 uptime + boot 시각 (cross-platform).
+
+    psutil 사용. 없으면 OS별 fallback (macOS=sysctl, Linux=/proc/uptime, Windows=PowerShell).
+    """
+    try:
+        from datetime import datetime
+
+        import psutil  # type: ignore
+        boot_ts = psutil.boot_time()
+        boot_dt = datetime.fromtimestamp(boot_ts)
+        uptime_sec = int(__import__("time").time() - boot_ts)
+        days = uptime_sec // 86400
+        hours = (uptime_sec % 86400) // 3600
+        mins = (uptime_sec % 3600) // 60
+        return f"uptime: {days}d {hours}h {mins}m (booted {boot_dt:%Y-%m-%d %H:%M:%S})"
+    except ImportError:
+        pass
+    # OS별 fallback
+    try:
+        if IS_MACOS:
+            r = subprocess.run(["sysctl", "-n", "kern.boottime"], capture_output=True, text=True, timeout=3)
+            return r.stdout.strip() or "uptime unknown"
+        if IS_LINUX:
+            with open("/proc/uptime") as f:
+                up = float(f.read().split()[0])
+            return f"uptime: {int(up // 86400)}d {int((up % 86400) // 3600)}h {int((up % 3600) // 60)}m"
+        if IS_WINDOWS:
+            r = subprocess.run(
+                ["powershell", "-NoProfile", "-Command",
+                 "(Get-CimInstance Win32_OperatingSystem).LastBootUpTime"],
+                capture_output=True, text=True, timeout=8,
+            )
+            return f"booted: {r.stdout.strip()}"
+        return "ERROR: unsupported OS"
+    except Exception as e:
+        return f"ERROR: {type(e).__name__}: {e}"
+
+
+REGISTRY.register(Tool(
+    name="system_uptime",
+    description="시스템 uptime + boot 시각 (cross-platform via psutil, OS별 fallback).",
+    input_schema={"type": "object", "properties": {}, "required": []},
+    handler=_system_uptime,
+))
+
+
+# ──────────────── system_locale (cross-platform) ────────────────
+def _system_locale() -> str:
+    """시스템 locale / timezone / keyboard layout 정보 (cross-platform)."""
+    import locale as _locale
+    from datetime import datetime, timezone
+
+    out: list[str] = []
+    try:
+        loc = _locale.getlocale()
+        out.append(f"locale: {loc[0] or '?'}.{loc[1] or '?'}")
+    except Exception as e:
+        out.append(f"locale: ERROR {e}")
+    try:
+        # 시스템 기본 인코딩
+        out.append(f"encoding: {_locale.getpreferredencoding(False)}")
+    except Exception:
+        pass
+    # 시스템 시각대 (TZ 또는 OS 기본)
+    tz_env = os.environ.get("TZ", "")
+    out.append(f"TZ env: {tz_env or '(system default)'}")
+    out.append(f"now local: {datetime.now()}")
+    out.append(f"now utc:   {datetime.now(timezone.utc).isoformat()}")
+    # 키보드 레이아웃 (best-effort)
+    if IS_MACOS:
+        try:
+            r = subprocess.run(
+                ["defaults", "read", str(Path.home() / "Library/Preferences/com.apple.HIToolbox.plist"),
+                 "AppleSelectedInputSources"],
+                capture_output=True, text=True, timeout=3,
+            )
+            kb = r.stdout.strip().split("\n")
+            kb_short = [l.strip() for l in kb if "InputSource" in l or "ID =" in l][:3]
+            out.append(f"keyboard: {' '.join(kb_short) or '(unknown)'}")
+        except Exception:
+            pass
+    elif IS_WINDOWS:
+        try:
+            r = subprocess.run(
+                ["powershell", "-NoProfile", "-Command",
+                 "(Get-WinUserLanguageList).LanguageTag -join ','"],
+                capture_output=True, text=True, timeout=5,
+            )
+            out.append(f"keyboard: {r.stdout.strip() or '(unknown)'}")
+        except Exception:
+            pass
+    elif IS_LINUX:
+        try:
+            r = subprocess.run(["setxkbmap", "-query"], capture_output=True, text=True, timeout=3)
+            for line in r.stdout.splitlines():
+                if line.startswith("layout:"):
+                    out.append(f"keyboard: {line.split(':',1)[1].strip()}")
+                    break
+        except Exception:
+            pass
+    return "\n".join(out)
+
+
+REGISTRY.register(Tool(
+    name="system_locale",
+    description="시스템 locale / timezone / 키보드 레이아웃 (cross-platform).",
+    input_schema={"type": "object", "properties": {}, "required": []},
+    handler=_system_locale,
+))
+
+
+# ──────────────── file_compare_dirs (cross-platform) ────────────────
+def _file_compare_dirs(dir1: str, dir2: str, max_results: int = 50) -> str:
+    """두 디렉토리의 파일 차이 비교 (cross-platform).
+
+    출력 형식 — 한국어:
+      ONLY in dir1: ...
+      ONLY in dir2: ...
+      DIFFER (size 또는 mtime 다름): ...
+    재귀 비교, 심볼릭 링크는 그대로 비교 (target은 비교 안 함).
+    """
+    p1 = Path(dir1).expanduser()
+    p2 = Path(dir2).expanduser()
+    if not p1.is_dir():
+        return f"ERROR: dir1 디렉토리 아님: {p1}"
+    if not p2.is_dir():
+        return f"ERROR: dir2 디렉토리 아님: {p2}"
+
+    def _walk(root: Path) -> dict[str, tuple[int, int]]:
+        """root 기준 상대경로 → (size, mtime)."""
+        result: dict[str, tuple[int, int]] = {}
+        for p in root.rglob("*"):
+            if p.is_file():
+                try:
+                    rel = str(p.relative_to(root))
+                    st = p.stat()
+                    result[rel] = (st.st_size, int(st.st_mtime))
+                except Exception:
+                    continue
+        return result
+
+    files1 = _walk(p1)
+    files2 = _walk(p2)
+    only1 = sorted(set(files1) - set(files2))
+    only2 = sorted(set(files2) - set(files1))
+    common = set(files1) & set(files2)
+    differ = sorted(f for f in common if files1[f] != files2[f])
+
+    out: list[str] = [
+        f"# Comparing {p1} ↔ {p2}",
+        f"  total {len(files1)} vs {len(files2)} files",
+        f"  ONLY in {p1.name}: {len(only1)}",
+        f"  ONLY in {p2.name}: {len(only2)}",
+        f"  DIFFER (size/mtime): {len(differ)}",
+        "",
+    ]
+    if only1:
+        out.append(f"--- ONLY in {p1.name} ---")
+        for f in only1[:max_results]:
+            out.append(f"  + {f}")
+        if len(only1) > max_results:
+            out.append(f"  ... +{len(only1) - max_results} more")
+    if only2:
+        out.append(f"--- ONLY in {p2.name} ---")
+        for f in only2[:max_results]:
+            out.append(f"  + {f}")
+        if len(only2) > max_results:
+            out.append(f"  ... +{len(only2) - max_results} more")
+    if differ:
+        out.append("--- DIFFER ---")
+        for f in differ[:max_results]:
+            s1, m1 = files1[f]
+            s2, m2 = files2[f]
+            out.append(f"  ~ {f}  (size {s1}→{s2}, mtime {m1 - m2:+d}s)")
+        if len(differ) > max_results:
+            out.append(f"  ... +{len(differ) - max_results} more")
+    return "\n".join(out)
+
+
+REGISTRY.register(Tool(
+    name="file_compare_dirs",
+    description="두 디렉토리의 파일 차이 비교 (cross-platform). 재귀, ONLY/DIFFER 분리 출력.",
+    input_schema={
+        "type": "object",
+        "properties": {
+            "dir1": {"type": "string"},
+            "dir2": {"type": "string"},
+            "max_results": {"type": "integer", "description": "각 카테고리 최대 표시, 기본 50"},
+        },
+        "required": ["dir1", "dir2"],
+    },
+    handler=_file_compare_dirs,
+))
+
+
+# ──────────────── system_kill_process (cross-platform, safe) ────────────────
+def _system_kill_process(pid: int, force: bool = False) -> str:
+    """PID로 프로세스 종료 (cross-platform). force=False=SIGTERM, True=SIGKILL/F.
+
+    안전을 위해 PID 1, 0, 음수는 거부. 자기 자신(jarvis)도 거부.
+    """
+    pid = int(pid)
+    if pid <= 1:
+        return "ERROR: 시스템 PID(0/1)는 종료 거부"
+    if pid == os.getpid():
+        return "ERROR: 자기 자신(jarvis 프로세스) 종료 거부"
+    try:
+        if IS_WINDOWS:
+            cmd = ["taskkill", "/PID", str(pid), "/T"]
+            if force:
+                cmd.append("/F")
+            r = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+            if r.returncode == 0:
+                return f"OK: terminated PID {pid}"
+            return f"ERROR: {r.stderr.strip() or r.stdout.strip()}"
+        # macOS / Linux — POSIX kill
+        import signal
+        sig = signal.SIGKILL if force else signal.SIGTERM
+        os.kill(pid, sig)
+        return f"OK: sent {'SIGKILL' if force else 'SIGTERM'} to PID {pid}"
+    except ProcessLookupError:
+        return f"ERROR: PID {pid} 존재하지 않음"
+    except PermissionError:
+        return f"ERROR: PID {pid} 종료 권한 없음 (다른 사용자/시스템 프로세스?)"
+    except Exception as e:
+        return f"ERROR: {type(e).__name__}: {e}"
+
+
+REGISTRY.register(Tool(
+    name="system_kill_process",
+    description=(
+        "PID로 프로세스 종료 (cross-platform). force=false=SIGTERM(graceful), "
+        "force=true=SIGKILL(macOS/Linux) 또는 taskkill /F (Windows). "
+        "PID 0/1/자기 자신은 안전상 거부."
+    ),
+    input_schema={
+        "type": "object",
+        "properties": {
+            "pid": {"type": "integer", "description": "종료할 프로세스 ID"},
+            "force": {"type": "boolean", "description": "true=강제 종료, 기본 false=graceful"},
+        },
+        "required": ["pid"],
+    },
+    handler=_system_kill_process,
+))
+
+
+# ──────────────── network_speedtest_simple (cross-platform) ────────────────
+def _network_speedtest_simple(timeout: int = 15) -> str:
+    """간단한 네트워크 속도 테스트. Cloudflare /cdn-cgi/trace + speedtest endpoint.
+
+    full speedtest는 외부 라이브러리 필요 → 여기는 ping latency + 1MB 다운로드 속도만.
+    """
+    import time as _t
+    import urllib.request
+
+    out: list[str] = []
+    # 1) Latency to Cloudflare (HEAD)
+    try:
+        start = _t.time()
+        urllib.request.urlopen("https://1.1.1.1/cdn-cgi/trace", timeout=timeout)
+        latency_ms = int((_t.time() - start) * 1000)
+        out.append(f"latency (1.1.1.1): {latency_ms}ms")
+    except Exception as e:
+        out.append(f"latency: ERROR {e}")
+        return "\n".join(out)
+
+    # 2) Download throughput — Cloudflare 1MB test file
+    try:
+        start = _t.time()
+        with urllib.request.urlopen(
+            "https://speed.cloudflare.com/__down?bytes=1048576", timeout=timeout,
+        ) as r:
+            data = r.read()
+        elapsed = _t.time() - start
+        size_mb = len(data) / 1024 / 1024
+        mbps = (size_mb * 8) / elapsed
+        out.append(f"download: {size_mb:.2f}MB in {elapsed:.2f}s ({mbps:.1f} Mbps)")
+    except Exception as e:
+        out.append(f"download: ERROR {e}")
+
+    # 3) Public IP (간단)
+    try:
+        with urllib.request.urlopen("https://api.ipify.org", timeout=5) as r:
+            out.append(f"public IP: {r.read().decode().strip()}")
+    except Exception:
+        pass
+
+    return "\n".join(out)
+
+
+REGISTRY.register(Tool(
+    name="network_speedtest_simple",
+    description=(
+        "간단한 네트워크 속도 측정 (cross-platform): "
+        "1.1.1.1 latency + Cloudflare 1MB 다운로드 throughput + public IP."
+    ),
+    input_schema={
+        "type": "object",
+        "properties": {"timeout": {"type": "integer", "description": "초, 기본 15"}},
+        "required": [],
+    },
+    handler=_network_speedtest_simple,
+))
+
+
 # 모듈 import 시 무용 — silence linter
 _ = shlex

@@ -6,15 +6,29 @@
 
 > Voice-first personal AI assistant — Claude-powered, autonomous, holographic HUD
 
-macOS 우선 / **Windows 베타 / Linux 베타** 지원 개인 AI 비서. 한국어 우선, "자비스" wake word 음성 대화 + **344개 도구** (cross-platform 약 240개 + macOS 99개 + Windows 17개 + Linux 13개) + 시네마틱 데스크톱 HUD(macOS) + plugin/config 시스템.
+macOS 우선 / **Windows 베타 / Linux 베타** 지원 개인 AI 비서. 한국어 우선, "자비스" wake word 음성 대화 + **350개 도구** (cross-platform 약 245개 + macOS 99개 + Windows 17개 + Linux 13개) + 시네마틱 데스크톱 HUD(macOS) + plugin/config 시스템 + **첫 만남/호칭 시스템** + **Passive Learning**.
 
-**v0.5.0 신규 — cross-platform 대규모 확장 (+43 도구)**:
-- 🪟 [`windows_extras.py`](src/jarvis/tools/windows_extras.py) — Windows 등가물 14개 (dark_mode, top_processes, frontmost_app, audio_device_list, mic_mute, battery, wifi, bluetooth, caffeinate_*, listening_ports, registry_read 등)
-- 🐧 [`linux_extras.py`](src/jarvis/tools/linux_extras.py) — Linux 등가물 13개 (notify-send, gsettings dark mode, ps, amixer/pactl 볼륨, upower, nmcli, bluetoothctl, wmctrl 등)
-- 🤖 [`ai_helpers.py`](src/jarvis/tools/ai_helpers.py) — Claude 기반 cross-platform 10개 (text_summarize/proofread/explain/korean_polish, email_draft, code_explain/review, decision_helper, task_decompose, meeting_notes_format)
-- 🔧 [`system_xp.py`](src/jarvis/tools/system_xp.py) 확장 +5 (screenshot_to_file, record_audio, env_summary, default_browser_url, open_terminal_at)
-- 🧪 테스트 커버리지 +33 (`test_system_xp`, `test_platform_branching`, `test_xp_modules`, `test_daemon_windows`)
-- 🚀 CI 매트릭스 확장: macos-14 / ubuntu-latest **/ windows-latest** (Python 3.9-3.12)
+**v0.5.0 신규 — cross-platform 대규모 확장 + 개인화 (+49 도구)**:
+
+🎭 **첫 만남 + 호칭 + Passive Learning** (인공지능 비서 몰입감):
+- 자비스를 처음 부르면: *"주인님 반갑습니다. 저는 당신의 일상을 보조할 자비스입니다. 제가 당신을 어떻게 호칭하면 좋을까요?"* → 사용자가 호칭 알려주면 영구 저장 → 이후 그 호칭으로만 응답
+- [`profile.py`](src/jarvis/profile.py) — `~/.jarvis/profile.json` (호칭/이름/첫 만남 시각/누적 대화 횟수/선호도)
+- [`observations.py`](src/jarvis/observations.py) — `~/.jarvis/observations.jsonl` (자비스가 관찰한 사용자 패턴, append-only)
+- 🔍 능동 활용: *"최근 일식당을 자주 검색하시던데, 근처 새로 생긴 평점 좋은 초밥집 정리해드릴까요?"*
+- 새 도구 [`personalization_observe`](src/jarvis/tools/personalization.py) — agent가 사용자 패턴 발견 시 즉시 기록 → 다음 대화에서 시스템 프롬프트에 자동 첨부
+- CLI: `jarvis profile` (조회/설정/리셋/관찰 조회)
+
+🪟 [`windows_extras.py`](src/jarvis/tools/windows_extras.py) — **Windows 등가물 14개**: dark_mode_*, top_processes, frontmost_app, audio_device_list, mic_mute, battery, wifi, bluetooth, caffeinate_*, listening_ports, registry_read
+
+🐧 [`linux_extras.py`](src/jarvis/tools/linux_extras.py) — **Linux 등가물 13개**: notify-send, gsettings dark_mode_*, ps top, amixer/pactl 볼륨, upower 배터리, nmcli wifi, bluetoothctl, wmctrl, systemd-inhibit
+
+🤖 [`ai_helpers.py`](src/jarvis/tools/ai_helpers.py) — **Claude 기반 cross-platform 10개**: text_summarize/proofread/explain/korean_polish, email_draft, code_explain/review_quick, decision_helper, task_decompose, meeting_notes_format
+
+🔧 [`system_xp.py`](src/jarvis/tools/system_xp.py) **확장 +10**: screenshot_to_file, record_audio, env_summary, default_browser_url, open_terminal_at, system_uptime, system_locale, file_compare_dirs, system_kill_process, network_speedtest_simple
+
+🧪 **테스트 커버리지 +99 (총 147)**: `test_system_xp`, `test_platform_branching`, `test_xp_modules`, `test_xp_extra`, `test_daemon_windows`, `test_profile_observations` (33), `test_cli_integration` (11) — subprocess로 jarvis CLI 직접 호출
+
+🚀 **CI 매트릭스 확장**: macos-14 / ubuntu-latest / **windows-latest** (Python 3.9-3.12)
 
 **v0.4.0 — Windows 베타 지원** (kim 브랜치):
 - `install.ps1` PowerShell 설치 스크립트

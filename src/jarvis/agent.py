@@ -6,7 +6,8 @@ from anthropic import Anthropic
 from rich.console import Console
 
 from jarvis import history, hud
-from jarvis.assistant import SYSTEM_PROMPT
+from jarvis import profile as user_profile
+from jarvis.assistant import _build_system_prompt
 from jarvis.config import settings
 from jarvis.tools import REGISTRY
 
@@ -61,10 +62,11 @@ def run_agent(
         "max_uses": 3,
     })
 
+    # 매 agent 실행마다 system prompt 재빌드 — 첫 만남/관찰/프로필 변화를 즉시 반영
     system_blocks = [
         {
             "type": "text",
-            "text": SYSTEM_PROMPT,
+            "text": _build_system_prompt(),
             "cache_control": {"type": "ephemeral"},
         }
     ]
@@ -131,4 +133,9 @@ def run_agent(
 
         return "[자비스: 최대 턴 수 초과]"
     finally:
+        # 대화 카운트 +1 — 첫 만남이었다면 first_met_at 자동 마킹 → 다음 호출부터 분기 OFF
+        try:
+            user_profile.increment_interactions()
+        except Exception:
+            pass
         hud.set_state("idle")
