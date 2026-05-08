@@ -6,9 +6,11 @@ import subprocess
 from datetime import datetime
 from pathlib import Path
 
+from jarvis.platform import mac_only
 from jarvis.tools.registry import REGISTRY, Tool
 
 
+@mac_only
 def _focus_mode(mode: str = "do_not_disturb") -> str:
     """macOS Focus 모드 토글. mode: 'do_not_disturb' / 'work' / 'personal' / 'off'.
 
@@ -40,6 +42,7 @@ def _focus_mode(mode: str = "do_not_disturb") -> str:
         return f"실패: {e}"
 
 
+@mac_only
 def _pomodoro_start(minutes: int = 25, label: str = "Pomodoro") -> str:
     """포모도로 타이머 시작 — 백그라운드 실행 (subprocess 분리).
 
@@ -62,6 +65,7 @@ subprocess.run(["osascript", "-e",
     return json.dumps({"started": True, "minutes": minutes, "pid": p.pid, "label": label}, ensure_ascii=False)
 
 
+@mac_only
 def _pomodoro_session(work: int = 25, rest: int = 5, cycles: int = 4) -> str:
     """전체 포모도로 사이클 시작 — work/rest 반복."""
     import sys
@@ -86,6 +90,7 @@ notify("포모도로 완료", f"{cycles}사이클 완료")
     return json.dumps({"started": True, "cycles": cycles, "work_min": work, "rest_min": rest, "pid": p.pid}, ensure_ascii=False)
 
 
+@mac_only
 def _daily_briefing(location: str = "Seoul") -> str:
     """오늘 브리핑: 날짜 + 날씨 + 캘린더 + 미완료 TODO + 최근 무드."""
     out: list[str] = []
@@ -130,6 +135,7 @@ def _daily_briefing(location: str = "Seoul") -> str:
     return "\n".join(out)
 
 
+@mac_only
 def _calendar_today_summary() -> str:
     """오늘 캘린더 요약 (osascript)."""
     script = '''

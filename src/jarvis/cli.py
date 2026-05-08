@@ -430,11 +430,22 @@ def timer(
     except KeyboardInterrupt:
         console.print("\n[yellow]타이머 취소[/yellow]")
         return
-    subprocess.run(["afplay", "/System/Library/Sounds/Glass.aiff"], check=False)
-    subprocess.run(
-        ["osascript", "-e", f'display notification "{message}" with title "자비스 타이머"'],
-        check=False,
-    )
+    # 종료 알림 — cross-platform via tools/macos._notify (OS 분기 내장)
+    try:
+        from jarvis.tools.macos import _notify
+        _notify("자비스 타이머", message)
+    except Exception:
+        pass
+    # 사운드: macOS=afplay, Windows=winsound, Linux=skip
+    from jarvis.platform import IS_MACOS as _IS_MAC, IS_WINDOWS as _IS_WIN
+    if _IS_MAC:
+        subprocess.run(["afplay", "/System/Library/Sounds/Glass.aiff"], check=False)
+    elif _IS_WIN:
+        try:
+            import winsound  # type: ignore
+            winsound.MessageBeep(winsound.MB_ICONASTERISK)
+        except Exception:
+            pass
     console.print(f"[bold green]⏰ {message}[/bold green]")
 
 
@@ -906,33 +917,51 @@ def doctor() -> None:
     except Exception as e:
         bad(f"마이크 query 실패: {e}")
 
-    # 4) launchd daemon
-    try:
-        out = _sp.run(
-            ["launchctl", "list"], capture_output=True, text=True, timeout=3
-        ).stdout
-        if "com.swxvno.jarvis" in out or "jarvis.wake" in out:
-            ok("launchd daemon 등록됨")
-        else:
-            bad("launchd daemon 미등록 — jarvis daemon install")
-    except Exception:
-        bad("launchctl 실행 실패")
+    # 4) wake daemon — OS 분기 (macOS launchd / Windows Task Scheduler)
+    from jarvis.platform import IS_MACOS as _IS_MAC, IS_WINDOWS as _IS_WIN
+    if _IS_MAC:
+        try:
+            out = _sp.run(
+                ["launchctl", "list"], capture_output=True, text=True, timeout=3
+            ).stdout
+            if "com.swxvno.jarvis" in out or "jarvis.wake" in out:
+                ok("launchd daemon 등록됨")
+            else:
+                bad("launchd daemon 미등록 — jarvis daemon install")
+        except Exception:
+            bad("launchctl 실행 실패")
+    elif _IS_WIN:
+        try:
+            out = _sp.run(
+                ["schtasks", "/query", "/tn", "JarvisWake"],
+                capture_output=True, text=True, timeout=5,
+            )
+            if out.returncode == 0:
+                ok("Windows Task Scheduler에 JarvisWake 등록됨")
+            else:
+                bad("Task Scheduler 미등록 — jarvis daemon install")
+        except Exception:
+            bad("schtasks 실행 실패")
+    else:
+        bad("Linux daemon은 미지원 — systemd unit 수동 작성 필요")
 
-    # 5) HUD
-    if shutil.which("swift"):
-        ok("swift toolchain 발견")
-    else:
-        bad("swift 없음 — Xcode Command Line Tools 설치")
-    hud_bin = Path.home() / "jarvis" / "hud-overlay" / ".build" / "release" / "JarvisHUD"
-    if hud_bin.exists():
-        ok(f"JarvisHUD 빌드됨: {hud_bin}")
-    else:
-        # 다른 위치 시도
-        proj_hud = Path(__file__).resolve().parents[2] / "hud-overlay" / ".build" / "release" / "JarvisHUD"
-        if proj_hud.exists():
-            ok(f"JarvisHUD 빌드됨: {proj_hud}")
+    # 5) HUD — macOS only feature (Swift overlay)
+    if _IS_MAC:
+        if shutil.which("swift"):
+            ok("swift toolchain 발견")
         else:
-            bad("JarvisHUD 미빌드 — cd hud-overlay && swift build -c release")
+            bad("swift 없음 — Xcode Command Line Tools 설치")
+        hud_bin = Path.home() / "jarvis" / "hud-overlay" / ".build" / "release" / "JarvisHUD"
+        if hud_bin.exists():
+            ok(f"JarvisHUD 빌드됨: {hud_bin}")
+        else:
+            proj_hud = Path(__file__).resolve().parents[2] / "hud-overlay" / ".build" / "release" / "JarvisHUD"
+            if proj_hud.exists():
+                ok(f"JarvisHUD 빌드됨: {proj_hud}")
+            else:
+                bad("JarvisHUD 미빌드 — cd hud-overlay && swift build -c release")
+    else:
+        ok("HUD overlay는 macOS 전용 — 현재 OS에서는 skip (P3 작업 후 지원)")
 
     # 6) memory.md
     memo = Path.home() / ".jarvis" / "memory.md"
@@ -948,6 +977,12 @@ def doctor() -> None:
 def permissions() -> None:
     """macOS 자동화 권한 다이얼로그 일괄 트리거 (Calendar/Reminders/Music/Mail)."""
     import subprocess as _sp
+
+    from jarvis.platform import IS_MACOS as _IS_MAC, os_label
+    if not _IS_MAC:
+        console.print(f"[yellow]권한 트리거는 macOS 전용 — 현재 OS({os_label()})에서는 미지원.[/yellow]")
+        console.print("[dim]Windows: 마이크 권한은 설정 > 개인정보 보호 및 보안 > 마이크에서 수동 허용.[/dim]")
+        return
 
     console.print("[bold cyan]macOS 자동화 권한 트리거[/bold cyan]")
     console.print("[dim]각 앱에 대한 권한 다이얼로그가 뜸. 모두 '허용' 누르시오.[/dim]\n")

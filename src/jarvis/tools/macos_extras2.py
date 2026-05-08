@@ -5,6 +5,7 @@ import re
 import subprocess
 from pathlib import Path
 
+from jarvis.platform import mac_only
 from jarvis.tools.registry import REGISTRY, Tool
 
 
@@ -13,6 +14,7 @@ def _esc(s: str) -> str:
 
 
 # ── Music.app control ─────────────────────────────────────────────────────
+@mac_only
 def _music_control(action: str, query: str = "") -> str:
     """Music.app 재생 제어. action: play|pause|next|previous|search."""
     actions = {
@@ -76,6 +78,7 @@ REGISTRY.register(Tool(
 
 
 # ── System Volume ─────────────────────────────────────────────────────────
+@mac_only
 def _set_volume(level: int) -> str:
     """시스템 출력 볼륨. level: 0~100."""
     level = max(0, min(100, int(level)))
@@ -89,6 +92,7 @@ def _set_volume(level: int) -> str:
         return f"ERROR: {e}"
 
 
+@mac_only
 def _get_volume() -> str:
     try:
         result = subprocess.run(
@@ -120,6 +124,7 @@ REGISTRY.register(Tool(
 
 
 # ── Display Brightness (M1+ via brightness CLI; fallback osascript) ───────
+@mac_only
 def _set_brightness(level: float) -> str:
     """디스플레이 밝기 설정. level: 0.0~1.0."""
     level = max(0.0, min(1.0, float(level)))
@@ -146,6 +151,7 @@ REGISTRY.register(Tool(
 
 
 # ── Reminders.app ────────────────────────────────────────────────────────
+@mac_only
 def _reminder_add(title: str, due_iso: str = "", body: str = "") -> str:
     """Reminders.app에 미리알림 추가."""
     if due_iso:
@@ -203,7 +209,7 @@ REGISTRY.register(Tool(
 ))
 
 
-# ── Note search (자비스 메모) ─────────────────────────────────────────────
+# ── Note search (자비스 메모) — cross-platform (file-based) ──────────────
 def _note_search(query: str, max_results: int = 10) -> str:
     """~/.jarvis/notes.md에서 query 매칭 라인 검색."""
     path = Path.home() / ".jarvis" / "notes.md"
@@ -257,7 +263,8 @@ REGISTRY.register(Tool(
 ))
 
 
-# ── Battery info ──────────────────────────────────────────────────────────
+# ── Battery info (pmset is macOS-only) ──────────────────────────────────
+@mac_only
 def _battery_info() -> str:
     """배터리 잔량 + 충전 상태 (pmset)."""
     try:
@@ -282,7 +289,8 @@ REGISTRY.register(Tool(
 ))
 
 
-# ── Wifi info ─────────────────────────────────────────────────────────────
+# ── Wifi info (airport/networksetup is macOS-only) ──────────────────────
+@mac_only
 def _wifi_info() -> str:
     """현재 Wifi 정보 (ssid, signal)."""
     try:
@@ -316,7 +324,7 @@ REGISTRY.register(Tool(
 ))
 
 
-# ── Bookmark add (URL → bookmarks.md) ────────────────────────────────────
+# ── Bookmark add (cross-platform — pure file write) ─────────────────────
 def _bookmark_add(url: str, title: str = "", tags: str = "") -> str:
     """~/.jarvis/bookmarks.md 에 URL 북마크."""
     from datetime import datetime as _dt
@@ -350,7 +358,8 @@ REGISTRY.register(Tool(
 ))
 
 
-# ── Process monitor ─────────────────────────────────────────────────────
+# ── Process monitor (ps -arcwwwxo is macOS-specific BSD ps args) ────────
+@mac_only
 def _top_processes(n: int = 10) -> str:
     """CPU 사용률 상위 N개 프로세스."""
     try:
@@ -377,6 +386,7 @@ REGISTRY.register(Tool(
 
 
 # ── Sleep / Lock screen / Eject ──────────────────────────────────────────
+@mac_only
 def _system_action(action: str) -> str:
     """system: sleep|lock|logout."""
     actions = {

@@ -1,7 +1,9 @@
-"""launchd daemon 관리 — macOS 전용.
+"""Wake daemon 관리 — macOS launchd / Windows Task Scheduler / Linux systemd(미구현).
 
-Windows에서는 모든 함수가 명확한 안내 메시지 반환.
-Windows 자동 시작이 필요하면 Task Scheduler 또는 시작 폴더에 .bat 추가 (TODO_WINDOWS.md 참조).
+OS별로 자동 dispatch:
+- macOS:   launchd plist (LaunchAgents)
+- Windows: schtasks (jarvis.daemon_windows)
+- Linux:   미지원 (수동 실행 또는 systemd unit 직접 작성)
 """
 from __future__ import annotations
 
@@ -10,7 +12,7 @@ import subprocess
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from jarvis.platform import IS_MACOS, os_label
+from jarvis.platform import IS_MACOS, IS_WINDOWS, os_label
 
 LABEL = "com.jarvis.wake"
 LAUNCH_AGENTS_DIR = Path.home() / "Library" / "LaunchAgents"
@@ -19,9 +21,10 @@ LOG_DIR = Path.home() / "Library" / "Logs"
 LOG_OUT = LOG_DIR / "jarvis-wake.out.log"
 LOG_ERR = LOG_DIR / "jarvis-wake.err.log"
 
-_NOT_MAC = (
-    f"NOT_SUPPORTED: launchd daemon은 macOS 전용 ({os_label()}에서 미지원).\n"
-    "Windows: Task Scheduler 또는 시작 폴더(shell:startup)에 'jarvis wake' 바로가기 등록\n"
+_NOT_SUPPORTED = (
+    f"NOT_SUPPORTED: wake daemon은 macOS launchd / Windows Task Scheduler 전용 "
+    f"({os_label()}에서 미지원).\n"
+    "Linux: systemd unit 또는 .desktop autostart 수동 작성 필요.\n"
     "참조: docs/TODO_WINDOWS.md"
 )
 
@@ -105,8 +108,11 @@ def install(
     args: Optional[List[str]] = None,
     env_vars: Optional[Dict[str, str]] = None,
 ) -> str:
+    if IS_WINDOWS:
+        from jarvis import daemon_windows
+        return daemon_windows.install(args, env_vars)
     if not IS_MACOS:
-        return _NOT_MAC
+        return _NOT_SUPPORTED
     LAUNCH_AGENTS_DIR.mkdir(parents=True, exist_ok=True)
     LOG_DIR.mkdir(parents=True, exist_ok=True)
     PLIST_PATH.write_text(render_plist(args, env_vars))
@@ -122,8 +128,11 @@ def install(
 
 
 def uninstall() -> str:
+    if IS_WINDOWS:
+        from jarvis import daemon_windows
+        return daemon_windows.uninstall()
     if not IS_MACOS:
-        return _NOT_MAC
+        return _NOT_SUPPORTED
     if not PLIST_PATH.exists():
         return "NOT_INSTALLED"
     _bootout()
@@ -132,8 +141,11 @@ def uninstall() -> str:
 
 
 def restart() -> str:
+    if IS_WINDOWS:
+        from jarvis import daemon_windows
+        return daemon_windows.restart()
     if not IS_MACOS:
-        return _NOT_MAC
+        return _NOT_SUPPORTED
     if not PLIST_PATH.exists():
         return "NOT_INSTALLED — run `jarvis daemon install` first"
     _bootout()
@@ -148,8 +160,11 @@ def restart() -> str:
 
 
 def status() -> str:
+    if IS_WINDOWS:
+        from jarvis import daemon_windows
+        return daemon_windows.status()
     if not IS_MACOS:
-        return _NOT_MAC
+        return _NOT_SUPPORTED
     if not PLIST_PATH.exists():
         return "NOT_INSTALLED"
     result = subprocess.run(
@@ -168,8 +183,11 @@ def status() -> str:
 
 
 def tail_log(stream: str = "out", lines: int = 50) -> str:
+    if IS_WINDOWS:
+        from jarvis import daemon_windows
+        return daemon_windows.tail_log(stream, lines)
     if not IS_MACOS:
-        return _NOT_MAC
+        return _NOT_SUPPORTED
     log_path = LOG_OUT if stream == "out" else LOG_ERR
     if not log_path.exists():
         return f"NO_LOG: {log_path}"

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# 자비스 원-스텝 설치 — macOS only
+# 자비스 원-스텝 설치 — macOS / Linux
 # Usage:  curl -fsSL https://raw.githubusercontent.com/no0m0321/jarvis/main/install.sh | bash
 #         또는 git clone 후  ./install.sh
+# Windows: install.ps1 사용
 set -euo pipefail
 
 GREEN='\033[0;32m'; YELLOW='\033[0;33m'; RED='\033[0;31m'; NC='\033[0m'
@@ -9,18 +10,34 @@ say()  { printf "${GREEN}▶ %s${NC}\n" "$*"; }
 warn() { printf "${YELLOW}⚠ %s${NC}\n" "$*"; }
 die()  { printf "${RED}✗ %s${NC}\n" "$*" >&2; exit 1; }
 
-[[ "$(uname)" == "Darwin" ]] || die "macOS only (Linux/Windows은 P3 cross-platform 작업 후 지원)"
+UNAME=$(uname)
+case "$UNAME" in
+  Darwin) IS_MAC=1 ;;
+  Linux)  IS_MAC=0; warn "Linux 베타 — daemon/HUD는 macOS 전용. core(LLM/voice)는 동작" ;;
+  MINGW*|MSYS*|CYGWIN*) die "Windows는 install.ps1을 사용하세요: powershell -ExecutionPolicy Bypass -File install.ps1" ;;
+  *) die "Unsupported OS: $UNAME — Windows는 install.ps1, 그 외는 수동 설치" ;;
+esac
 
 REPO_URL="https://github.com/no0m0321/jarvis.git"
 REPO_DIR="${JARVIS_HOME:-$HOME/jarvis}"
 
-# 1) Homebrew 의존성 (Python 3.9+, portaudio for sounddevice)
-if ! command -v brew >/dev/null 2>&1; then
-  die "Homebrew 미설치 — https://brew.sh"
+# 1) 시스템 의존성 (Python 3.9+, portaudio for sounddevice)
+if [[ $IS_MAC -eq 1 ]]; then
+  if ! command -v brew >/dev/null 2>&1; then
+    die "Homebrew 미설치 — https://brew.sh"
+  fi
+  say "Homebrew 의존성 확인"
+  brew list portaudio >/dev/null 2>&1 || brew install portaudio
+  brew list python@3.11 >/dev/null 2>&1 || brew install python@3.11
+else
+  # Linux
+  if ! command -v python3 >/dev/null 2>&1; then
+    die "python3 미설치 — apt/yum/pacman 등으로 python 3.9+ 설치 필요"
+  fi
+  if ! ldconfig -p 2>/dev/null | grep -q portaudio && [[ ! -f /usr/include/portaudio.h ]]; then
+    warn "portaudio 미설치 가능 — sounddevice 동작 안 하면: sudo apt install -y libportaudio2 portaudio19-dev"
+  fi
 fi
-say "Homebrew 의존성 확인"
-brew list portaudio >/dev/null 2>&1 || brew install portaudio
-brew list python@3.11 >/dev/null 2>&1 || brew install python@3.11
 
 # 2) 저장소 clone (이미 있으면 pull)
 if [[ -d "$REPO_DIR/.git" ]]; then
@@ -47,10 +64,12 @@ if [[ ! -f ".env" ]]; then
   warn ".env 생성됨 — ANTHROPIC_API_KEY를 채우시오: $REPO_DIR/.env"
 fi
 
-# 5) JarvisHUD 빌드 (Swift)
-if [[ -d "hud-overlay" ]]; then
+# 5) JarvisHUD 빌드 (Swift) — macOS 전용
+if [[ $IS_MAC -eq 1 && -d "hud-overlay" ]]; then
   say "JarvisHUD overlay 빌드 (Swift release)"
   (cd hud-overlay && swift build -c release) || warn "HUD 빌드 실패 — 수동: cd hud-overlay && swift build -c release"
+elif [[ -d "hud-overlay" ]]; then
+  warn "HUD overlay (Swift)는 Linux 미지원 — skip"
 fi
 
 # 6) PATH에 jarvis 심볼릭 (선택)

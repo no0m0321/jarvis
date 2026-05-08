@@ -1,12 +1,11 @@
 """도구 통합. import 시 모든 모듈이 REGISTRY에 자동 등록.
 
-플랫폼 분기:
-- 항상 import: cross-platform 도구 모듈
-- macOS only import: AppleScript/osascript 의존 모듈 (Windows에서는 등록 안 됨)
-- 결과: Windows에서 약 197개, macOS에서 약 296개 도구 등록 (vision +2 포함)
+플랫폼 분기 (graceful 정책):
+- 모든 모듈은 모든 OS에서 import 됨 → 도구 명단(REGISTRY)이 OS와 무관하게 일관
+- macOS 전용 핸들러는 `@mac_only` 로 감싸져 Windows/Linux 호출 시 한국어 ERROR string 반환
+- cross-platform 핸들러는 그대로 동작
+- 신규 cross-platform 모듈 system_xp 포함 → 모든 OS에서 317개 도구 등록
 """
-from jarvis.platform import IS_MACOS
-
 # ── Cross-platform 모듈 (모든 OS) ──────────────────────────
 from jarvis.tools import (  # noqa: F401  (sideeffect imports)
     code_exec,
@@ -31,6 +30,7 @@ from jarvis.tools import (  # noqa: F401  (sideeffect imports)
     network_extra,
     personal,
     shell,
+    system_xp,     # 신규 cross-platform: open_path/show_in_folder + windows_*
     util_extra,
     utility,
     utils,
@@ -38,20 +38,19 @@ from jarvis.tools import (  # noqa: F401  (sideeffect imports)
     web,
 )
 
-# ── macOS 전용 모듈 (Windows/Linux에서는 등록 안 됨) ────────
-if IS_MACOS:
-    from jarvis.tools import (  # noqa: F401
-        applescript,
-        comm,
-        extras,
-        macos_browser,
-        macos_extras2,
-        macos_more,
-        macos_system,
-        productivity,
-        productivity_extra,
-        window_mgmt,
-    )
+# ── macOS-heavy 모듈 (모든 OS에서 import — 핸들러는 @mac_only로 graceful 분기) ─
+from jarvis.tools import (  # noqa: F401
+    applescript,
+    comm,
+    extras,
+    macos_browser,
+    macos_extras2,
+    macos_more,
+    macos_system,
+    productivity,
+    productivity_extra,
+    window_mgmt,
+)
 
 from jarvis.tools.registry import REGISTRY, Tool
 

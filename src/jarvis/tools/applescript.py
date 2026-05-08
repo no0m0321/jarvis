@@ -3,9 +3,11 @@ from __future__ import annotations
 
 import subprocess
 
+from jarvis.platform import mac_only
 from jarvis.tools.registry import REGISTRY, Tool
 
 
+@mac_only
 def _apple_script(script: str, timeout: int = 30) -> str:
     """임의 AppleScript 실행. 결과 stdout 반환."""
     try:
@@ -37,6 +39,7 @@ REGISTRY.register(Tool(
 ))
 
 
+@mac_only
 def _shortcuts_run(name: str, input_text: str = "") -> str:
     """macOS Shortcuts.app 단축어 실행 (Sonoma+ shortcuts CLI)."""
     cmd = ["shortcuts", "run", name]
@@ -57,6 +60,7 @@ def _shortcuts_run(name: str, input_text: str = "") -> str:
         return "ERROR: 'shortcuts' CLI 미설치 (macOS Monterey+ 필요)"
 
 
+@mac_only
 def _shortcuts_list() -> str:
     """등록된 shortcuts 목록."""
     try:
@@ -92,6 +96,7 @@ REGISTRY.register(Tool(
 ))
 
 
+@mac_only
 def _frontmost_app() -> str:
     """현재 frontmost (활성) 앱 이름."""
     return _apple_script(
@@ -107,6 +112,7 @@ REGISTRY.register(Tool(
 ))
 
 
+@mac_only
 def _running_apps() -> str:
     """실행 중인 앱 list (visible)."""
     return _apple_script(
@@ -122,6 +128,7 @@ REGISTRY.register(Tool(
 ))
 
 
+@mac_only
 def _quit_app(name: str) -> str:
     """앱 종료."""
     safe = name.replace('"', '\\"')

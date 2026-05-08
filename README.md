@@ -1,4 +1,4 @@
-# 자비스 (JARVIS) v0.3.1
+# 자비스 (JARVIS) v0.4.0
 
 [![CI](https://github.com/no0m0321/jarvis/actions/workflows/ci.yml/badge.svg)](https://github.com/no0m0321/jarvis/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -6,7 +6,13 @@
 
 > Voice-first personal AI assistant — Claude-powered, autonomous, holographic HUD
 
-macOS 네이티브 개인 AI 비서. 한국어 우선, "자비스" wake word 음성 대화 + **296개 도구**를 통한 실제 시스템 동작 + 시네마틱 데스크톱 HUD + plugin/config 시스템.
+macOS 우선 / **Windows 베타** 지원 개인 AI 비서. 한국어 우선, "자비스" wake word 음성 대화 + **301개 도구** (macOS 모두 / Windows 약 200개 정상 동작 + 99개는 `@mac_only`로 명확한 한국어 ERROR 반환) + 시네마틱 데스크톱 HUD(macOS) + plugin/config 시스템.
+
+**v0.4.0 신규 — Windows 베타 지원**:
+- `install.ps1` PowerShell 설치 스크립트
+- `jarvis daemon install/uninstall/restart/status` → Windows Task Scheduler (`schtasks /sc onlogon`) 자동 분기
+- 99개 macOS 전용 도구가 Windows에서 호출 시 한국어 ERROR string 반환 (registry 등록은 유지 → agent가 도구 명단 파악)
+- 신규 도구 4개: `system_open_path` · `system_show_in_folder` (cross-platform) / `windows_run_powershell` · `windows_outlook_compose` (Windows 전용)
 
 📐 [아키텍처](docs/ARCHITECTURE.md) · 🔒 [보안 노트](docs/SECURITY.md) · 🤝 [기여](CONTRIBUTING.md) · 📜 [LICENSE (MIT)](LICENSE)
 
@@ -27,26 +33,35 @@ macOS 네이티브 개인 AI 비서. 한국어 우선, "자비스" wake word 음
 .venv/bin/jarvis memory --add "나는 미니멀 디자인 선호"
 ```
 
-## 빠른 시작 — 한 줄 설치
+## 빠른 시작
+
+### macOS / Linux
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/no0m0321/jarvis/main/install.sh | bash
+```
+
+### Windows (PowerShell 5+)
+
+```powershell
+iwr https://raw.githubusercontent.com/no0m0321/jarvis/main/install.ps1 -UseBasicParsing | iex
 ```
 
 또는 수동:
 
 ```bash
 git clone https://github.com/no0m0321/jarvis.git && cd jarvis
-./install.sh
+./install.sh    # macOS / Linux
+.\install.ps1   # Windows PowerShell
 ```
 
 설치 후:
 
 ```bash
 jarvis init             # 첫 실행 마법사 — API 키 / 호칭 / 메모 템플릿
-jarvis permissions      # macOS 자동화 권한 다이얼로그 일괄 트리거
-jarvis doctor           # API 키 / 마이크 / 의존성 / launchd / HUD 진단
-jarvis daemon install   # wake daemon 백그라운드 등록
+jarvis permissions      # macOS 자동화 권한 다이얼로그 일괄 트리거 (Windows에선 안내만)
+jarvis doctor           # API 키 / 마이크 / 의존성 / 데몬 / HUD 진단 (OS 자동 분기)
+jarvis daemon install   # wake daemon 백그라운드 등록 (macOS=launchd / Windows=Task Scheduler)
 ```
 
 ## 구조
@@ -87,11 +102,12 @@ src/jarvis/
 | **Web search** | Anthropic server-side `web_search` tool |
 | **Persistent memory** | `~/.jarvis/memory.md` 가 시스템 프롬프트에 자동 첨부 |
 | **History** | `~/.jarvis/history.jsonl` append-only, `jarvis hud history`로 조회 |
-| **Holographic HUD** | Übersicht widget, voice-reactive 80-particle 3D cloud |
-| **Premium TTS** | Reed (남성, 자비스 톤) 기본. `JARVIS_VOICE` env로 변경 |
+| **Holographic HUD** | Übersicht widget, voice-reactive 80-particle 3D cloud (macOS only) |
+| **Premium TTS** | macOS=Reed/Yuna native (`say`), Windows=SAPI5 한국어 자동 (pyttsx3) |
 | **Multi-persona** | jarvis / casual / formal / creative — `JARVIS_PERSONA` env |
 | **Health server** | `:41417/healthz` `/metrics` `/tools` `/history` |
-| **launchd daemon** | RunAtLoad + KeepAlive, macOS 부팅 시 자동 시작 |
+| **Wake daemon** | macOS launchd (RunAtLoad + KeepAlive) / Windows Task Scheduler (onlogon) |
+| **Windows baseline** | `pyttsx3` SAPI5, `pywin32`/`win10toast`, `winsound`, `os.startfile` |
 
 ## HUD v6 시각 효과 (30+)
 

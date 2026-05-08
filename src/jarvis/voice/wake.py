@@ -9,14 +9,21 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any, Optional, Tuple
 
+from jarvis.platform import IS_MACOS
 from jarvis.voice.recorder import capture_phrase
 from jarvis.voice.transcribe import transcribe
 
 _DEBUG = os.environ.get("JARVIS_WAKE_DEBUG", "0") == "1"
-# JARVIS_HOVER_GATE=0 으로 끄면 항상 마이크 listening (이전 동작)
-# 기본은 hover gate ON — 카메라 영역 마우스 호버 시에만 마이크 사용
-_HOVER_GATE = os.environ.get("JARVIS_HOVER_GATE", "1") == "1"
-_HOVER_FILE = Path.home() / "Library" / "Caches" / "jarvis-hover.json"
+# JARVIS_HOVER_GATE=0 으로 끄면 항상 마이크 listening (이전 동작).
+# 기본은 hover gate ON — 카메라 영역 마우스 호버 시에만 마이크 사용 (JarvisHUD.app이 신호 파일 작성).
+# Windows/Linux에서는 JarvisHUD가 없으므로 hover_gate 자동 OFF (사용자가 명시적으로 1 설정 가능).
+_HOVER_GATE_DEFAULT = "1" if IS_MACOS else "0"
+_HOVER_GATE = os.environ.get("JARVIS_HOVER_GATE", _HOVER_GATE_DEFAULT) == "1"
+# macOS는 JarvisHUD.app 호환을 위해 Library/Caches, 그 외는 ~/.jarvis/cache
+if IS_MACOS:
+    _HOVER_FILE = Path.home() / "Library" / "Caches" / "jarvis-hover.json"
+else:
+    _HOVER_FILE = Path.home() / ".jarvis" / "cache" / "jarvis-hover.json"
 
 
 def _is_hover_active() -> bool:

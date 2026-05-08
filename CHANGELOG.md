@@ -1,5 +1,45 @@
 # Changelog
 
+## v0.4.0 — 2026-05-08 (Windows 베타 + 도구 graceful 분기)
+
+### 변경 — Windows 베타 지원 (P0 + P1 + 도구 graceful 분기)
+
+**인프라**:
+- `install.ps1` 신규 — PowerShell 5+ 설치 스크립트 (Python venv + pip + jarvis.bat 래퍼)
+- `install.sh` — Linux 분기 추가, Windows 진입 시 install.ps1 안내
+- `src/jarvis/daemon_windows.py` 신규 — `schtasks /sc onlogon` 기반 Task Scheduler 백엔드 (install/uninstall/restart/status/tail_log)
+- `src/jarvis/daemon.py` — IS_WINDOWS 분기 wrapper로 변경, daemon_windows에 위임
+- `src/jarvis/cli.py` — `jarvis doctor` / `permissions` / `timer` 가 OS-aware 분기 (Windows: schtasks 체크 + winsound MessageBeep)
+- `src/jarvis/voice/wake.py` — `_HOVER_FILE` macOS는 `~/Library/Caches`, 그 외는 `~/.jarvis/cache`. `JARVIS_HOVER_GATE` 기본값 Windows/Linux=OFF
+- `pyproject.toml` — version 0.3.1 → 0.4.0
+
+**graceful 분기 (반복 작업)**:
+- `tools/__init__.py` — macOS 전용 모듈 10개의 `if IS_MACOS:` 가드 제거. Windows에서도 모든 도구가 REGISTRY에 등록되어 명단 노출.
+- macOS 핸들러 99개에 `@mac_only` 데코레이터 부착 — Windows/Linux 호출 시 `"ERROR: macOS 전용 도구 — 현재 OS(win32)에서 미지원"` 한국어 string 반환
+  - `applescript.py` (5), `comm.py` (1: imessage), `extras.py` (9: shortcuts/spotify/dnd/dock/trash), `macos_browser.py` (8), `macos_extras2.py` (9), `macos_more.py` (4), `macos_system.py` (21), `productivity.py` (5), `productivity_extra.py` (5: alarm_set/eye_break/breathing/meditation), `window_mgmt.py` (7)
+
+### 추가 — 도구 297 → **301 (+4)**
+
+신규 모듈 [`src/jarvis/tools/system_xp.py`](src/jarvis/tools/system_xp.py):
+
+- `system_open_path` (cross-platform): 로컬 파일/폴더를 OS 기본 앱으로 열기 — macOS=`open`, Windows=`os.startfile`, Linux=`xdg-open`
+- `system_show_in_folder` (cross-platform): 파일 탐색기에서 select/reveal — macOS=`open -R`, Windows=`explorer /select,`, Linux=부모 폴더
+- `windows_run_powershell` (Windows 전용 — `apple_script` Windows 등가물): NoProfile + ExecutionPolicy Bypass로 PowerShell 실행
+- `windows_outlook_compose` (Windows 전용 — `mail_compose` Windows 등가물): pywin32 Outlook COM, 실패 시 mailto fallback
+
+### 문서
+
+- README — "macOS 네이티브" → "macOS 우선, Windows 베타", 도구 카운트 296 → 301, install.ps1 안내 추가
+- `docs/TODO_WINDOWS.md` 신규 — Windows 지원 P0/P1/P2/P3 로드맵 + 현황 표
+
+### 기존 동작 유지
+
+- macOS에서는 모든 도구 동작 unchanged (mac_only 데코레이터는 macOS에서 그대로 통과)
+- Windows에서 cross-platform 도구 약 200개 정상 동작 (notify/say/clipboard/screen_capture/web_search 등)
+- Windows에서 macOS 전용 도구 99개는 명확한 한국어 ERROR string 반환 (raise 없음 → agent loop 안전)
+
+---
+
 ## v0.3.1 — 2026-05-04 (도구 확장 2차)
 
 ### 추가 — 도구 247 → **296개 (+49)**

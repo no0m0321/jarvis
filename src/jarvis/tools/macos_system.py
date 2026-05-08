@@ -4,6 +4,7 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
+from jarvis.platform import mac_only
 from jarvis.tools.registry import REGISTRY, Tool
 
 
@@ -21,6 +22,7 @@ def _osa(script: str, timeout: int = 8) -> str:
 
 
 # ── Bluetooth ─────────────────────────────────────────────────────────────
+@mac_only
 def _bluetooth_status() -> str:
     """blueutil 또는 system_profiler 기반."""
     if subprocess.run(["which", "blueutil"], capture_output=True).returncode == 0:
@@ -42,6 +44,7 @@ def _bluetooth_status() -> str:
         return f"ERROR: {e}"
 
 
+@mac_only
 def _bluetooth_toggle(state: str = "toggle") -> str:
     """state: on|off|toggle. blueutil CLI 필요."""
     if subprocess.run(["which", "blueutil"], capture_output=True).returncode != 0:
@@ -76,17 +79,20 @@ REGISTRY.register(Tool(
 
 
 # ── Dark mode ─────────────────────────────────────────────────────────────
+@mac_only
 def _dark_mode_toggle() -> str:
     s = 'tell application "System Events" to tell appearance preferences to set dark mode to not dark mode'
     return _osa(s) or "OK: toggled"
 
 
+@mac_only
 def _dark_mode_set(on: bool = True) -> str:
     val = "true" if on else "false"
     s = f'tell application "System Events" to tell appearance preferences to set dark mode to {val}'
     return _osa(s) or f"OK: dark={on}"
 
 
+@mac_only
 def _dark_mode_status() -> str:
     s = 'tell application "System Events" to tell appearance preferences to return dark mode'
     return _osa(s) or "?"
@@ -117,6 +123,7 @@ REGISTRY.register(Tool(
 
 
 # ── Audio output device ───────────────────────────────────────────────────
+@mac_only
 def _audio_device_list() -> str:
     """SwitchAudioSource (brew install switchaudio-osx) 우선, 없으면 안내."""
     if subprocess.run(["which", "SwitchAudioSource"], capture_output=True).returncode != 0:
@@ -134,6 +141,7 @@ def _audio_device_list() -> str:
         return f"ERROR: {e}"
 
 
+@mac_only
 def _audio_device_set(name: str) -> str:
     if subprocess.run(["which", "SwitchAudioSource"], capture_output=True).returncode != 0:
         return "WARN: SwitchAudioSource 미설치. `brew install switchaudio-osx` 필요."
@@ -166,6 +174,7 @@ REGISTRY.register(Tool(
 
 
 # ── Mic mute (시스템 입력 볼륨) ──────────────────────────────────────────
+@mac_only
 def _mic_mute(state: str = "toggle") -> str:
     """state: on|off|toggle. on=mute (input volume 0), off=unmute (75)."""
     cur = _osa("input volume of (get volume settings)")
@@ -196,6 +205,7 @@ REGISTRY.register(Tool(
 
 
 # ── Time Machine ──────────────────────────────────────────────────────────
+@mac_only
 def _tm_status() -> str:
     try:
         r = subprocess.run(
@@ -207,6 +217,7 @@ def _tm_status() -> str:
         return f"ERROR: {e}"
 
 
+@mac_only
 def _tm_latest_backup() -> str:
     try:
         r = subprocess.run(
@@ -233,6 +244,7 @@ REGISTRY.register(Tool(
 
 
 # ── Listening ports ───────────────────────────────────────────────────────
+@mac_only
 def _listening_ports() -> str:
     try:
         r = subprocess.run(
@@ -254,6 +266,7 @@ REGISTRY.register(Tool(
 
 
 # ── Memory pressure ───────────────────────────────────────────────────────
+@mac_only
 def _memory_pressure() -> str:
     try:
         r = subprocess.run(
@@ -276,6 +289,7 @@ REGISTRY.register(Tool(
 
 
 # ── Diskutil list ─────────────────────────────────────────────────────────
+@mac_only
 def _diskutil_list() -> str:
     try:
         r = subprocess.run(
@@ -296,6 +310,7 @@ REGISTRY.register(Tool(
 
 
 # ── Spotlight metadata (mdls) ─────────────────────────────────────────────
+@mac_only
 def _mdls_metadata(path: str) -> str:
     p = Path(path).expanduser()
     if not p.exists():
@@ -323,6 +338,7 @@ REGISTRY.register(Tool(
 
 
 # ── log show (system log) ─────────────────────────────────────────────────
+@mac_only
 def _log_show(predicate: str = "", last: str = "5m", max_lines: int = 50) -> str:
     """log show — 최근 N분/시간."""
     cmd = ["log", "show", "--last", last, "--style", "compact"]
@@ -353,6 +369,7 @@ REGISTRY.register(Tool(
 
 
 # ── defaults read/write ──────────────────────────────────────────────────
+@mac_only
 def _defaults_read(domain: str, key: str = "") -> str:
     cmd = ["defaults", "read", domain]
     if key:
@@ -380,6 +397,7 @@ REGISTRY.register(Tool(
 
 
 # ── AirDrop (Finder reveal) ──────────────────────────────────────────────
+@mac_only
 def _airdrop_send(file_path: str) -> str:
     """파일을 AirDrop sheet로 열기 (사용자 수신자 선택)."""
     p = Path(file_path).expanduser()
@@ -413,6 +431,7 @@ REGISTRY.register(Tool(
 
 
 # ── Quick Look ────────────────────────────────────────────────────────────
+@mac_only
 def _quick_look(path: str) -> str:
     p = Path(path).expanduser()
     if not p.exists():
@@ -440,6 +459,7 @@ REGISTRY.register(Tool(
 
 
 # ── Finder reveal ────────────────────────────────────────────────────────
+@mac_only
 def _finder_reveal(path: str) -> str:
     p = Path(path).expanduser()
     if not p.exists():
@@ -467,6 +487,7 @@ REGISTRY.register(Tool(
 _CAFFEINATE_PROC = {"p": None}
 
 
+@mac_only
 def _caffeinate_start(minutes: int = 60) -> str:
     """N분간 sleep 방지. 0 = 무한."""
     if _CAFFEINATE_PROC["p"] and _CAFFEINATE_PROC["p"].poll() is None:
@@ -482,6 +503,7 @@ def _caffeinate_start(minutes: int = 60) -> str:
         return f"ERROR: {e}"
 
 
+@mac_only
 def _caffeinate_stop() -> str:
     p = _CAFFEINATE_PROC["p"]
     if p and p.poll() is None:

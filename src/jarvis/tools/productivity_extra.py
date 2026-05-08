@@ -9,6 +9,7 @@ import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+from jarvis.platform import mac_only
 from jarvis.tools.registry import REGISTRY, Tool
 
 _DATA_DIR = Path.home() / ".jarvis"
@@ -31,6 +32,7 @@ def _save(p: Path, data) -> None:
 
 
 # ── Alarm ─────────────────────────────────────────────────────────────────
+@mac_only
 def _alarm_set(at_iso: str, message: str = "Alarm") -> str:
     """at_iso: 'YYYY-MM-DD HH:MM'. 백그라운드 thread로 sleep 후 알림."""
     try:
@@ -191,6 +193,7 @@ REGISTRY.register(Tool(
 
 
 # ── Eye break (20-20-20) ─────────────────────────────────────────────────
+@mac_only
 def _eye_break_start(interval_minutes: int = 20) -> str:
     """20분마다 알림으로 눈 휴식 권장. daemon thread."""
     state_file = _DATA_DIR / "eye_break.json"
@@ -213,6 +216,7 @@ def _eye_break_start(interval_minutes: int = 20) -> str:
     return f"OK: eye break loop started ({interval_minutes}min interval)"
 
 
+@mac_only
 def _eye_break_stop() -> str:
     state_file = _DATA_DIR / "eye_break.json"
     s = _load(state_file, {})
@@ -240,6 +244,7 @@ REGISTRY.register(Tool(
 
 
 # ── Breathing exercise (4-7-8) ───────────────────────────────────────────
+@mac_only
 def _breathing_478(cycles: int = 4) -> str:
     """4초 흡기 → 7초 정지 → 8초 호기, N회 반복."""
     def _run():
@@ -269,6 +274,7 @@ REGISTRY.register(Tool(
 
 
 # ── Meditation timer ─────────────────────────────────────────────────────
+@mac_only
 def _meditation(minutes: int = 10) -> str:
     def _run():
         subprocess.run(["afplay", "/System/Library/Sounds/Tink.aiff"], capture_output=True)
