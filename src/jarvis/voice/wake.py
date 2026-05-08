@@ -7,7 +7,7 @@ import sys
 import time
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, Optional, Tuple
+from typing import Any, Optional
 
 from jarvis.platform import IS_MACOS
 from jarvis.voice.recorder import capture_phrase
@@ -38,7 +38,7 @@ def _is_hover_active() -> bool:
 
 # 한국어 tiny/small/base 모델은 "자비스"를 다양하게 전사 — 변종 폭넓게 허용
 # 실측 오인: 사비스, 헤이지알베스, 자비쓰, 차비스, 쟈브스 등
-DEFAULT_WAKE_WORDS: Tuple[str, ...] = (
+DEFAULT_WAKE_WORDS: tuple[str, ...] = (
     # Korean — "자비스" 정변종
     "자비스", "쟈비스", "재비스", "자뷔스", "쟈브스", "자브스",
     "자비쓰", "쟈비쓰", "자뷔쓰",
@@ -54,7 +54,7 @@ DEFAULT_WAKE_WORDS: Tuple[str, ...] = (
 # 'jarvis' substring 매칭이라 "Hey Jarvis"는 자동 인식됨
 
 
-def get_wake_words() -> Tuple[str, ...]:
+def get_wake_words() -> tuple[str, ...]:
     """DEFAULT_WAKE_WORDS + JARVIS_WAKE_WORD 환경변수(쉼표 구분) 합쳐 반환.
 
     예: JARVIS_WAKE_WORD="베이비,버디" → 기본 + 두 단어 추가.
@@ -73,7 +73,7 @@ def detect_wake_word(
     wake_words: Sequence[str] = DEFAULT_WAKE_WORDS,
     detection_model: str = "base",
     language: Optional[str] = None,  # None/auto → ko/en 둘 다 매칭
-) -> Tuple[bool, str]:
+) -> tuple[bool, str]:
     """오디오 → 전사 (약한 initial_prompt) → 매칭. (matched, text).
 
     language=None: Whisper auto-detect (한국어/영어 둘 다 가능).

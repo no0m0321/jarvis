@@ -5,7 +5,11 @@ import json
 import os
 import time
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Optional
+
+from jarvis.logger import get_logger
+
+log = get_logger(__name__)
 
 _HISTORY_PATH = Path(os.environ.get(
     "JARVIS_HISTORY_PATH",
@@ -17,11 +21,11 @@ def _ensure_dir() -> None:
     _HISTORY_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 
-def append(role: str, content: str, metadata: Dict[str, Any] = None) -> None:
+def append(role: str, content: str, metadata: Optional[dict[str, Any]] = None) -> None:
     """한 turn 추가. role: user|assistant. content: 평문 텍스트."""
     try:
         _ensure_dir()
-        entry = {
+        entry: dict[str, Any] = {
             "ts": time.time(),
             "role": role,
             "content": content[:8000],
@@ -30,21 +34,25 @@ def append(role: str, content: str, metadata: Dict[str, Any] = None) -> None:
             entry["meta"] = metadata
         with _HISTORY_PATH.open("a", encoding="utf-8") as f:
             f.write(json.dumps(entry, ensure_ascii=False) + "\n")
-    except Exception:
-        pass  # best-effort
+    except OSError as e:
+        log.warning("history append failed: %s", e)
 
 
-def tail(n: int = 20) -> list[Dict[str, Any]]:
+def tail(n: int = 20) -> list[dict[str, Any]]:
     """마지막 n개 turn."""
     if not _HISTORY_PATH.exists():
         return []
-    lines = _HISTORY_PATH.read_text(encoding="utf-8").splitlines()[-n:]
-    out = []
+    try:
+        lines = _HISTORY_PATH.read_text(encoding="utf-8").splitlines()[-n:]
+    except OSError as e:
+        log.warning("history read failed: %s", e)
+        return []
+    out: list[dict[str, Any]] = []
     for line in lines:
         try:
             out.append(json.loads(line))
-        except Exception:
-            continue
+        except json.JSONDecodeError:
+            continue  # corrupt line, skip
     return out
 
 

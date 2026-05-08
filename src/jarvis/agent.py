@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from anthropic import Anthropic
 from rich.console import Console
@@ -9,10 +9,13 @@ from jarvis import history, hud
 from jarvis import profile as user_profile
 from jarvis.assistant import _build_system_prompt
 from jarvis.config import settings
+from jarvis.logger import get_logger
 from jarvis.tools import REGISTRY
 
+log = get_logger(__name__)
 
-def _block_to_dict(block: Any) -> Dict[str, Any]:
+
+def _block_to_dict(block: Any) -> dict[str, Any]:
     if hasattr(block, "model_dump"):
         return block.model_dump(exclude_unset=False)
     if isinstance(block, dict):
@@ -21,7 +24,7 @@ def _block_to_dict(block: Any) -> Dict[str, Any]:
 
 
 def _final_text(content: Any) -> str:
-    parts: List[str] = []
+    parts: list[str] = []
     for block in content:
         if getattr(block, "type", None) == "text":
             parts.append(getattr(block, "text", "") or "")
@@ -136,6 +139,6 @@ def run_agent(
         # 대화 카운트 +1 — 첫 만남이었다면 first_met_at 자동 마킹 → 다음 호출부터 분기 OFF
         try:
             user_profile.increment_interactions()
-        except Exception:
-            pass
+        except OSError as e:
+            log.warning("profile increment_interactions 실패: %s", e)
         hud.set_state("idle")

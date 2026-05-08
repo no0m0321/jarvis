@@ -195,10 +195,20 @@ REGISTRY.register(Tool(
 
 REGISTRY.register(Tool(
     name="focus_mode",
-    description="macOS Focus 모드 전환 (Shortcuts.app 등록 필요). mode: do_not_disturb/work/personal/off.",
+    description=(
+        "macOS Focus 모드 전환 (Shortcuts.app에 'Set Focus to <mode>' 단축어 등록 필요). "
+        "off는 Focus 자체 해제."
+    ),
     input_schema={
         "type": "object",
-        "properties": {"mode": {"type": "string", "default": "do_not_disturb"}},
+        "properties": {
+            "mode": {
+                "type": "string",
+                "description": "Focus 모드",
+                "enum": ["do_not_disturb", "work", "personal", "off"],
+                "default": "do_not_disturb",
+            },
+        },
     },
     handler=_focus_mode,
 ))

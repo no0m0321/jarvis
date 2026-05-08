@@ -175,12 +175,20 @@ def _text_korean_polish(text: str, tone: str = "neutral") -> str:
 
 REGISTRY.register(Tool(
     name="text_korean_polish",
-    description="한국어 어색한 표현/번역체를 자연스럽게 다듬기. tone: neutral/formal/casual/professional.",
+    description=(
+        "한국어 어색한 표현/번역체를 자연스럽게 다듬기 (Claude). "
+        "neutral=중립적, formal=정중한 존댓말, casual=친근한 반말/해체, professional=공적 보고체."
+    ),
     input_schema={
         "type": "object",
         "properties": {
-            "text": {"type": "string"},
-            "tone": {"type": "string", "description": "기본 neutral"},
+            "text": {"type": "string", "description": "다듬을 한국어 텍스트"},
+            "tone": {
+                "type": "string",
+                "description": "원하는 어조",
+                "enum": ["neutral", "formal", "casual", "professional"],
+                "default": "neutral",
+            },
         },
         "required": ["text"],
     },
@@ -287,12 +295,20 @@ def _code_review_quick(code: str, focus: str = "all") -> str:
 
 REGISTRY.register(Tool(
     name="code_review_quick",
-    description="빠른 코드 리뷰 (Claude). focus: all/security/performance/style.",
+    description=(
+        "빠른 코드 리뷰 (Claude). 보안/성능/스타일/버그 가능성을 (심각도/위치/조치) 형식으로. "
+        "focus로 검토 영역을 좁혀서 더 깊이 파게 할 수 있음."
+    ),
     input_schema={
         "type": "object",
         "properties": {
-            "code": {"type": "string"},
-            "focus": {"type": "string", "description": "기본 all"},
+            "code": {"type": "string", "description": "리뷰할 코드 (전체 또는 일부)"},
+            "focus": {
+                "type": "string",
+                "description": "검토 영역",
+                "enum": ["all", "security", "performance", "style"],
+                "default": "all",
+            },
         },
         "required": ["code"],
     },

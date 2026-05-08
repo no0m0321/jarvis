@@ -1,9 +1,15 @@
 # 자비스 원-스텝 설치 — Windows (PowerShell 5+)
 # Usage:
-#   iwr https://raw.githubusercontent.com/no0m0321/jarvis/main/install.ps1 -UseBasicParsing | iex
-#   또는 git clone 후 ./install.ps1
+#   $env:JARVIS_LANG="ja"; iwr https://raw.githubusercontent.com/no0m0321/jarvis/main/install.ps1 -UseBasicParsing | iex
+#   또는 git clone 후:  powershell -ExecutionPolicy Bypass -File install.ps1
 #
 # install.sh와 의미적으로 동등. macOS 전용 절차(brew portaudio, Swift HUD 빌드)는 Windows에서 skip.
+#
+# v0.7.0 강화:
+# - ExecutionPolicy Restricted 환경 자동 감지 + 안내 (`-ExecutionPolicy Bypass` 권장)
+# - Python winget fallback (Python 미설치 시 winget 자동 설치 옵션 제공)
+# - pip install retry (네트워크 일시 끊김 복구) — 최대 3회
+# - 부분 실패 시 partial 상태 명시 (어디까지 됐는지 사용자에게 표시)
 
 $ErrorActionPreference = "Stop"
 
@@ -11,24 +17,74 @@ function Write-Info  { param([string]$msg) Write-Host "▶ $msg" -ForegroundColo
 function Write-Warn  { param([string]$msg) Write-Host "⚠ $msg" -ForegroundColor Yellow }
 function Write-Err   { param([string]$msg) Write-Host "✗ $msg" -ForegroundColor Red; exit 1 }
 
-# 1) Python 3.11+ 확인
-$py = $null
-foreach ($cmd in @("py -3.11", "py -3.12", "py -3", "python3", "python")) {
-    try {
-        $ver = & cmd /c "$cmd --version 2>&1"
-        if ($LASTEXITCODE -eq 0 -and $ver -match "Python\s+3\.(9|1[0-9])") {
-            $py = $cmd
-            Write-Info "Python found: $cmd ($ver)"
-            break
-        }
-    } catch { continue }
+# 0) ExecutionPolicy 검증 — 사용자 환경에서 스크립트가 차단됐는지
+$policy = Get-ExecutionPolicy -Scope CurrentUser
+if ($policy -eq "Restricted" -or $policy -eq "AllSigned") {
+    Write-Warn "현재 ExecutionPolicy: $policy — 스크립트 실행이 제한될 수 있습니다."
+    Write-Warn "권장 실행 방법:"
+    Write-Warn "  powershell -ExecutionPolicy Bypass -File install.ps1"
+    Write-Warn "또는 한 줄 설치 시:"
+    Write-Warn "  iwr https://...install.ps1 -UseBasicParsing | iex"
+    Write-Warn "(iex는 Restricted를 우회하므로 정상 동작)"
 }
-if (-not $py) {
-    Write-Warn "Python 3.9+ 미설치. 설치 방법:"
+
+# 1) Python 3.11+ 확인 + 미설치 시 winget 자동 설치 옵션
+function Find-Python {
+    foreach ($cmd in @("py -3.11", "py -3.12", "py -3", "python3", "python")) {
+        try {
+            $ver = & cmd /c "$cmd --version 2>&1"
+            if ($LASTEXITCODE -eq 0 -and $ver -match "Python\s+3\.(9|1[0-9])") {
+                return @{ cmd = $cmd; ver = $ver }
+            }
+        } catch { continue }
+    }
+    return $null
+}
+
+function Install-PythonViaWinget {
+    if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+        return $false
+    }
+    Write-Info "winget으로 Python 3.11 자동 설치 시도..."
+    & winget install --id Python.Python.3.11 --accept-source-agreements --accept-package-agreements --silent 2>&1 | Out-Null
+    if ($LASTEXITCODE -eq 0) {
+        # PATH 갱신 (winget 설치 후 새 세션 권장이지만 가능한 경우 reload)
+        $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + `
+                    [System.Environment]::GetEnvironmentVariable("Path", "User")
+        return $true
+    }
+    return $false
+}
+
+function Invoke-PipWithRetry {
+    param([string[]]$Args, [int]$MaxRetries = 3)
+    for ($i = 1; $i -le $MaxRetries; $i++) {
+        & cmd /c "$VenvPip $Args 2>&1" | Out-Null
+        if ($LASTEXITCODE -eq 0) { return $true }
+        if ($i -lt $MaxRetries) {
+            Write-Warn "pip 실패 (시도 $i/$MaxRetries) — $([math]::Pow(2,$i))초 후 재시도..."
+            Start-Sleep -Seconds ([math]::Pow(2, $i))
+        }
+    }
+    return $false
+}
+
+# 1) Python 3.11+ 확인 — 미설치 시 winget 자동 설치 시도
+$pyInfo = Find-Python
+if (-not $pyInfo) {
+    Write-Warn "Python 3.9+ 미설치 감지."
+    if (Install-PythonViaWinget) {
+        $pyInfo = Find-Python
+    }
+}
+if (-not $pyInfo) {
+    Write-Warn "Python 3.9+ 설치 방법:"
     Write-Warn "  winget install Python.Python.3.11"
     Write-Warn "  또는 https://www.python.org/downloads/windows/ 에서 다운로드"
-    Write-Err "Python 3.9+ 가 필요합니다"
+    Write-Err "Python 3.9+ 가 필요합니다 (winget 자동 설치도 실패)"
 }
+$py = $pyInfo.cmd
+Write-Info "Python found: $py ($($pyInfo.ver))"
 
 # 2) 저장소 위치 결정 + clone
 $RepoUrl = "https://github.com/no0m0321/jarvis.git"
@@ -54,10 +110,32 @@ $VenvPip = Join-Path $VenvDir "Scripts\pip.exe"
 $VenvJarvis = Join-Path $VenvDir "Scripts\jarvis.exe"
 if (-not (Test-Path $VenvPip)) { Write-Err "venv pip 없음: $VenvPip" }
 
-Write-Info "Python 패키지 설치 (editable + dev)"
-& $VenvPip install -q --upgrade pip
-& $VenvPip install -q -e ".[dev]"
-if ($LASTEXITCODE -ne 0) { Write-Err "pip install 실패" }
+Write-Info "Python 패키지 설치 (editable + dev) — retry up to 3x"
+# upgrade pip with retry
+$pipUpgradeOk = $false
+for ($i = 1; $i -le 3; $i++) {
+    & $VenvPip install -q --upgrade pip
+    if ($LASTEXITCODE -eq 0) { $pipUpgradeOk = $true; break }
+    if ($i -lt 3) {
+        Write-Warn "pip upgrade 실패 (시도 $i/3) — 재시도..."
+        Start-Sleep -Seconds ([math]::Pow(2, $i))
+    }
+}
+if (-not $pipUpgradeOk) { Write-Warn "pip upgrade 실패 — 기존 pip로 진행" }
+
+# editable install with retry
+$installOk = $false
+for ($i = 1; $i -le 3; $i++) {
+    & $VenvPip install -q -e ".[dev]"
+    if ($LASTEXITCODE -eq 0) { $installOk = $true; break }
+    if ($i -lt 3) {
+        Write-Warn "pip install 실패 (시도 $i/3) — $([math]::Pow(2,$i))초 후 재시도..."
+        Start-Sleep -Seconds ([math]::Pow(2, $i))
+    }
+}
+if (-not $installOk) {
+    Write-Err "pip install 실패 (3회 재시도 후) — 네트워크 또는 의존성 문제. 수동: $VenvPip install -e `".[dev]`""
+}
 
 # 4) .env 초기화
 if (-not (Test-Path ".env")) {

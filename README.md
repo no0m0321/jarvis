@@ -1,4 +1,4 @@
-# 자비스 (JARVIS) v0.6.0
+# 자비스 (JARVIS) v0.7.0
 
 [![CI](https://github.com/no0m0321/jarvis/actions/workflows/ci.yml/badge.svg)](https://github.com/no0m0321/jarvis/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -8,7 +8,18 @@
 
 **8개 언어 지원** (🇰🇷 한국어 · 🇺🇸 English · 🇯🇵 日本語 · 🇨🇳 中文 · 🇪🇸 Español · 🇫🇷 Français · 🇩🇪 Deutsch · 🇵🇹 Português) — macOS 우선 / Windows 베타 / Linux 베타 개인 AI 비서. wake word 음성 대화 + **350개 도구** (cross-platform 245 + macOS 99 + Windows 17 + Linux 13) + 시네마틱 데스크톱 HUD(macOS) + 첫 만남/호칭 시스템 + Passive Learning.
 
-**v0.6.0 신규 — 다국어 지원**:
+**v0.7.0 신규 — 보안 hardening + 코드 품질**:
+- 🔒 [`src/jarvis/logger.py`](src/jarvis/logger.py) — 중앙 로깅 + secret 자동 마스킹 (9개 secret env 패턴, sk-/ghp_/github_pat 정규식)
+- 🛡 `run_shell` / `bash_exec` / `python_exec` — 위험 패턴 자동 거부 (rm -rf /, fork bomb, mkfs, dd, /etc/shadow, curl|sh, urllib+exec)
+- 🛡 [`plugins.py`](src/jarvis/plugins.py) — 파일 권한 + AST 정적 분석 (group/world writable 거부, `__import__('os')` / `exec(urlopen())` 패턴 거부)
+- 📋 enum 추가 (7개 도구) — music_control/system_action/mic_mute/bluetooth_toggle/focus_mode/text_korean_polish/code_review_quick
+- ⚡ system prompt 캐싱 — env+파일 mtime 기반 invalidation, 매 호출 0~수ms
+- 🚀 install.ps1 — ExecutionPolicy 안내, winget Python 자동 설치, pip retry 3x exponential backoff
+- 🔍 `.github/workflows/codeql.yml` — 정기 보안 스캔 (security-extended + 매주 cron)
+- 🐍 typing 모더화 (Dict/List → dict/list, 5개 파일)
+- ✅ pytest 221/221 통과
+
+**v0.6.0 — 다국어 지원**:
 - 🌍 [`src/jarvis/i18n.py`](src/jarvis/i18n.py) — 8개 언어 첫 만남 인사 + 호칭 + TTS voice 자동 매칭
 - 📦 [`docs/download.html`](docs/download.html) — 언어 선택 → 언어 사전 설정된 install 명령 자동 생성 (사이트에서 다운로드)
 - 🎙 한국어/영어 native system prompt; 그 외 6개 언어는 영어 base + "ALWAYS respond in X" directive

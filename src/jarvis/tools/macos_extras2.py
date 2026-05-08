@@ -64,11 +64,18 @@ end tell
 
 REGISTRY.register(Tool(
     name="music_control",
-    description="Music.app 재생 제어. play/pause/next/previous/stop/current/search.",
+    description=(
+        "macOS Music.app 재생 제어 — play/pause/next/previous/stop/current/search 액션. "
+        "search는 query로 라이브러리 검색 후 첫 결과 재생."
+    ),
     input_schema={
         "type": "object",
         "properties": {
-            "action": {"type": "string", "description": "play|pause|next|previous|stop|current|search"},
+            "action": {
+                "type": "string",
+                "description": "수행할 동작",
+                "enum": ["play", "pause", "next", "previous", "stop", "current", "search"],
+            },
             "query": {"type": "string", "description": "search 액션 시 곡/아티스트명"},
         },
         "required": ["action"],
@@ -405,10 +412,16 @@ def _system_action(action: str) -> str:
 
 REGISTRY.register(Tool(
     name="system_action",
-    description="시스템 동작: sleep|lock|screensaver.",
+    description="macOS 시스템 동작 — 즉시 실행. sleep=수면, lock=화면 잠금, screensaver=스크린세이버.",
     input_schema={
         "type": "object",
-        "properties": {"action": {"type": "string"}},
+        "properties": {
+            "action": {
+                "type": "string",
+                "description": "수행할 시스템 동작",
+                "enum": ["sleep", "lock", "screensaver"],
+            },
+        },
         "required": ["action"],
     },
     handler=_system_action,

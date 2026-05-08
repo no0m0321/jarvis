@@ -56,10 +56,10 @@ def test_jarvis_help() -> None:
 
 
 def test_jarvis_version() -> None:
-    """jarvis version — '0.6.0' 출력 (현재 릴리스 버전)."""
+    """jarvis version — '0.7.0' 출력 (현재 릴리스 버전)."""
     r = _run(["version"])
     assert r.returncode == 0
-    assert "0.6.0" in r.stdout
+    assert "0.7.0" in r.stdout
     assert "jarvis" in r.stdout.lower()
 
 

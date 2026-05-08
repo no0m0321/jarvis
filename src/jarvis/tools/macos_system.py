@@ -68,10 +68,17 @@ REGISTRY.register(Tool(
 ))
 REGISTRY.register(Tool(
     name="bluetooth_toggle",
-    description="블루투스 on/off/toggle (blueutil CLI 필요).",
+    description="macOS 블루투스 on/off/toggle (blueutil CLI 필요 — `brew install blueutil`).",
     input_schema={
         "type": "object",
-        "properties": {"state": {"type": "string", "description": "on|off|toggle"}},
+        "properties": {
+            "state": {
+                "type": "string",
+                "description": "블루투스 어댑터 상태",
+                "enum": ["on", "off", "toggle"],
+                "default": "toggle",
+            },
+        },
         "required": [],
     },
     handler=_bluetooth_toggle,
@@ -194,10 +201,17 @@ def _mic_mute(state: str = "toggle") -> str:
 
 REGISTRY.register(Tool(
     name="mic_mute",
-    description="시스템 마이크 입력 볼륨 mute/unmute (on=mute=0, off=unmute=75).",
+    description="macOS 마이크 입력 볼륨 mute/unmute (on=mute=0, off=unmute=75, toggle=현재 상태 반전).",
     input_schema={
         "type": "object",
-        "properties": {"state": {"type": "string", "description": "on|off|toggle"}},
+        "properties": {
+            "state": {
+                "type": "string",
+                "description": "마이크 상태",
+                "enum": ["on", "off", "toggle"],
+                "default": "toggle",
+            },
+        },
         "required": [],
     },
     handler=_mic_mute,

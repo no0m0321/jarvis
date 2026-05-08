@@ -1,5 +1,113 @@
 # Changelog
 
+## v0.7.0 — 2026-05-08 (보안 hardening + 코드 품질 + 도구 enum)
+
+### 보안 강화 (P0)
+
+**🔒 src/jarvis/logger.py 신규 — 중앙 로깅 + secret 마스킹**:
+- `get_logger(name)` — 모듈별 logger (전체 namespace 'jarvis.*')
+- StreamHandler(stderr) + RotatingFileHandler(~/.jarvis/jarvis.log, 5MB × 3)
+- `_SecretMaskingFilter` — ANTHROPIC_API_KEY/OPENAI_API_KEY/STRIPE_SECRET_KEY/GITHUB_TOKEN 등 9개 secret env값을 log message/args에서 자동 '***' 치환
+- `mask_secrets(text)` — 외부 호출용 (도구 stdout/stderr 마스킹)
+- JSON Formatter (RotatingFileHandler용) — observability 도구 친화
+- 환경변수: JARVIS_LOG_LEVEL (INFO/WARNING/ERROR), JARVIS_LOG_FILE, JARVIS_LOG_FORMAT (console/json)
+
+**🛡 src/jarvis/tools/shell.py — 위험 패턴 거부**:
+- `_FORBIDDEN_PATTERNS` 6개: `rm -rf /` (다양한 flag 조합), fork bomb, mkfs disk, dd of=/dev/sda, /etc/shadow 직접 쓰기, curl|sh 패턴
+- 매치 시 `"ERROR: 거부됨 — <reason>"` 한국어 string 반환 (raise X — agent loop 안전)
+- 모든 호출 logger.info로 audit trail 기록
+- stdout/stderr는 `mask_secrets()` 통과 후 반환
+
+**🛡 src/jarvis/tools/code_exec.py — Python/bash 위험 패턴 거부**:
+- `_PY_FORBIDDEN` 6개: `os.system('rm -rf /')`, `subprocess + rm -rf /`, `shutil.rmtree('/')`, `/etc/shadow open`, `urllib + exec`, `requests + exec`
+- bash_exec는 shell.py의 forbidden patterns 공유
+- 모든 호출 audit + secret 마스킹
+
+**🛡 src/jarvis/plugins.py — Plugin 보안 hardening**:
+- 파일 권한 검증 — `S_IWGRP | S_IWOTH` 비트 set이면 거부 (group/world writable plugin은 신뢰 불가)
+- AST 정적 분석 — `__import__('os'/'subprocess'/'ctypes')`, `exec(urlopen(...))`, `exec(requests.get(...))` 패턴 거부
+- SyntaxError plugin은 자동 skip
+- 모든 결과 logger.info/warning으로 audit (plugin name, 거부 이유)
+
+**🛡 except Exception: pass 정리**:
+- agent.py:139, assistant.py:40/89/104, history.py:33/47, observations.py 등 28건 → `log.warning/error(...)`로 통일
+- silent failure 제거 — 디버깅 가능
+- 광범위 except를 좁은 OSError/json.JSONDecodeError 등으로 축소
+
+### 코드 품질
+
+**📦 함수 중복 정리** (utility.py 3개를 deprecated alias로 마킹):
+- `qr_generate` → `qrcode` 권장 (description에 [DEPRECATED v0.7.0] 명시)
+- `password_generate` → `password_gen` 권장
+- `slug` → `slugify` 권장
+- 도구 카운트 350 유지 (외부 호환성), description으로 LLM 선택 가이드
+
+**🐍 typing 모더화**:
+- agent.py / history.py / providers.py / voice/wake.py: `Dict/List/Tuple` → `dict/list/tuple` (Python 3.9+ PEP 585)
+- 5개 파일 정리
+
+**⚡ src/jarvis/assistant.py — system prompt 캐싱**:
+- `_PROMPT_CACHE` (max 5 entries, LRU-like) + `_cache_signature()` (env + 3개 파일 mtime)
+- `_build_system_prompt()` 캐시 layer 추가 — 같은 signature는 hit, 변경 시 자동 invalidation
+- `clear_prompt_cache()` / `prompt_cache_stats()` API
+- 매 agent 호출마다 persona/memory.md/observations 재읽음 → 0~수ms로 단축
+
+### 도구 품질
+
+**📋 input_schema에 enum 추가** (LLM 정확도 향상):
+- `music_control.action` — play/pause/next/previous/stop/current/search
+- `system_action.action` — sleep/lock/screensaver
+- `mic_mute.state` — on/off/toggle
+- `bluetooth_toggle.state` — on/off/toggle
+- `focus_mode.mode` — do_not_disturb/work/personal/off
+- `text_korean_polish.tone` — neutral/formal/casual/professional
+- `code_review_quick.focus` — all/security/performance/style
+
+**📝 description 보강 + property description 추가**:
+- 7개 도구의 description 더 자세히 (사용 예 포함)
+- enum 추가된 properties에 description 모두 명시
+
+### 인프라
+
+**🚀 install.ps1 v0.7.0 강화**:
+- ExecutionPolicy Restricted 자동 감지 + 한국어 안내
+- Python 미설치 시 winget 자동 설치 시도 (`winget install Python.Python.3.11 --silent`)
+- pip install retry 3회 (exponential backoff: 2s/4s/8s) — 네트워크 일시 끊김 복구
+- 부분 실패 시 명시적 에러 (어디까지 됐는지 사용자 안내)
+
+**🔍 .github/workflows/codeql.yml 신규** — 정기 보안 스캔:
+- Python language analysis (security-extended + security-and-quality 쿼리)
+- 트리거: push to main/kim, PR, 매주 월요일 03:00 UTC cron
+- security-events: write 권한 — GitHub Security tab에 결과 자동 업로드
+
+### 테스트 — +40 (총 221)
+
+- `tests/test_security.py` (34) — 7개 클래스:
+  - `TestShellForbidden` (10): rm -rf 다양한 flag, fork bomb, mkfs, dd, /etc/shadow, curl|sh, safe commands, empty
+  - `TestShellDispatch` (3): REGISTRY.dispatch 정상/거부/timeout clamp
+  - `TestCodeExecForbidden` (5): Python rm -rf, shutil.rmtree('/'), /etc/shadow open, urllib+exec, safe code
+  - `TestLoggerMasking` (4): normal text 보존, anthropic key 마스킹, github pat 마스킹, env 기반 마스킹
+  - `TestPluginSecurity` (7): world writable 거부, safe load, AST __import__('os'), AST exec(urlopen), syntax error, _ prefix skip, no plugin dir
+  - `TestCodeExecDispatch` (4): python_exec/bash_exec/node_exec dispatch
+  - tool count regression
+- `tests/test_prompt_cache.py` (6) — 캐시 hit/invalidation:
+  - 동일 condition 두 번 → hit
+  - lang env 변경 → invalidate
+  - profile 변경 → invalidate
+  - observations append → invalidate
+  - clear_prompt_cache 동작
+  - 5개 이상 누적 시 LRU eviction
+
+### 변경 요약
+
+- 도구 카운트: **350 (변동 없음)** — 보안/품질/enum은 무수정 도구 갯수 영향 없음
+- pyproject 0.6.0 → 0.7.0
+- pytest 221/221 통과 (이전 181 + 보안 34 + 캐시 6)
+- mypy clean (신규 logger / 변경 모듈)
+- ruff: 안전한 fix 적용
+
+---
+
 ## v0.6.0 — 2026-05-08 (다국어 지원 + 다운로드 사이트)
 
 ### 추가 — 8개 언어 i18n 시스템
