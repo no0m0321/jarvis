@@ -8,6 +8,7 @@
 """
 # ── Cross-platform 모듈 (모든 OS) ──────────────────────────
 from jarvis.tools import (  # noqa: F401  (sideeffect imports)
+    ai_helpers,    # 신규 v0.5.0: text_summarize/proofread/explain/code_review/decision/...
     code_exec,
     coding,
     converters,
@@ -23,6 +24,7 @@ from jarvis.tools import (  # noqa: F401  (sideeffect imports)
     generators,
     health_extra,
     info,
+    linux_extras,  # 신규 v0.5.0: linux_notify/dark_mode/top_processes/volume/battery/wifi/...
     macos,         # cross-platform: notify/say/open_url
     macos_extra,   # cross-platform: clipboard/screen_capture (calendar는 mac_only)
     memory,
@@ -30,12 +32,13 @@ from jarvis.tools import (  # noqa: F401  (sideeffect imports)
     network_extra,
     personal,
     shell,
-    system_xp,     # 신규 cross-platform: open_path/show_in_folder + windows_*
+    system_xp,     # cross-platform: open_path/show_in_folder/screenshot/audio_record/env_summary
     util_extra,
     utility,
     utils,
     vision,        # cross-platform: vision_screen/camera_describe (mss + opencv)
     web,
+    windows_extras,  # 신규 v0.5.0: windows_dark_mode/top_processes/battery/wifi/bluetooth/registry/...
 )
 
 # ── macOS-heavy 모듈 (모든 OS에서 import — 핸들러는 @mac_only로 graceful 분기) ─

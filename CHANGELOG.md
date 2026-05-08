@@ -1,5 +1,68 @@
 # Changelog
 
+## v0.5.0 — 2026-05-08 (cross-platform 대규모 확장)
+
+### 추가 — 도구 301 → **344 (+43)**
+
+**🪟 windows_extras.py — Windows 등가물 14개**:
+- 다크모드: `windows_dark_mode_status` / `windows_dark_mode_set` / `windows_dark_mode_toggle` (registry HKCU)
+- 시스템: `windows_top_processes`, `windows_frontmost_app`, `windows_running_apps`, `windows_audio_device_list`, `windows_mic_mute`
+- 진단: `windows_battery_info` (Win32_Battery), `windows_wifi_info` (netsh), `windows_bluetooth_status` (Get-PnpDevice)
+- Sleep 방지: `windows_caffeinate_start` / `windows_caffeinate_stop` (SetThreadExecutionState)
+- 네트워크/시스템: `windows_listening_ports` (netstat), `windows_registry_read`
+
+**🐧 linux_extras.py — Linux 등가물 13개**:
+- `linux_notify` (notify-send)
+- `linux_dark_mode_status/set/toggle` (gsettings GNOME)
+- `linux_top_processes` (ps -eo pid,pcpu,pmem,comm)
+- `linux_volume_set/get` (amixer 우선, pactl fallback)
+- `linux_battery_info` (upower)
+- `linux_wifi_info` (nmcli/iwgetid)
+- `linux_bluetooth_status` (bluetoothctl)
+- `linux_caffeinate_start/stop` (systemd-inhibit/xset)
+- `linux_window_list` (wmctrl)
+
+**🤖 ai_helpers.py — Claude 기반 cross-platform 10개**:
+- `text_summarize` — 긴 텍스트 N줄 요약 (lang ko/en)
+- `text_proofread` — 맞춤법/문법 교정 + 변경점 설명
+- `text_explain` — 어려운 개념 풀이 (파인만 기법, audience 지정)
+- `text_korean_polish` — 어색한 한국어/번역체 다듬기 (tone: neutral/formal/casual/professional)
+- `email_draft` — 이메일 초안 (tone, lang, recipient)
+- `code_explain` — 코드 동작 설명 (lang_hint)
+- `code_review_quick` — 빠른 코드 리뷰 (focus: all/security/performance/style)
+- `decision_helper` — 의사결정 보조 (장단점 + 조건부 추천)
+- `task_decompose` — 큰 작업을 단계별 분해 (depth 1/2/3)
+- `meeting_notes_format` — 자유 메모 → 구조화된 회의록
+
+**🔧 system_xp.py 확장 5개**:
+- `system_screenshot_to_file` — 화면 캡처 → PNG 파일 (mss, cross-platform)
+- `system_record_audio` — 마이크 녹음 → WAV 파일 (sounddevice)
+- `system_env_summary` — OS / Python / CPU / Memory / Disk / ~/.jarvis / API key 종합 진단
+- `system_default_browser_url` — 기본 브라우저로 URL 열기
+- `system_open_terminal_at` — 지정 폴더에서 새 터미널 (Terminal.app / wt.exe / gnome-terminal)
+
+### 변경
+
+- `pyproject.toml` version 0.4.0 → 0.5.0
+- `src/jarvis/tools/__init__.py` — 신규 모듈 import (ai_helpers, linux_extras, windows_extras)
+- `.github/workflows/ci.yml` — `windows-latest` runner 추가 (Python 3.11/3.12, 3.9는 sounddevice wheel 안정성 이슈로 exclude). lint/type check는 Linux runner에서만 실행 (CI 시간 단축).
+- README/CHANGELOG/TODO_WINDOWS — 도구 카운트 갱신, 신규 모듈 안내
+
+### 테스트 — +33 (총 81개)
+
+- `tests/test_system_xp.py` — system_xp 9개 도구 동작 + windows_only graceful 분기
+- `tests/test_platform_branching.py` — `mac_only`/`windows_only` 데코레이터 동작, mock OS spoof
+- `tests/test_xp_modules.py` — windows_extras / linux_extras / ai_helpers 등록 + 분기 + input validation
+- `tests/test_daemon_windows.py` — schtasks mock 검증 (install/uninstall/status/tail_log)
+
+### 기존 동작 유지
+
+- macOS native 동작 unchanged (mac_only는 macOS에선 그대로 통과)
+- v0.4.0 graceful 분기 정책 유지 (모든 OS에서 도구 명단 일관 노출)
+- Windows에서 cross-platform 도구 약 240개 정상 동작 (이전 200개 → 240개로 증가)
+
+---
+
 ## v0.4.0 — 2026-05-08 (Windows 베타 + 도구 graceful 분기)
 
 ### 변경 — Windows 베타 지원 (P0 + P1 + 도구 graceful 분기)

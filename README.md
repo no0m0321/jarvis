@@ -1,4 +1,4 @@
-# 자비스 (JARVIS) v0.4.0
+# 자비스 (JARVIS) v0.5.0
 
 [![CI](https://github.com/no0m0321/jarvis/actions/workflows/ci.yml/badge.svg)](https://github.com/no0m0321/jarvis/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -6,13 +6,21 @@
 
 > Voice-first personal AI assistant — Claude-powered, autonomous, holographic HUD
 
-macOS 우선 / **Windows 베타** 지원 개인 AI 비서. 한국어 우선, "자비스" wake word 음성 대화 + **301개 도구** (macOS 모두 / Windows 약 200개 정상 동작 + 99개는 `@mac_only`로 명확한 한국어 ERROR 반환) + 시네마틱 데스크톱 HUD(macOS) + plugin/config 시스템.
+macOS 우선 / **Windows 베타 / Linux 베타** 지원 개인 AI 비서. 한국어 우선, "자비스" wake word 음성 대화 + **344개 도구** (cross-platform 약 240개 + macOS 99개 + Windows 17개 + Linux 13개) + 시네마틱 데스크톱 HUD(macOS) + plugin/config 시스템.
 
-**v0.4.0 신규 — Windows 베타 지원**:
+**v0.5.0 신규 — cross-platform 대규모 확장 (+43 도구)**:
+- 🪟 [`windows_extras.py`](src/jarvis/tools/windows_extras.py) — Windows 등가물 14개 (dark_mode, top_processes, frontmost_app, audio_device_list, mic_mute, battery, wifi, bluetooth, caffeinate_*, listening_ports, registry_read 등)
+- 🐧 [`linux_extras.py`](src/jarvis/tools/linux_extras.py) — Linux 등가물 13개 (notify-send, gsettings dark mode, ps, amixer/pactl 볼륨, upower, nmcli, bluetoothctl, wmctrl 등)
+- 🤖 [`ai_helpers.py`](src/jarvis/tools/ai_helpers.py) — Claude 기반 cross-platform 10개 (text_summarize/proofread/explain/korean_polish, email_draft, code_explain/review, decision_helper, task_decompose, meeting_notes_format)
+- 🔧 [`system_xp.py`](src/jarvis/tools/system_xp.py) 확장 +5 (screenshot_to_file, record_audio, env_summary, default_browser_url, open_terminal_at)
+- 🧪 테스트 커버리지 +33 (`test_system_xp`, `test_platform_branching`, `test_xp_modules`, `test_daemon_windows`)
+- 🚀 CI 매트릭스 확장: macos-14 / ubuntu-latest **/ windows-latest** (Python 3.9-3.12)
+
+**v0.4.0 — Windows 베타 지원** (kim 브랜치):
 - `install.ps1` PowerShell 설치 스크립트
 - `jarvis daemon install/uninstall/restart/status` → Windows Task Scheduler (`schtasks /sc onlogon`) 자동 분기
 - 99개 macOS 전용 도구가 Windows에서 호출 시 한국어 ERROR string 반환 (registry 등록은 유지 → agent가 도구 명단 파악)
-- 신규 도구 4개: `system_open_path` · `system_show_in_folder` (cross-platform) / `windows_run_powershell` · `windows_outlook_compose` (Windows 전용)
+- 신규 도구 4개: `system_open_path` · `system_show_in_folder` / `windows_run_powershell` · `windows_outlook_compose`
 
 📐 [아키텍처](docs/ARCHITECTURE.md) · 🔒 [보안 노트](docs/SECURITY.md) · 🤝 [기여](CONTRIBUTING.md) · 📜 [LICENSE (MIT)](LICENSE)
 
@@ -107,7 +115,9 @@ src/jarvis/
 | **Multi-persona** | jarvis / casual / formal / creative — `JARVIS_PERSONA` env |
 | **Health server** | `:41417/healthz` `/metrics` `/tools` `/history` |
 | **Wake daemon** | macOS launchd (RunAtLoad + KeepAlive) / Windows Task Scheduler (onlogon) |
-| **Windows baseline** | `pyttsx3` SAPI5, `pywin32`/`win10toast`, `winsound`, `os.startfile` |
+| **Windows baseline** | `pyttsx3` SAPI5, `pywin32`/`win10toast`, `winsound`, `os.startfile`, PowerShell, registry, ctypes |
+| **Linux baseline** | `notify-send`, `gsettings`, `amixer`/`pactl`, `upower`, `nmcli`, `bluetoothctl`, `wmctrl`, `systemd-inhibit` |
+| **AI 헬퍼 도구** | text_summarize/proofread/explain/korean_polish, email_draft, code_review_quick, decision_helper, task_decompose, meeting_notes_format |
 
 ## HUD v6 시각 효과 (30+)
 

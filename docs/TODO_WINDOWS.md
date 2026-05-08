@@ -1,23 +1,26 @@
-# Windows 지원 로드맵
+# Windows / Linux 지원 로드맵
 
-자비스 v0.4.0부터 Windows 베타 지원 시작. 코어(LLM·voice·STT·TTS·screen·clipboard·webcam)는 cross-platform이지만 macOS 전용 기능(launchd, AppleScript, Übersicht HUD 등)은 Windows 등가물로 점진 포팅 필요.
+자비스 v0.4.0부터 Windows 베타, v0.5.0부터 Linux 베타 지원. 코어(LLM·voice·STT·TTS·screen·clipboard·webcam)는 모든 OS에서 cross-platform 동작. macOS 전용 기능(launchd, AppleScript, Übersicht HUD)은 Windows/Linux 등가물로 점진 포팅 중 (P2).
 
-## 현황 (v0.4.0)
+## 현황 (v0.5.0)
 
-| 영역 | 상태 |
-|---|---|
-| LLM 호출 (Anthropic SDK) | ✅ 완전 동일 |
-| 음성 입력 (sounddevice + faster-whisper) | ✅ 완전 동일 |
-| TTS (pyttsx3 + SAPI5 한국어 Heami 자동 선택) | ✅ 동작 (macOS Reed/Yuna 대비 음질 차이) |
-| 클립보드 / 화면 캡처 / 웹캠 | ✅ pyperclip / mss / opencv 모두 cross-platform |
-| 알림 (toast) | ✅ win10toast → PowerShell native fallback |
-| 도구 명단 (REGISTRY) | ✅ 모든 OS 동일 301개 |
-| cross-platform 도구 약 200개 | ✅ 정상 동작 |
-| macOS 전용 도구 99개 | ⚠️ `@mac_only` graceful → 한국어 ERROR 반환 (호출 시 agent에 안내) |
-| 신규 Windows 전용 도구 (`windows_run_powershell`, `windows_outlook_compose`) | ✅ pywin32 + Outlook COM |
-| Wake daemon | ✅ Windows Task Scheduler (`/sc onlogon`) |
-| HUD overlay (Übersicht / Swift) | ❌ macOS 전용 (P3) |
-| 권한 다이얼로그 일괄 트리거 (`jarvis permissions`) | N/A — Windows는 설정 앱에서 수동 |
+| 영역 | macOS | Windows | Linux |
+|---|---|---|---|
+| LLM 호출 (Anthropic SDK) | ✅ | ✅ | ✅ |
+| 음성 입력 (sounddevice + faster-whisper) | ✅ | ✅ | ✅ |
+| TTS | ✅ Reed/Yuna native | ✅ pyttsx3 + SAPI5 한국어 Heami | ✅ pyttsx3 + espeak |
+| 클립보드 / 화면 캡처 / 웹캠 | ✅ | ✅ | ✅ |
+| 알림 | ✅ Notification Center | ✅ win10toast/PowerShell | ✅ notify-send |
+| 도구 명단 (REGISTRY 카운트) | 344 | 344 (+windows_*) | 344 (+linux_*) |
+| cross-platform 도구 (240개) | ✅ | ✅ | ✅ |
+| AI 헬퍼 도구 10개 (ai_helpers.py) | ✅ | ✅ | ✅ |
+| macOS 전용 도구 99개 | ✅ native | ⚠️ `@mac_only` graceful ERROR | ⚠️ 동일 |
+| Windows 전용 도구 17개 (windows_extras + system_xp) | ⚠️ ERROR | ✅ | ⚠️ ERROR |
+| Linux 전용 도구 13개 (linux_extras) | ⚠️ ERROR | ⚠️ ERROR | ✅ |
+| Wake daemon | ✅ launchd | ✅ Task Scheduler | ❌ systemd unit 미구현 |
+| HUD overlay (Übersicht / Swift) | ✅ | ❌ P3 | ❌ P3 |
+| 권한 다이얼로그 일괄 트리거 (`jarvis permissions`) | ✅ | N/A 설정 앱 수동 | N/A |
+| CI 매트릭스 | ✅ macos-14 | ✅ windows-latest (3.11/3.12) | ✅ ubuntu-latest |
 
 ## P0 (v0.4.0 ✅ 완료)
 
@@ -33,30 +36,35 @@
 - [x] macOS 도구 99개 `@mac_only` graceful 분기 — Windows에서 명확한 한국어 ERROR
 - [x] README + CHANGELOG 업데이트
 
-## P2 (예정 — macOS 도구의 Windows 등가물 신규 구현)
+## P2 (진행 중 — macOS 도구의 Windows/Linux 등가물 신규 구현)
 
-| macOS 도구 | Windows 등가물 후보 |
-|---|---|
-| `mail_compose` | `windows_outlook_compose` ✅ (v0.4.0 추가) |
-| `apple_script` | `windows_run_powershell` ✅ (v0.4.0 추가) |
-| `calendar_add/list_today` | Outlook Calendar COM |
-| `reminder_add` | Microsoft To Do API or Tasks COM |
-| `music_control` | Spotify Web API or `tell-spotify` PowerShell |
-| `bluetooth_status/toggle` | `Get-PnpDevice -Class Bluetooth` PowerShell |
-| `dark_mode_toggle/set/status` | registry HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize\AppsUseLightTheme |
-| `audio_device_list/set` | NirCmd 또는 PowerShell (AudioDeviceCmdlets) |
-| `mic_mute` | NirCmd `mutesysvolume 1 default_record` |
-| `caffeinate_start/stop` | PowerShell SetThreadExecutionState |
-| `quick_look` | Windows 11 Preview / Quicklook 앱 |
-| `finder_reveal` | `system_show_in_folder` ✅ (v0.4.0 추가) |
-| `spotlight_search` | Windows Search Indexer COM (Microsoft.Search.Interop) |
-| `airdrop_reveal` | Nearby Sharing (Windows 10+ Settings) |
-| `frontmost_app` / `running_apps` | `Get-Process -IncludeUserName` PowerShell |
-| `top_processes` | `Get-Process | Sort-Object -Descending CPU` |
-| `window_*` (focus/position/minimize) | `Add-Type -TypeDefinition` + Win32 API |
-| `safari_*` / `chrome_*` (브라우저 탭) | claude-in-chrome MCP 또는 Selenium |
-| `imessage_send` | N/A — iMessage은 macOS/iOS 전용 |
-| `time_machine_*` | File History (Windows 10+) — `wbadmin` 또는 PowerShell |
+| macOS 도구 | Windows 등가물 | Linux 등가물 |
+|---|---|---|
+| `mail_compose` | ✅ `windows_outlook_compose` (v0.4.0) | TODO `linux_thunderbird_compose` |
+| `apple_script` | ✅ `windows_run_powershell` (v0.4.0) | TODO `linux_run_bash` (이미 `run_shell` 있음) |
+| `calendar_add/list_today` | TODO Outlook Calendar COM | TODO `evolution-calendar` |
+| `reminder_add` | TODO Microsoft To Do API | TODO `gnome-todo` |
+| `music_control` | TODO Spotify Web API | TODO MPRIS D-Bus |
+| `bluetooth_status` | ✅ `windows_bluetooth_status` (v0.5.0) | ✅ `linux_bluetooth_status` (v0.5.0) |
+| `dark_mode_*` | ✅ `windows_dark_mode_*` (v0.5.0) | ✅ `linux_dark_mode_*` (v0.5.0) |
+| `audio_device_list/set` | ✅ `windows_audio_device_list` (v0.5.0, readonly) | TODO `linux_audio_device_*` (pactl list) |
+| `mic_mute` | ✅ `windows_mic_mute` (v0.5.0, AudioDeviceCmdlets) | TODO amixer/pactl set-source-mute |
+| `caffeinate_*` | ✅ `windows_caffeinate_start/stop` (v0.5.0) | ✅ `linux_caffeinate_start/stop` (v0.5.0) |
+| `quick_look` | TODO Windows 11 Preview | TODO `gloobus-preview`/`sushi` |
+| `finder_reveal` | ✅ `system_show_in_folder` (v0.4.0) | ✅ `system_show_in_folder` (v0.4.0) |
+| `spotlight_search` | TODO Windows Search Indexer COM | TODO `tracker3 search` 또는 `recoll` |
+| `airdrop_reveal` | TODO Nearby Sharing | TODO `bluez-obex` |
+| `frontmost_app` / `running_apps` | ✅ `windows_frontmost_app` / `windows_running_apps` (v0.5.0) | TODO `linux_frontmost_app` (xdotool) |
+| `top_processes` | ✅ `windows_top_processes` (v0.5.0) | ✅ `linux_top_processes` (v0.5.0) |
+| `battery_info` | ✅ `windows_battery_info` (v0.5.0, Win32_Battery) | ✅ `linux_battery_info` (v0.5.0, upower) |
+| `wifi_info` | ✅ `windows_wifi_info` (v0.5.0, netsh) | ✅ `linux_wifi_info` (v0.5.0, nmcli/iwgetid) |
+| `listening_ports` | ✅ `windows_listening_ports` (v0.5.0, netstat) | TODO `linux_listening_ports` (ss/lsof) |
+| `defaults_read` | ✅ `windows_registry_read` (v0.5.0) | TODO `linux_dconf_read` (gsettings + dconf) |
+| `set_volume`/`get_volume` | TODO `windows_volume_*` (AudioDeviceCmdlets) | ✅ `linux_volume_set/get` (v0.5.0) |
+| `window_*` (focus/position/minimize) | TODO Win32 API via PowerShell | ✅ `linux_window_list` (v0.5.0, wmctrl), 나머지 TODO |
+| `safari_*` / `chrome_*` | TODO Selenium 또는 PyAutoGUI | TODO 동일 |
+| `imessage_send` | N/A | N/A |
+| `time_machine_*` | TODO File History (`wbadmin`) | TODO `restic` 또는 `borg` (별도 백업 도구 의존) |
 
 ## P3 (장기 — HUD overlay cross-platform)
 
