@@ -3,725 +3,394 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>JARVIS · 내 대시보드</title>
+<title>JARVIS Command Center · Dashboard</title>
 <meta name="robots" content="noindex" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Orbitron:wght@500;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
 <style>
 :root {
-  --cyan: #4cc9ff;
-  --cyan-bright: #7de0ff;
-  --cyan-dim: #5fb4d4;
-  --cyan-glow: rgba(76, 201, 255, 0.55);
-  --cyan-soft: rgba(76, 201, 255, 0.10);
-  --cyan-faint: rgba(76, 201, 255, 0.04);
-  --bg-0: #02060d;
-  --bg-1: #050b16;
-  --bg-2: #0a1320;
-  --line: rgba(76, 201, 255, 0.14);
-  --line-strong: rgba(76, 201, 255, 0.32);
-  --text: #d6effa;
-  --text-dim: #7896a4;
-  --accent: #ffd166;
-  --success: #4ade80;
-  --error: #ff6b8e;
+  --bg: #03060d;
+  --bg-soft: #07101d;
+  --panel: rgba(10, 20, 36, 0.76);
+  --panel-strong: rgba(12, 26, 46, 0.92);
+  --glass: rgba(255, 255, 255, 0.055);
+  --line: rgba(125, 226, 255, 0.16);
+  --line-strong: rgba(125, 226, 255, 0.38);
+  --text: #eefaff;
+  --muted: #86a4b7;
+  --cyan: #7de2ff;
+  --blue: #4f7dff;
+  --violet: #a779ff;
+  --green: #50f0a8;
+  --gold: #ffd166;
+  --red: #ff6f91;
+  --shadow: 0 30px 90px rgba(0, 0, 0, 0.42);
+  --radius-xl: 34px;
+  --radius-lg: 26px;
+  --radius-md: 18px;
 }
-
 * { margin: 0; padding: 0; box-sizing: border-box; }
-html, body {
-  background: var(--bg-0);
-  color: var(--text);
-  font-family: 'Outfit', -apple-system, system-ui, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  min-height: 100vh;
-}
+html { scroll-behavior: smooth; }
 body {
-  background:
-    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0, 132, 199, 0.18), transparent 60%),
-    radial-gradient(ellipse 50% 50% at 85% 80%, rgba(76, 201, 255, 0.06), transparent 70%),
-    var(--bg-0);
-  padding: 32px 24px 80px;
+  min-height: 100vh;
+  color: var(--text);
+  background: var(--bg);
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
-
-/* ── Top nav ── */
-.topnav {
-  max-width: 1280px;
-  margin: 0 auto 32px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 16px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid var(--line);
-}
-.brand {
-  font-family: 'Orbitron', sans-serif;
-  font-weight: 700;
-  font-size: 18px;
-  letter-spacing: 0.32em;
-  color: var(--cyan-bright);
-  text-decoration: none;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.brand .dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--cyan-bright);
-  box-shadow: 0 0 10px var(--cyan-glow);
-}
-.nav-actions {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 12px;
-}
-.nav-actions a {
-  color: var(--text-dim);
-  text-decoration: none;
-  transition: color 0.15s ease;
-}
-.nav-actions a:hover { color: var(--cyan-bright); }
-
-/* ── Container ── */
-.container {
-  max-width: 1280px;
-  margin: 0 auto;
-}
-
-/* ── Welcome hero ── */
-.welcome {
-  background: linear-gradient(135deg, rgba(10,19,32,0.95), rgba(5,11,22,0.95));
-  border: 1px solid var(--line);
-  border-radius: 22px;
-  padding: 40px;
-  margin-bottom: 28px;
-  position: relative;
-  overflow: hidden;
-}
-.welcome::before {
+body::before {
   content: "";
-  position: absolute;
-  top: 0; right: 0;
-  width: 320px;
-  height: 320px;
-  background: radial-gradient(circle, var(--cyan-glow), transparent 70%);
-  filter: blur(80px);
-  pointer-events: none;
-}
-.welcome-greet {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 12px;
-  letter-spacing: 0.16em;
-  color: var(--cyan);
-  text-transform: uppercase;
-  margin-bottom: 12px;
-}
-.welcome h1 {
-  font-size: 34px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  background: linear-gradient(135deg, var(--text) 0%, var(--cyan-bright) 80%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  margin-bottom: 8px;
-}
-.welcome .email {
-  color: var(--text-dim);
-  font-size: 14px;
-  font-family: 'JetBrains Mono', monospace;
-}
-
-/* ── Grid ── */
-.grid {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 20px;
-  margin-bottom: 20px;
-}
-@media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
-
-/* ── Card ── */
-.card {
-  background: linear-gradient(180deg, rgba(10,19,32,0.85), rgba(5,11,22,0.85));
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 24px;
-  position: relative;
-}
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 18px;
-}
-.card-header h2 {
-  font-family: 'Orbitron', sans-serif;
-  font-weight: 500;
-  font-size: 11px;
-  letter-spacing: 0.24em;
-  color: var(--cyan-bright);
-  text-transform: uppercase;
-}
-.card-header .badge {
-  background: var(--cyan-soft);
-  color: var(--cyan-bright);
-  padding: 3px 10px;
-  border-radius: 999px;
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  border: 1px solid var(--line-strong);
-  font-family: 'JetBrains Mono', monospace;
-}
-.card-header .badge.paid    { background: rgba(74,222,128,0.10); color: var(--success); border-color: rgba(74,222,128,0.32); }
-.card-header .badge.pending { background: rgba(255,209,102,0.10); color: var(--accent); border-color: rgba(255,209,102,0.32); }
-.full { grid-column: 1 / -1; }
-
-/* ── Download primary ── */
-.download-card {
-  background: linear-gradient(135deg, rgba(76,201,255,0.08), rgba(76,201,255,0.02));
-  border: 1px solid var(--line-strong);
-}
-.download-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 16px;
-}
-.download-info .ver {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 22px;
-  letter-spacing: 0.06em;
-  margin-bottom: 4px;
-}
-.download-info .meta {
-  color: var(--text-dim);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 12px;
-}
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 22px;
-  border-radius: 10px;
-  font-weight: 600;
-  font-size: 14px;
-  font-family: inherit;
-  cursor: pointer;
-  border: 1px solid transparent;
-  transition: all 0.15s ease;
-  letter-spacing: 0.02em;
-  text-decoration: none;
-}
-.btn-primary {
-  background: linear-gradient(180deg, var(--cyan-bright) 0%, var(--cyan) 100%);
-  color: #001829;
-  border-color: var(--cyan);
-}
-.btn-primary:hover {
-  box-shadow: 0 0 28px var(--cyan-glow);
-  transform: translateY(-1px);
-}
-.btn-primary:disabled { opacity: 0.5; cursor: wait; transform: none; box-shadow: none; }
-.btn-ghost {
-  background: transparent;
-  color: var(--cyan);
-  border-color: var(--line);
-}
-.btn-ghost:hover { background: var(--cyan-soft); border-color: var(--line-strong); }
-.btn-danger {
-  background: transparent;
-  color: var(--error);
-  border-color: rgba(255,107,142,0.32);
-}
-.btn-danger:hover { background: rgba(255,107,142,0.06); }
-
-/* ── Stats grid ── */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
-  margin-bottom: 20px;
-}
-@media (max-width: 720px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
-.stat-tile {
-  background: var(--bg-1);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 18px 16px;
-}
-.stat-tile .lbl {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 0.16em;
-  color: var(--text-dim);
-  text-transform: uppercase;
-  margin-bottom: 10px;
-}
-.stat-tile .num {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 26px;
-  color: var(--cyan-bright);
-  font-weight: 500;
-}
-.stat-tile .suf {
-  color: var(--text-dim);
-  font-size: 12px;
-  font-family: 'JetBrains Mono', monospace;
-  margin-left: 6px;
-}
-
-/* ── Purchase rows ── */
-.purchase-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 0;
-  border-bottom: 1px solid rgba(76,201,255,0.06);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 12px;
-}
-.purchase-row:last-child { border-bottom: none; }
-.purchase-row .left { display: flex; flex-direction: column; gap: 4px; }
-.purchase-row .product { color: var(--cyan-bright); font-size: 13px; }
-.purchase-row .ts { color: var(--text-dim); font-size: 11px; }
-.purchase-row .amount { color: var(--text); font-weight: 500; }
-.purchase-row .pill {
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-.purchase-row .pill.paid    { background: rgba(74,222,128,0.10); color: var(--success); }
-.purchase-row .pill.pending { background: rgba(255,209,102,0.10); color: var(--accent); }
-.purchase-row .pill.failed  { background: rgba(255,107,142,0.10); color: var(--error); }
-
-/* ── Usage tile (recent calls list) ── */
-.usage-list { max-height: 260px; overflow-y: auto; padding-right: 6px; }
-.usage-list::-webkit-scrollbar { width: 6px; }
-.usage-list::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
-.usage-row {
-  padding: 10px 0;
-  border-bottom: 1px solid rgba(76,201,255,0.05);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 12px;
-}
-.usage-row:last-child { border-bottom: none; }
-.usage-head {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 4px;
-}
-.usage-head .endpoint { color: var(--cyan-bright); font-weight: 500; }
-.usage-head .ts { color: var(--text-dim); font-size: 10px; letter-spacing: 0.08em; }
-.usage-detail { color: var(--text-dim); font-size: 11px; display: flex; gap: 12px; }
-
-/* ── Empty / loading ── */
-.empty {
-  color: var(--text-dim);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 12px;
-  padding: 32px 0;
-  text-align: center;
-}
-
-/* ── Avatar ── */
-.avatar {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--cyan-bright) 0%, var(--cyan) 60%, #0084c7 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  font-weight: 700;
-  color: #001829;
-  flex-shrink: 0;
-  box-shadow: 0 0 16px var(--cyan-glow);
-}
-
-/* ── Footer ── */
-.footer {
-  max-width: 1280px;
-  margin: 40px auto 0;
-  padding-top: 24px;
-  border-top: 1px solid var(--line);
-  text-align: center;
-  color: var(--text-dim);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-/* ── Banner ── */
-#flashBanner {
   position: fixed;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%) translateY(120%);
-  padding: 14px 28px;
-  border-radius: 12px;
-  font-weight: 600;
-  font-size: 14px;
-  z-index: 9999;
-  transition: transform 0.4s cubic-bezier(.2,.7,.2,1);
+  inset: 0;
+  z-index: -3;
+  background:
+    linear-gradient(rgba(125,226,255,0.032) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(125,226,255,0.032) 1px, transparent 1px),
+    radial-gradient(circle at 18% 8%, rgba(79,125,255,0.24), transparent 28%),
+    radial-gradient(circle at 82% 18%, rgba(167,121,255,0.22), transparent 30%),
+    radial-gradient(circle at 48% 88%, rgba(80,240,168,0.10), transparent 34%),
+    #03060d;
+  background-size: 46px 46px, 46px 46px, auto, auto, auto, auto;
 }
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 0%, rgba(125,226,255,0.12), transparent 52%);
+}
+a { color: inherit; text-decoration: none; }
+button { font: inherit; }
+.shell { max-width: 1480px; margin: 0 auto; padding: 24px; }
+.topnav {
+  position: sticky;
+  top: 16px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 22px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: rgba(4, 9, 18, 0.78);
+  backdrop-filter: blur(26px);
+  box-shadow: 0 16px 50px rgba(0,0,0,0.30);
+}
+.brand { display: flex; align-items: center; gap: 14px; min-width: 230px; }
+.brand-mark {
+  width: 42px; height: 42px; border-radius: 16px;
+  display: grid; place-items: center;
+  background: radial-gradient(circle at 30% 20%, #fff, var(--cyan) 20%, var(--blue) 62%, #08111f 100%);
+  box-shadow: 0 0 30px rgba(125,226,255,0.45);
+}
+.brand-mark span { width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(255,255,255,.9); }
+.brand-title { display: flex; flex-direction: column; gap: 2px; }
+.brand-title strong { font-size: 14px; letter-spacing: .26em; font-weight: 800; }
+.brand-title small { color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .12em; }
+.nav-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 40px; padding: 10px 16px;
+  border-radius: 14px; border: 1px solid transparent;
+  color: var(--text); font-weight: 700; letter-spacing: -0.01em;
+  cursor: pointer; transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease, background .18s ease;
+}
+.btn:hover { transform: translateY(-1px); }
+.btn-primary { color: #03101b; background: linear-gradient(135deg, var(--cyan), var(--blue)); box-shadow: 0 12px 34px rgba(79,125,255,.30); }
+.btn-primary:hover { box-shadow: 0 16px 44px rgba(125,226,255,.32); }
+.btn-ghost { background: rgba(255,255,255,.035); border-color: var(--line); color: var(--text); }
+.btn-ghost:hover { border-color: var(--line-strong); background: rgba(125,226,255,.08); }
+.btn-danger { color: var(--red); background: rgba(255,111,145,.06); border-color: rgba(255,111,145,.32); }
+.btn:disabled { opacity: .55; cursor: wait; transform: none; }
+.hero {
+  display: grid; grid-template-columns: minmax(0, 1.42fr) minmax(360px, .72fr); gap: 18px; margin-bottom: 18px;
+}
+.panel {
+  position: relative; overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  background: linear-gradient(180deg, var(--panel), rgba(5,10,20,.64));
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(24px);
+}
+.command-hero { min-height: 420px; padding: 38px; display: grid; grid-template-columns: minmax(0,1fr) 340px; gap: 18px; align-items: center; }
+.command-hero::before {
+  content: ""; position: absolute; inset: -1px; z-index: -1;
+  background: radial-gradient(circle at 75% 34%, rgba(125,226,255,.18), transparent 34%), radial-gradient(circle at 18% 0%, rgba(167,121,255,.16), transparent 32%);
+}
+.eyebrow { color: var(--cyan); font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; letter-spacing: .20em; text-transform: uppercase; margin-bottom: 12px; }
+.command-hero h1 { max-width: 900px; font-size: clamp(38px, 4.35vw, 66px); line-height: .98; letter-spacing: -.055em; margin-bottom: 20px; word-break: keep-all; }
+.command-hero h1 span { color: var(--cyan); text-shadow: 0 0 40px rgba(125,226,255,.36); }
+.lead { max-width: 760px; color: #b6ccda; font-size: 17px; line-height: 1.72; }
+.hero-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 28px; }
+.reactor { justify-self: center; position: relative; width: 310px; height: 310px; display: grid; place-items: center; }
+.ring, .core, .scan { position: absolute; border-radius: 50%; }
+.ring { border: 1px solid rgba(125,226,255,.34); animation: spin 12s linear infinite; }
+.ring.one { width: 300px; height: 300px; box-shadow: inset 0 0 60px rgba(125,226,255,.10); }
+.ring.two { width: 220px; height: 220px; border-style: dashed; animation-duration: 8s; animation-direction: reverse; }
+.ring.three { width: 140px; height: 140px; border-color: rgba(80,240,168,.45); animation-duration: 5s; }
+.core { width: 82px; height: 82px; background: radial-gradient(circle, #fff 0%, var(--cyan) 20%, var(--blue) 66%, #03101b 100%); box-shadow: 0 0 60px rgba(125,226,255,.72); }
+.scan { width: 285px; height: 285px; border: 1px solid rgba(255,255,255,.08); clip-path: polygon(50% 50%, 100% 0, 100% 28%); animation: spin 4.2s linear infinite; background: conic-gradient(from 90deg, rgba(125,226,255,.20), transparent 22%); }
+@keyframes spin { to { transform: rotate(360deg); } }
+.account-card { padding: 26px; }
+.card-title { display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-bottom: 22px; }
+.card-title h2 { font-size: 12px; font-family: 'JetBrains Mono', monospace; letter-spacing: .20em; text-transform: uppercase; color: var(--cyan); }
+.badge { display: inline-flex; align-items: center; justify-content: center; padding: 5px 11px; border-radius: 99px; border: 1px solid var(--line-strong); color: var(--cyan); background: rgba(125,226,255,.08); font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: .11em; text-transform: uppercase; }
+.badge.paid { color: var(--green); border-color: rgba(80,240,168,.38); background: rgba(80,240,168,.08); }
+.badge.pending { color: var(--gold); border-color: rgba(255,209,102,.38); background: rgba(255,209,102,.08); }
+.user-head { display: flex; align-items: center; gap: 16px; margin-bottom: 22px; }
+.avatar { width: 62px; height: 62px; border-radius: 22px; display: grid; place-items: center; color: #06111f; font-size: 24px; font-weight: 800; background: linear-gradient(135deg, #fff, var(--cyan) 35%, var(--blue)); box-shadow: 0 0 34px rgba(125,226,255,.38); }
+.user-head strong { display: block; font-size: 24px; letter-spacing: -.03em; }
+.user-head span { color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+.account-lines { display: grid; gap: 10px; }
+.info-line { display: flex; justify-content: space-between; gap: 16px; padding: 13px 0; border-bottom: 1px solid rgba(125,226,255,.09); }
+.info-line span { color: var(--muted); }
+.info-line strong { text-align: right; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kpi-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 14px; margin-bottom: 18px; }
+.kpi { padding: 22px; border-radius: var(--radius-lg); }
+.kpi label { display: block; color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .16em; text-transform: uppercase; margin-bottom: 10px; }
+.kpi strong { display: block; font-size: clamp(28px, 3vw, 42px); line-height: 1; letter-spacing: -.055em; }
+.kpi small { display: block; margin-top: 9px; color: var(--muted); }
+.kpi.ok strong { color: var(--green); }
+.kpi.warn strong { color: var(--gold); }
+.main-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(360px, .82fr); gap: 18px; }
+.download-card { padding: 26px; margin-bottom: 18px; }
+.download-body { display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+.release-title { font-size: 30px; font-weight: 800; letter-spacing: -.04em; margin-bottom: 6px; }
+.release-meta { display: flex; gap: 10px; flex-wrap: wrap; color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+.progress-wrap { margin-top: 22px; }
+.progress-track { height: 10px; border-radius: 99px; background: rgba(255,255,255,.06); overflow: hidden; border: 1px solid rgba(125,226,255,.10); }
+.progress-fill { width: 82%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--green), var(--cyan), var(--blue)); box-shadow: 0 0 22px rgba(125,226,255,.44); }
+.progress-labels { display: flex; justify-content: space-between; margin-top: 9px; color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+.table-card, .usage-card, .ops-card { padding: 24px; }
+.timeline { display: grid; gap: 10px; }
+.row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 16px; align-items: center; padding: 15px 0; border-bottom: 1px solid rgba(125,226,255,.08); }
+.row:last-child { border-bottom: 0; }
+.row .primary-text { display: block; color: var(--text); font-weight: 700; margin-bottom: 4px; }
+.row .sub { display: block; color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+.amount { font-family: 'JetBrains Mono', monospace; font-weight: 700; text-align: right; }
+.pill { display: inline-flex; align-items: center; justify-content: center; min-width: 64px; padding: 4px 9px; border-radius: 99px; font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+.pill.paid { color: var(--green); background: rgba(80,240,168,.10); }
+.pill.pending { color: var(--gold); background: rgba(255,209,102,.10); }
+.pill.failed { color: var(--red); background: rgba(255,111,145,.10); }
+.usage-list { max-height: 460px; overflow: auto; padding-right: 4px; }
+.usage-list::-webkit-scrollbar { width: 8px; }
+.usage-list::-webkit-scrollbar-thumb { background: rgba(125,226,255,.18); border-radius: 99px; }
+.usage-item { padding: 14px 0; border-bottom: 1px solid rgba(125,226,255,.075); }
+.usage-head { display: flex; justify-content: space-between; gap: 14px; margin-bottom: 8px; }
+.usage-head strong { font-size: 14px; }
+.usage-head span { color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 10px; }
+.usage-metrics { display: flex; gap: 12px; flex-wrap: wrap; color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+.ops-grid { display: grid; gap: 12px; }
+.ops-item { padding: 15px; border: 1px solid rgba(125,226,255,.12); border-radius: 18px; background: rgba(255,255,255,.035); }
+.ops-item strong { display: block; margin-bottom: 5px; }
+.ops-item span { color: var(--muted); line-height: 1.45; font-size: 13px; }
+.empty { padding: 34px 0; text-align: center; color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+.footer { margin: 28px auto 10px; text-align: center; color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
+#flashBanner { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(140%); z-index: 100; max-width: min(680px, calc(100vw - 32px)); padding: 14px 22px; border-radius: 16px; color: #04111f; font-weight: 800; box-shadow: 0 18px 52px rgba(0,0,0,.30); transition: transform .32s cubic-bezier(.2,.7,.2,1); }
 #flashBanner.show { transform: translateX(-50%) translateY(0); }
-#flashBanner.success { background: linear-gradient(180deg, #5cdcc8, #34d399); color: #00251a; box-shadow: 0 12px 40px rgba(52,211,153,0.4); }
-#flashBanner.error   { background: linear-gradient(180deg, #ff8aa8, #ff6b8e); color: #2a0010; box-shadow: 0 12px 40px rgba(255,107,142,0.4); }
-#flashBanner.info    { background: linear-gradient(180deg, var(--cyan-bright), var(--cyan)); color: #001829; box-shadow: 0 12px 40px var(--cyan-glow); }
+#flashBanner.success { background: linear-gradient(135deg, var(--green), var(--cyan)); }
+#flashBanner.error { background: linear-gradient(135deg, #ff8aa8, var(--red)); }
+#flashBanner.info { background: linear-gradient(135deg, var(--cyan), var(--blue)); }
+@media (max-width: 1120px) { .hero, .main-grid, .command-hero { grid-template-columns: 1fr; } .reactor { display: none; } .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 720px) { .shell { padding: 14px; } .topnav { position: static; align-items: flex-start; } .brand-title small { display: none; } .nav-actions { width: 100%; } .btn { flex: 1; } .kpi-grid { grid-template-columns: 1fr; } .command-hero { padding: 26px; } .command-hero h1 { font-size: 38px; } }
 </style>
 </head>
 <body>
+<div class="shell">
+  <header class="topnav">
+    <a href="/" class="brand" aria-label="JARVIS 홈으로 이동">
+      <div class="brand-mark"><span></span></div>
+      <div class="brand-title"><strong>JARVIS</strong><small>COMMAND CENTER</small></div>
+    </a>
+    <div class="nav-actions">
+      <a class="btn btn-ghost" href="/">메인</a>
+      <a class="btn btn-ghost" href="https://github.com/no0m0321/jarvis" target="_blank" rel="noreferrer">GitHub</a>
+      <button class="btn btn-danger" id="signOutBtn">로그아웃</button>
+    </div>
+  </header>
 
-<!-- ── Top nav ── -->
-<div class="topnav">
-  <a href="/" class="brand"><span class="dot"></span>JARVIS · DASHBOARD</a>
-  <div class="nav-actions">
-    <a href="/">← 메인</a>
-    <a href="https://github.com/no0m0321/jarvis" target="_blank">GITHUB</a>
-    <button class="btn btn-ghost" id="signOutBtn" style="padding:6px 12px;font-size:12px;">로그아웃</button>
-  </div>
-</div>
-
-<div class="container">
-  <!-- Welcome -->
-  <div class="welcome" id="welcome" style="display:none;">
-    <div style="display:flex;align-items:center;gap:18px;">
-      <div class="avatar" id="avatar">?</div>
+  <section class="hero">
+    <article class="panel command-hero">
       <div>
-        <div class="welcome-greet">SIGNED IN</div>
-        <h1>안녕하세요, 주인님</h1>
-        <div class="email" id="userEmail">—</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Stats -->
-  <div class="stats-grid" id="statsGrid">
-    <div class="stat-tile">
-      <div class="lbl">상태</div>
-      <div class="num" id="statusNum">—</div>
-    </div>
-    <div class="stat-tile">
-      <div class="lbl">총 결제</div>
-      <div class="num" id="totalPaid">0<span class="suf">USD</span></div>
-    </div>
-    <div class="stat-tile">
-      <div class="lbl">API 호출</div>
-      <div class="num" id="apiCalls">0<span class="suf">회</span></div>
-    </div>
-    <div class="stat-tile">
-      <div class="lbl">사용 토큰</div>
-      <div class="num" id="totalTokens">0<span class="suf">k</span></div>
-    </div>
-  </div>
-
-  <!-- Download (primary action) -->
-  <div class="card download-card" style="margin-bottom:20px;">
-    <div class="card-header">
-      <h2>다운로드</h2>
-      <span class="badge paid" id="downloadBadge">PAID</span>
-    </div>
-    <div class="download-row">
-      <div class="download-info">
-        <div class="ver">JARVIS v0.3.0 · Source</div>
-        <div class="meta">jarvis-v0.3.0.zip · 116 KB · 24h signed URL</div>
-      </div>
-      <button class="btn btn-primary" id="downloadBtn">⬇ 다운로드</button>
-    </div>
-  </div>
-
-  <!-- Grid: purchases + usage -->
-  <div class="grid">
-    <!-- Purchases -->
-    <div class="card">
-      <div class="card-header">
-        <h2>결제 내역</h2>
-        <span class="badge"><span id="purchasesCount">0</span> records</span>
-      </div>
-      <div id="purchases"><div class="empty">불러오는 중…</div></div>
-    </div>
-
-    <!-- Account info -->
-    <div class="card">
-      <div class="card-header">
-        <h2>계정</h2>
-      </div>
-      <div id="accountInfo">
-        <div class="purchase-row">
-          <div class="left">
-            <span class="product">이메일</span>
-            <span class="ts" id="accEmail">—</span>
-          </div>
-        </div>
-        <div class="purchase-row">
-          <div class="left">
-            <span class="product">사용자 ID</span>
-            <span class="ts" id="accUid">—</span>
-          </div>
-        </div>
-        <div class="purchase-row">
-          <div class="left">
-            <span class="product">결제일</span>
-            <span class="ts" id="accSince">—</span>
-          </div>
-        </div>
-        <div class="purchase-row">
-          <div class="left">
-            <span class="product">제품</span>
-            <span class="ts" id="accProduct">—</span>
-          </div>
+        <p class="eyebrow">PRIVATE AI OPERATING SYSTEM</p>
+        <h1>구매자를 위한 <span>프리미엄 자비스 관제실</span></h1>
+        <p class="lead">결제 상태, 데스크톱 앱 다운로드, Claude API 사용량, 계정 정보를 한 번에 확인하는 상용형 대시보드입니다. 설치 직후 고객이 제품 가치를 바로 체감하도록 시각적 품질과 운영 지표를 대폭 강화했습니다.</p>
+        <div class="hero-actions">
+          <button class="btn btn-primary" id="heroDownloadBtn">데스크톱 앱 다운로드</button>
+          <a class="btn btn-ghost" href="#usagePanel">API 사용량 보기</a>
         </div>
       </div>
-    </div>
-  </div>
+      <div class="reactor" aria-hidden="true">
+        <div class="scan"></div><div class="ring one"></div><div class="ring two"></div><div class="ring three"></div><div class="core"></div>
+      </div>
+    </article>
 
-  <!-- Usage timeline -->
-  <div class="card full" style="margin-top:20px;">
-    <div class="card-header">
-      <h2>최근 API 사용량</h2>
-      <span class="badge"><span id="usageCount">0</span> calls</span>
+    <aside class="panel account-card" id="welcome">
+      <div class="card-title"><h2>Operator Profile</h2><span class="badge" id="profileBadge">AUTH</span></div>
+      <div class="user-head">
+        <div class="avatar" id="avatar">J</div>
+        <div><strong id="displayName">안녕하세요, 주인님</strong><span id="userEmail">계정 확인 중</span></div>
+      </div>
+      <div class="account-lines">
+        <div class="info-line"><span>사용자 ID</span><strong id="accUid">—</strong></div>
+        <div class="info-line"><span>결제일</span><strong id="accSince">—</strong></div>
+        <div class="info-line"><span>제품</span><strong id="accProduct">—</strong></div>
+        <div class="info-line"><span>웹 세션</span><strong id="sessionState">VERIFYING</strong></div>
+      </div>
+    </aside>
+  </section>
+
+  <section class="kpi-grid" id="statsGrid">
+    <article class="panel kpi" id="statusTile"><label>Entitlement</label><strong id="statusNum">—</strong><small>구매/다운로드 권한</small></article>
+    <article class="panel kpi"><label>Total Paid</label><strong id="totalPaid">0 USD</strong><small>누적 결제 금액</small></article>
+    <article class="panel kpi"><label>Claude Calls</label><strong id="apiCalls">0</strong><small>최근 API 호출</small></article>
+    <article class="panel kpi"><label>Token Volume</label><strong id="totalTokens">0</strong><small>입력·출력·캐시 토큰</small></article>
+  </section>
+
+  <section class="main-grid">
+    <div>
+      <article class="panel download-card">
+        <div class="card-title"><h2>Desktop Release</h2><span class="badge paid" id="downloadBadge">PAID</span></div>
+        <div class="download-body">
+          <div>
+            <div class="release-title">JARVIS Command Center v1.0</div>
+            <div class="release-meta"><span id="releaseObject">desktop installer</span><span>signed URL 24h</span><span>Claude-ready</span></div>
+          </div>
+          <button class="btn btn-primary" id="downloadBtn">다운로드 시작</button>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-track"><div class="progress-fill"></div></div>
+          <div class="progress-labels"><span>제품 완성도</span><span>Premium Launch Build · 82%</span></div>
+        </div>
+      </article>
+
+      <article class="panel table-card">
+        <div class="card-title"><h2>Purchase Ledger</h2><span class="badge"><span id="purchasesCount">0</span>&nbsp;records</span></div>
+        <div id="purchases"><div class="empty">결제 내역을 불러오는 중입니다.</div></div>
+      </article>
     </div>
-    <div class="usage-list" id="usage"><div class="empty">불러오는 중…</div></div>
-  </div>
+
+    <aside class="panel ops-card">
+      <div class="card-title"><h2>Premium Readiness</h2><span class="badge">OPS</span></div>
+      <div class="ops-grid">
+        <div class="ops-item"><strong>Secure Entitlement</strong><span>Supabase 인증과 paid 결제 확인 후 다운로드 URL을 발급합니다.</span></div>
+        <div class="ops-item"><strong>Claude Metering</strong><span>모델, 토큰, 캐시, 비용, 지연 시간을 사용량 테이블에 기록합니다.</span></div>
+        <div class="ops-item"><strong>Desktop First UX</strong><span>Electron Command Center와 웹 대시보드가 같은 제품 경험으로 이어집니다.</span></div>
+        <div class="ops-item"><strong>Launch Quality</strong><span>결제자에게 100만 원대 제품처럼 보이는 고급 인터페이스를 제공합니다.</span></div>
+      </div>
+    </aside>
+  </section>
+
+  <section class="panel usage-card" id="usagePanel" style="margin-top:18px;">
+    <div class="card-title"><h2>Claude Usage Timeline</h2><span class="badge"><span id="usageCount">0</span>&nbsp;calls</span></div>
+    <div class="usage-list" id="usage"><div class="empty">API 사용량을 불러오는 중입니다.</div></div>
+  </section>
+
+  <footer class="footer">JARVIS Command Center v1.0 · Claude-powered desktop launch dashboard</footer>
 </div>
-
-<div class="footer">
-  v0.4.0 · Made with ◈ + Claude Opus 4.7 · <a href="/" style="color:inherit;">메인으로</a>
-</div>
-
 <div id="flashBanner"></div>
-
-<!-- ── Config ── -->
-<script id="config">
-  window.SUPABASE_URL      = window.SUPABASE_URL      || "";
-  window.SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || "";
-</script>
+<script id="config">window.SUPABASE_URL = window.SUPABASE_URL || ""; window.SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || "";</script>
 <script src="/env.js" onerror="void 0"></script>
-
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
 const URL = window.SUPABASE_URL;
 const KEY = window.SUPABASE_ANON_KEY;
 const $ = (id) => document.getElementById(id);
-
-if (!URL || !KEY) {
-  flash("Supabase 환경변수 누락 — /env.js 또는 Vercel env 설정 필요", "error");
-  setTimeout(() => location.href = "/login.html", 2000);
-}
-
 const supabase = (URL && KEY) ? createClient(URL, KEY) : null;
+let currentSession = null;
 
-function flash(text, kind = "info", duration = 3500) {
-  const el = $("flashBanner");
-  el.textContent = text;
-  el.className = kind + " show";
-  setTimeout(() => el.classList.remove("show"), duration);
-}
+function flash(text, kind = "info", duration = 3600) { const el = $("flashBanner"); el.textContent = text; el.className = kind + " show"; setTimeout(() => el.classList.remove("show"), duration); }
+function escapeHtml(s) { return String(s || "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function fmtUSD(cents) { return (Number(cents || 0) / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function fmtDate(iso) { if (!iso) return "—"; const d = new Date(iso); return d.toLocaleDateString("ko-KR") + " " + d.toLocaleTimeString("ko-KR", { hour:"2-digit", minute:"2-digit" }); }
+function fmtTokens(n) { n = Number(n || 0); if (n < 1000) return n.toString(); if (n < 1000000) return (n / 1000).toFixed(1) + "k"; return (n / 1000000).toFixed(2) + "M"; }
+function setPaidState(isPaid) { const tile = $("statusTile"); tile.classList.toggle("ok", isPaid); tile.classList.toggle("warn", !isPaid); $("statusNum").textContent = isPaid ? "PAID" : "PENDING"; $("downloadBadge").textContent = isPaid ? "PAID" : "LOCKED"; $("downloadBadge").className = "badge " + (isPaid ? "paid" : "pending"); $("profileBadge").textContent = isPaid ? "VERIFIED" : "AUTH"; $("profileBadge").className = "badge " + (isPaid ? "paid" : "pending"); $("downloadBtn").disabled = !isPaid; $("heroDownloadBtn").disabled = !isPaid; }
 
-function escapeHtml(s) {
-  return (s || "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-}
-
-function fmtUSD(cents) {
-  return (cents / 100).toFixed(2);
-}
-
-function fmtDate(iso) {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  return d.toLocaleDateString("ko-KR") + " " + d.toLocaleTimeString("ko-KR", {hour:"2-digit",minute:"2-digit"});
-}
-
-function fmtTokens(n) {
-  if (n < 1000) return n.toString();
-  if (n < 1000000) return (n / 1000).toFixed(1) + "k";
-  return (n / 1000000).toFixed(2) + "M";
-}
-
-// ── 인증 게이트 ──
 async function requireAuth() {
-  if (!supabase) return null;
+  if (!supabase) { renderDemoMode(); flash("Supabase 설정이 없어 데모 데이터로 미리보기 중입니다.", "info"); return null; }
   const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.user) {
-    flash("로그인이 필요합니다", "info", 1500);
-    setTimeout(() => location.href = "/login.html?next=/dashboard.html", 1500);
-    return null;
-  }
+  if (!session?.user) { flash("로그인이 필요합니다. 로그인 페이지로 이동합니다.", "info", 1600); setTimeout(() => location.href = "/login.html?next=/dashboard.html", 1600); return null; }
+  currentSession = session;
   return session;
 }
 
-// ── 데이터 로드 ──
-async function loadProfile(session) {
-  const user = session.user;
-  $("welcome").style.display = "block";
-  $("userEmail").textContent = user.email || "(no email)";
-  $("avatar").textContent = (user.email || "?")[0].toUpperCase();
-  $("accEmail").textContent = user.email || "—";
-  $("accUid").textContent = user.id;
+function loadProfile(session) {
+  const user = session?.user || { email: "demo@jarvis.ai", id: "demo-operator" };
+  const email = user.email || "operator@jarvis.ai";
+  $("userEmail").textContent = email;
+  $("displayName").textContent = "안녕하세요, 주인님";
+  $("avatar").textContent = email[0].toUpperCase();
+  $("accUid").textContent = user.id || "—";
+  $("sessionState").textContent = session ? "ACTIVE" : "DEMO";
 }
 
-async function loadPurchases(session) {
-  const { data, error } = await supabase
-    .from("purchases")
-    .select("id, status, amount_cents, currency, product, created_at, paid_at")
-    .order("created_at", { ascending: false })
-    .limit(20);
-
-  if (error) {
-    $("purchases").innerHTML = `<div class="empty">에러: ${escapeHtml(error.message)}</div>`;
-    return;
-  }
-  if (!data || data.length === 0) {
-    $("purchases").innerHTML = `<div class="empty">결제 내역 없음</div>`;
-    return;
-  }
-
+async function loadPurchases() {
+  const { data, error } = await supabase.from("purchases").select("id, status, amount_cents, currency, product, created_at, paid_at").order("created_at", { ascending: false }).limit(20);
+  if (error) { $("purchases").innerHTML = `<div class="empty">에러: ${escapeHtml(error.message)}</div>`; return; }
+  renderPurchases(data || []);
+}
+function renderPurchases(data) {
   $("purchasesCount").textContent = data.length;
-
-  // 상태/금액 합산
+  if (!data.length) { $("purchases").innerHTML = `<div class="empty">결제 내역 없음</div>`; setPaidState(false); return; }
   const paid = data.filter(p => p.status === "paid");
-  const totalCents = paid.reduce((s, p) => s + (p.amount_cents || 0), 0);
-  $("totalPaid").innerHTML = `${fmtUSD(totalCents)}<span class="suf">USD</span>`;
-
-  if (paid.length > 0) {
-    const latest = paid[0];
-    $("statusNum").textContent = "PAID";
-    $("statusNum").style.color = "var(--success)";
-    $("downloadBadge").textContent = "PAID";
-    $("downloadBadge").className = "badge paid";
-    $("accSince").textContent = fmtDate(latest.paid_at);
-    $("accProduct").textContent = latest.product || "—";
-    $("downloadBtn").disabled = false;
-  } else {
-    $("statusNum").textContent = "PENDING";
-    $("statusNum").style.color = "var(--accent)";
-    $("downloadBadge").textContent = "NOT PAID";
-    $("downloadBadge").className = "badge pending";
-    $("accSince").textContent = "—";
-    $("accProduct").textContent = "—";
-    $("downloadBtn").disabled = true;
-  }
-
-  $("purchases").innerHTML = data.map(p => `
-    <div class="purchase-row">
-      <div class="left">
-        <span class="product">${escapeHtml(p.product || "jarvis")}</span>
-        <span class="ts">${fmtDate(p.paid_at || p.created_at)}</span>
-      </div>
-      <div style="display:flex;align-items:center;gap:14px;">
-        <span class="amount">${fmtUSD(p.amount_cents || 0)} ${(p.currency || "usd").toUpperCase()}</span>
-        <span class="pill ${p.status}">${p.status.toUpperCase()}</span>
-      </div>
-    </div>
-  `).join("");
+  const totalCents = paid.reduce((s, p) => s + Number(p.amount_cents || 0), 0);
+  $("totalPaid").textContent = `${fmtUSD(totalCents)} USD`;
+  if (paid.length) { const latest = paid[0]; setPaidState(true); $("accSince").textContent = fmtDate(latest.paid_at); $("accProduct").textContent = latest.product || "JARVIS Command Center"; } else { setPaidState(false); $("accSince").textContent = "—"; $("accProduct").textContent = "—"; }
+  $("purchases").innerHTML = `<div class="timeline">${data.map(p => `<div class="row"><div><span class="primary-text">${escapeHtml(p.product || "jarvis")}</span><span class="sub">${fmtDate(p.paid_at || p.created_at)}</span></div><div><div class="amount">${fmtUSD(p.amount_cents || 0)} ${(p.currency || "usd").toUpperCase()}</div><span class="pill ${escapeHtml(p.status || "pending")}">${escapeHtml(p.status || "pending")}</span></div></div>`).join("")}</div>`;
 }
 
-async function loadUsage(session) {
-  const { data, error } = await supabase
-    .from("usage")
-    .select("model, endpoint, input_tokens, output_tokens, cache_read_tokens, cost_cents, duration_ms, created_at, status")
-    .order("created_at", { ascending: false })
-    .limit(50);
-
-  if (error) {
-    $("usage").innerHTML = `<div class="empty">에러: ${escapeHtml(error.message)}</div>`;
-    return;
-  }
-  if (!data || data.length === 0) {
-    $("usage").innerHTML = `<div class="empty">API 호출 기록 없음</div>`;
-    return;
-  }
-
+async function loadUsage() {
+  const { data, error } = await supabase.from("usage").select("model, endpoint, input_tokens, output_tokens, cache_read_tokens, cache_create_tokens, cost_cents, duration_ms, created_at, status").order("created_at", { ascending: false }).limit(60);
+  if (error) { $("usage").innerHTML = `<div class="empty">에러: ${escapeHtml(error.message)}</div>`; return; }
+  renderUsage(data || []);
+}
+function renderUsage(data) {
   $("usageCount").textContent = data.length;
-  $("apiCalls").innerHTML = `${data.length}<span class="suf">회</span>`;
-
-  const totalTokens = data.reduce((s, r) =>
-    s + (r.input_tokens || 0) + (r.output_tokens || 0) + (r.cache_read_tokens || 0), 0);
-  $("totalTokens").innerHTML = `${fmtTokens(totalTokens)}<span class="suf"></span>`;
-
-  $("usage").innerHTML = data.slice(0, 50).map(u => `
-    <div class="usage-row">
-      <div class="usage-head">
-        <span class="endpoint">${escapeHtml(u.endpoint || "?")} · ${escapeHtml((u.model || "").replace("claude-", ""))}</span>
-        <span class="ts">${fmtDate(u.created_at)}</span>
-      </div>
-      <div class="usage-detail">
-        <span>in ${u.input_tokens || 0}</span>
-        <span>out ${u.output_tokens || 0}</span>
-        ${u.cache_read_tokens ? `<span>cache ${u.cache_read_tokens}</span>` : ""}
-        <span>$${fmtUSD(u.cost_cents || 0)}</span>
-        ${u.duration_ms ? `<span>${u.duration_ms}ms</span>` : ""}
-        <span style="color: ${u.status >= 400 ? 'var(--error)' : 'var(--text-dim)'}">${u.status || 200}</span>
-      </div>
-    </div>
-  `).join("");
+  $("apiCalls").textContent = data.length.toLocaleString("ko-KR");
+  const totalTokens = data.reduce((s, r) => s + Number(r.input_tokens || 0) + Number(r.output_tokens || 0) + Number(r.cache_read_tokens || 0) + Number(r.cache_create_tokens || 0), 0);
+  $("totalTokens").textContent = fmtTokens(totalTokens);
+  if (!data.length) { $("usage").innerHTML = `<div class="empty">API 호출 기록 없음</div>`; return; }
+  $("usage").innerHTML = data.map(u => `<div class="usage-item"><div class="usage-head"><strong>${escapeHtml(u.endpoint || "llm")} · ${escapeHtml((u.model || "claude").replace("claude-", ""))}</strong><span>${fmtDate(u.created_at)}</span></div><div class="usage-metrics"><span>in ${Number(u.input_tokens || 0).toLocaleString()}</span><span>out ${Number(u.output_tokens || 0).toLocaleString()}</span>${u.cache_read_tokens ? `<span>cache ${Number(u.cache_read_tokens).toLocaleString()}</span>` : ""}${u.cache_create_tokens ? `<span>cache+ ${Number(u.cache_create_tokens).toLocaleString()}</span>` : ""}<span>$${fmtUSD(Number(u.cost_cents || 0))}</span>${u.duration_ms ? `<span>${u.duration_ms}ms</span>` : ""}<span style="color:${Number(u.status || 200) >= 400 ? 'var(--red)' : 'var(--muted)'}">${u.status || 200}</span></div></div>`).join("");
 }
 
-// ── 액션 ──
-$("downloadBtn").addEventListener("click", async () => {
-  const session = await requireAuth();
-  if (!session) return;
-  const btn = $("downloadBtn");
-  const orig = btn.textContent;
-  btn.disabled = true;
-  btn.textContent = "준비 중…";
-  try {
-    const r = await fetch("/api/download", {
-      headers: { "Authorization": "Bearer " + session.access_token },
-    });
-    if (!r.ok) {
-      const err = await r.json().catch(() => ({}));
-      throw new Error(err.error || `HTTP ${r.status}`);
-    }
-    const { url } = await r.json();
-    flash("다운로드 시작…", "success", 2500);
-    location.href = url;
-  } catch (err) {
-    flash("다운로드 실패: " + err.message, "error");
-  } finally {
-    btn.textContent = orig;
-    btn.disabled = false;
-  }
-});
-
-$("signOutBtn").addEventListener("click", async () => {
-  if (!supabase) return;
-  await supabase.auth.signOut();
-  flash("로그아웃됨. 메인으로 이동…", "info", 1500);
-  setTimeout(() => location.href = "/", 1500);
-});
-
-// ── 부팅 ──
-async function boot() {
-  const session = await requireAuth();
-  if (!session) return;
-  await Promise.all([
-    loadProfile(session),
-    loadPurchases(session),
-    loadUsage(session),
+function renderDemoMode() {
+  loadProfile(null);
+  renderPurchases([{ status: "paid", amount_cents: 1000000, currency: "krw", product: "JARVIS Command Center Lifetime", created_at: new Date().toISOString(), paid_at: new Date().toISOString() }]);
+  renderUsage([
+    { model: "claude-sonnet-4-6", endpoint: "llm_stream", input_tokens: 18420, output_tokens: 3220, cache_read_tokens: 12000, cost_cents: 8.42, duration_ms: 1420, status: 200, created_at: new Date().toISOString() },
+    { model: "claude-opus-4-7", endpoint: "agent", input_tokens: 42100, output_tokens: 6200, cache_read_tokens: 18000, cost_cents: 54.21, duration_ms: 3280, status: 200, created_at: new Date(Date.now()-3600_000).toISOString() },
+    { model: "claude-haiku-4-5-20251001", endpoint: "health", input_tokens: 920, output_tokens: 180, cache_read_tokens: 0, cost_cents: 0.12, duration_ms: 340, status: 200, created_at: new Date(Date.now()-7200_000).toISOString() }
   ]);
 }
 
-if (supabase) boot();
+async function triggerDownload() {
+  const session = currentSession || await requireAuth();
+  if (!session) return;
+  const buttons = [$("downloadBtn"), $("heroDownloadBtn")];
+  buttons.forEach(btn => { btn.disabled = true; btn.dataset.orig = btn.textContent; btn.textContent = "URL 발급 중"; });
+  try {
+    const r = await fetch("/api/download", { headers: { "Authorization": "Bearer " + session.access_token } });
+    if (!r.ok) { const err = await r.json().catch(() => ({})); throw new Error(err.error || `HTTP ${r.status}`); }
+    const payload = await r.json();
+    if (payload.object) $("releaseObject").textContent = payload.object;
+    flash("다운로드를 시작합니다.", "success");
+    location.href = payload.url;
+  } catch (err) { flash("다운로드 실패: " + err.message, "error"); }
+  finally { buttons.forEach(btn => { btn.textContent = btn.dataset.orig || "다운로드"; btn.disabled = false; }); }
+}
+$("downloadBtn").addEventListener("click", triggerDownload);
+$("heroDownloadBtn").addEventListener("click", triggerDownload);
+$("signOutBtn").addEventListener("click", async () => { if (!supabase) { flash("데모 모드입니다.", "info"); return; } await supabase.auth.signOut(); flash("로그아웃되었습니다.", "info", 1400); setTimeout(() => location.href = "/", 1400); });
 
-// 30초마다 새로고침
-setInterval(() => { if (supabase) boot(); }, 30000);
+async function boot() { const session = await requireAuth(); if (!session) return; loadProfile(session); await Promise.all([loadPurchases(), loadUsage()]); }
+boot();
+setInterval(() => { if (supabase && currentSession) Promise.all([loadPurchases(), loadUsage()]); }, 30000);
 </script>
-
 </body>
 </html>

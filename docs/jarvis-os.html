@@ -1,0 +1,4064 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>J.A.R.V.I.S — OS Dashboard</title>
+<meta name="description" content="JARVIS OS — Stark-grade voice AI dashboard with full sci-fi HUD." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Orbitron:wght@400;500;700;800;900&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --cyan: #4cc9ff;
+  --cyan-bright: #7de0ff;
+  --cyan-dim: #5fb4d4;
+  --cyan-deep: #0084c7;
+  --cyan-glow: rgba(76, 201, 255, 0.55);
+  --cyan-soft: rgba(76, 201, 255, 0.10);
+  --cyan-faint: rgba(76, 201, 255, 0.04);
+  --bg-0: #02060d;
+  --bg-1: #050b16;
+  --bg-2: #0a1320;
+  --bg-3: #0f1c2e;
+  --line: rgba(76, 201, 255, 0.12);
+  --line-strong: rgba(76, 201, 255, 0.32);
+  --text: #d6effa;
+  --text-dim: #7896a4;
+  --text-faint: #4a6878;
+  --gold: #ffd56a;
+  --red: #ff5f57;
+  --green: #28c93b;
+  --orange: #ff9500;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--bg-0);
+  color: var(--text);
+  font-family: 'Outfit', -apple-system, system-ui, sans-serif;
+  font-weight: 400;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  cursor: crosshair;
+}
+
+/* ────── BOOT OVERLAY (페이지 로드 시 풀스크린 검은 화면 + boot text) ────── */
+#boot-overlay {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--cyan);
+  font-size: 13px;
+  pointer-events: none;
+  animation: bootFadeOut 0.6s ease-out 3.2s forwards;
+}
+
+#boot-overlay .boot-line {
+  opacity: 0;
+  margin: 4px 0;
+  letter-spacing: 1px;
+}
+
+#boot-overlay .boot-logo {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 32px;
+  font-weight: 900;
+  letter-spacing: 12px;
+  margin-bottom: 32px;
+  opacity: 0;
+  background: linear-gradient(90deg, transparent 0%, var(--cyan) 50%, transparent 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: bootLogoIn 0.8s ease-out 0.1s forwards, bootShimmer 2s linear infinite 1s;
+}
+
+@keyframes bootLogoIn {
+  to { opacity: 1; }
+}
+@keyframes bootShimmer {
+  to { background-position: -200% 0; }
+}
+@keyframes bootFadeOut {
+  to { opacity: 0; visibility: hidden; }
+}
+
+#boot-overlay .boot-line:nth-child(2) { animation: bootLineIn 0.3s ease-out 0.6s forwards; }
+#boot-overlay .boot-line:nth-child(3) { animation: bootLineIn 0.3s ease-out 0.9s forwards; }
+#boot-overlay .boot-line:nth-child(4) { animation: bootLineIn 0.3s ease-out 1.2s forwards; }
+#boot-overlay .boot-line:nth-child(5) { animation: bootLineIn 0.3s ease-out 1.5s forwards; }
+#boot-overlay .boot-line:nth-child(6) { animation: bootLineIn 0.3s ease-out 1.8s forwards; }
+#boot-overlay .boot-line:nth-child(7) { animation: bootLineIn 0.3s ease-out 2.1s forwards; }
+#boot-overlay .boot-line:nth-child(8) { animation: bootLineIn 0.3s ease-out 2.4s forwards; }
+#boot-overlay .boot-line:nth-child(9) { animation: bootLineIn 0.3s ease-out 2.7s forwards; }
+
+@keyframes bootLineIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ────── BACKGROUND LAYERS ────── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at center, rgba(76, 201, 255, 0.08) 0%, transparent 60%),
+    linear-gradient(180deg, var(--bg-0) 0%, var(--bg-1) 100%);
+  z-index: -3;
+  pointer-events: none;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line) 1px, transparent 1px);
+  background-size: 80px 80px;
+  background-position: 0 0;
+  opacity: 0.18;
+  z-index: -2;
+  pointer-events: none;
+  animation: gridShift 40s linear infinite;
+}
+
+@keyframes gridShift {
+  to { background-position: 80px 80px; }
+}
+
+/* Scanlines */
+.scanlines {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0px,
+    transparent 3px,
+    rgba(76, 201, 255, 0.015) 3px,
+    rgba(76, 201, 255, 0.015) 4px
+  );
+}
+
+.scanline-sweep {
+  position: fixed;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background: linear-gradient(180deg, transparent, rgba(76, 201, 255, 0.06), transparent);
+  pointer-events: none;
+  z-index: -1;
+  animation: scanSweep 8s linear infinite;
+}
+
+@keyframes scanSweep {
+  0% { top: -80px; }
+  100% { top: 100vh; }
+}
+
+/* ────── MAIN GRID ────── */
+.os {
+  display: grid;
+  grid-template-columns: 280px 1fr 320px;
+  grid-template-rows: 60px 1fr 60px;
+  height: 100vh;
+  gap: 0;
+  opacity: 0;
+  animation: osIn 0.8s ease-out 3.2s forwards;
+}
+
+@keyframes osIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ────── HEADER ────── */
+header.top {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, var(--bg-2) 0%, transparent 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+header.top::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+  animation: headerScan 4s linear infinite;
+}
+
+@keyframes headerScan {
+  0%, 100% { transform: translateX(-100%); }
+  50% { transform: translateX(100%); }
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-icon {
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--cyan);
+  border-radius: 50%;
+  position: relative;
+  animation: brandSpin 8s linear infinite;
+}
+
+.brand-icon::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border: 1px solid var(--cyan-dim);
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: brandSpin 4s linear infinite reverse;
+}
+
+.brand-icon::after {
+  content: '';
+  position: absolute;
+  inset: 9px;
+  background: var(--cyan);
+  border-radius: 50%;
+  box-shadow: 0 0 12px var(--cyan-glow);
+}
+
+@keyframes brandSpin {
+  to { transform: rotate(360deg); }
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.brand-text .title {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 800;
+  font-size: 13px;
+  color: var(--cyan-bright);
+  letter-spacing: 4px;
+}
+
+.brand-text .build {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: var(--text-faint);
+  letter-spacing: 2px;
+  margin-top: 2px;
+}
+
+.center-status {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--cyan-bright);
+  letter-spacing: 4px;
+  position: relative;
+  padding: 6px 32px;
+  border: 1px solid var(--line-strong);
+  border-radius: 30px;
+  background: rgba(76, 201, 255, 0.04);
+}
+
+.center-status::before, .center-status::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 60px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--line-strong));
+  transform: translateY(-50%);
+}
+
+.center-status::before { left: -60px; }
+.center-status::after { right: -60px; transform: translateY(-50%) scaleX(-1); }
+
+.network-status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.2;
+}
+
+.network-status .label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: var(--text-faint);
+  letter-spacing: 2px;
+}
+
+.network-status .value {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px;
+  color: var(--green);
+  letter-spacing: 3px;
+  font-weight: 700;
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.wifi-icon {
+  width: 14px;
+  height: 14px;
+  position: relative;
+}
+
+.wifi-icon::before, .wifi-icon::after, .wifi-icon i {
+  content: '';
+  position: absolute;
+  border: 1.5px solid var(--green);
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  border-radius: 50%;
+  animation: wifiPulse 2s ease-in-out infinite;
+}
+
+.wifi-icon::before { width: 14px; height: 14px; left: 0; top: 0; }
+.wifi-icon i { width: 9px; height: 9px; left: 2.5px; top: 2.5px; animation-delay: 0.2s; }
+.wifi-icon::after { width: 4px; height: 4px; left: 5px; top: 5px; animation-delay: 0.4s; }
+
+@keyframes wifiPulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+/* ────── LEFT SIDEBAR ────── */
+aside.left {
+  border-right: 1px solid var(--line);
+  padding: 16px 12px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transform: translateX(-30px);
+  opacity: 0;
+  animation: leftSlideIn 0.6s ease-out 3.4s forwards;
+}
+
+@keyframes leftSlideIn {
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: linear-gradient(145deg, var(--bg-2) 0%, var(--bg-1) 100%);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.menu-item::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  width: 2px;
+  background: var(--cyan);
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform 0.25s;
+}
+
+.menu-item:hover {
+  border-color: var(--cyan);
+  background: linear-gradient(145deg, rgba(76, 201, 255, 0.08), var(--bg-1));
+  box-shadow: 0 0 20px rgba(76, 201, 255, 0.15);
+  transform: translateX(2px);
+}
+
+.menu-item:hover::before {
+  transform: scaleY(1);
+}
+
+.menu-item .icon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--cyan-dim);
+  font-size: 14px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+
+.menu-item:hover .icon {
+  color: var(--cyan-bright);
+  border-color: var(--cyan-dim);
+  background: rgba(76, 201, 255, 0.08);
+}
+
+.menu-item .name {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: 2px;
+  line-height: 1.1;
+}
+
+.menu-item .sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: var(--text-faint);
+  letter-spacing: 1px;
+  margin-top: 2px;
+}
+
+/* Stats cards */
+.stat-card {
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 14px;
+  background: linear-gradient(145deg, var(--bg-2) 0%, var(--bg-1) 100%);
+  margin-top: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--cyan-dim), transparent);
+}
+
+.stat-card .label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+  margin-bottom: 12px;
+}
+
+.donut {
+  width: 70px;
+  height: 70px;
+  position: relative;
+  margin: 0 auto;
+}
+
+.donut svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.donut .bg {
+  stroke: var(--line);
+  stroke-width: 4;
+  fill: none;
+}
+
+.donut .fg {
+  stroke: var(--cyan);
+  stroke-width: 4;
+  fill: none;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 4px var(--cyan-glow));
+  transition: stroke-dashoffset 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.donut .pct {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--cyan-bright);
+}
+
+.donut .pct .sym {
+  font-size: 10px;
+  color: var(--cyan-dim);
+}
+
+.stat-card .meta {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: var(--text-faint);
+  text-align: center;
+  margin-top: 8px;
+  letter-spacing: 1px;
+}
+
+.network-rates {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text);
+  padding: 8px 0;
+}
+
+.rate-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.rate-row span:first-child {
+  color: var(--text-dim);
+  font-size: 9px;
+  letter-spacing: 1px;
+}
+
+.rate-row span:last-child {
+  color: var(--cyan-bright);
+  font-weight: 500;
+}
+
+/* Environment + Map */
+.environment {
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 14px;
+  background: linear-gradient(145deg, var(--bg-2) 0%, var(--bg-1) 100%);
+  margin-top: 12px;
+}
+
+.env-temp {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.env-temp .big {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--cyan-bright);
+  letter-spacing: -1px;
+}
+
+.env-temp .cond {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  flex: 1;
+}
+
+.cloud-icon {
+  width: 36px;
+  height: 36px;
+  margin-left: auto;
+  position: relative;
+  filter: drop-shadow(0 0 4px var(--cyan-glow));
+}
+
+.env-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.env-stats .key {
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  font-size: 9px;
+}
+
+.env-stats .val {
+  color: var(--cyan-bright);
+  text-align: right;
+  font-weight: 500;
+}
+
+.world-map {
+  margin-top: 12px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 8px;
+  background: var(--bg-2);
+  height: 90px;
+  position: relative;
+  overflow: hidden;
+}
+
+.world-map svg {
+  width: 100%;
+  height: 100%;
+}
+
+.world-map .dot {
+  fill: var(--cyan);
+  filter: drop-shadow(0 0 3px var(--cyan-glow));
+  animation: dotPulse 2s ease-in-out infinite;
+}
+
+@keyframes dotPulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; transform: scale(1.5); }
+}
+
+/* ────── CENTER (J.A.R.V.I.S core) ────── */
+main.center {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.core-wrap {
+  position: relative;
+  width: 600px;
+  height: 600px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 동심원 5개 — 다른 속도/방향 회전 */
+.ring {
+  position: absolute;
+  border: 1px solid var(--cyan);
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ring::before, .ring::after {
+  content: '';
+  position: absolute;
+  background: var(--cyan-bright);
+  border-radius: 50%;
+  filter: drop-shadow(0 0 8px var(--cyan-glow));
+}
+
+.ring-1 {
+  width: 580px; height: 580px;
+  border-color: rgba(76, 201, 255, 0.18);
+  border-style: dashed;
+  animation:
+    ringIn 0.8s ease-out 3.6s forwards,
+    ringSpin1 60s linear infinite 4s;
+}
+
+.ring-2 {
+  width: 480px; height: 480px;
+  border-color: rgba(76, 201, 255, 0.30);
+  animation:
+    ringIn 0.8s ease-out 3.8s forwards,
+    ringSpin2 40s linear infinite 4s;
+}
+
+.ring-2::before {
+  width: 6px; height: 6px;
+  top: -3px; left: 50%;
+  transform: translateX(-50%);
+}
+.ring-2::after {
+  width: 4px; height: 4px;
+  bottom: -2px; left: 50%;
+  transform: translateX(-50%);
+}
+
+.ring-3 {
+  width: 380px; height: 380px;
+  border-color: rgba(76, 201, 255, 0.45);
+  animation:
+    ringIn 0.8s ease-out 4.0s forwards,
+    ringSpin3 30s linear infinite reverse 4s;
+}
+
+.ring-3::before {
+  width: 8px; height: 8px;
+  top: 50%; left: -4px;
+  transform: translateY(-50%);
+}
+
+.ring-4 {
+  width: 280px; height: 280px;
+  border-color: rgba(76, 201, 255, 0.55);
+  animation:
+    ringIn 0.8s ease-out 4.2s forwards,
+    ringSpin4 20s linear infinite 4s;
+  box-shadow:
+    0 0 30px rgba(76, 201, 255, 0.25),
+    inset 0 0 30px rgba(76, 201, 255, 0.15);
+}
+
+.ring-4::before {
+  width: 10px; height: 10px;
+  top: 50%; right: -5px;
+  transform: translateY(-50%);
+}
+
+.ring-5 {
+  width: 180px; height: 180px;
+  border: 2px solid var(--cyan-bright);
+  border-style: dashed;
+  animation:
+    ringIn 0.8s ease-out 4.4s forwards,
+    ringSpin5 15s linear infinite reverse 4s;
+  box-shadow:
+    0 0 40px rgba(76, 201, 255, 0.4),
+    inset 0 0 20px rgba(76, 201, 255, 0.2);
+}
+
+@keyframes ringIn {
+  to { opacity: 1; }
+}
+@keyframes ringSpin1 { to { transform: rotate(360deg); } }
+@keyframes ringSpin2 { to { transform: rotate(360deg); } }
+@keyframes ringSpin3 { to { transform: rotate(360deg); } }
+@keyframes ringSpin4 { to { transform: rotate(360deg); } }
+@keyframes ringSpin5 { to { transform: rotate(360deg); } }
+
+/* 회전 텍스트 */
+.rotate-text {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0;
+  animation: ringIn 1s ease-out 4.6s forwards;
+}
+
+.rotate-text svg { width: 100%; height: 100%; }
+.rotate-text .rt {
+  fill: var(--cyan-dim);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+}
+
+.rt-outer {
+  animation: rtSpin 80s linear infinite;
+  transform-origin: center;
+}
+.rt-mid {
+  animation: rtSpin 50s linear infinite reverse;
+  transform-origin: center;
+}
+.rt-inner {
+  animation: rtSpin 30s linear infinite;
+  transform-origin: center;
+}
+@keyframes rtSpin { to { transform: rotate(360deg); } }
+
+/* 중앙 펄스 코어 */
+.core-pulse {
+  position: absolute;
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--cyan) 0%, var(--cyan-deep) 50%, transparent 70%);
+  opacity: 0.5;
+  filter: blur(20px);
+  animation:
+    ringIn 1s ease-out 4.4s forwards,
+    corePulse 3s ease-in-out infinite 5s;
+}
+
+@keyframes corePulse {
+  0%, 100% { transform: scale(1); opacity: 0.5; }
+  50% { transform: scale(1.3); opacity: 0.8; }
+}
+
+/* J.A.R.V.I.S 로고 */
+.jarvis-logo {
+  position: relative;
+  z-index: 5;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size: 56px;
+  letter-spacing: 14px;
+  color: #fff;
+  text-shadow:
+    0 0 10px var(--cyan-bright),
+    0 0 25px var(--cyan-glow),
+    0 0 50px var(--cyan-glow),
+    0 0 100px var(--cyan);
+  opacity: 0;
+  animation:
+    logoIn 1.2s ease-out 4.6s forwards,
+    logoBreath 4s ease-in-out infinite 6s;
+}
+
+@keyframes logoIn {
+  from { opacity: 0; transform: scale(0.85); letter-spacing: 30px; }
+  to { opacity: 1; transform: scale(1); letter-spacing: 14px; }
+}
+
+@keyframes logoBreath {
+  0%, 100% {
+    text-shadow:
+      0 0 10px var(--cyan-bright),
+      0 0 25px var(--cyan-glow),
+      0 0 50px var(--cyan-glow),
+      0 0 100px var(--cyan);
+  }
+  50% {
+    text-shadow:
+      0 0 20px var(--cyan-bright),
+      0 0 50px var(--cyan-glow),
+      0 0 100px var(--cyan-glow),
+      0 0 200px var(--cyan);
+  }
+}
+
+/* Particle ambient */
+.particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.particle {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: var(--cyan);
+  border-radius: 50%;
+  filter: drop-shadow(0 0 4px var(--cyan-glow));
+  opacity: 0;
+}
+
+/* Bottom status under logo */
+.bottom-status {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+  z-index: 10;
+  opacity: 0;
+  animation: ringIn 0.8s ease-out 5.0s forwards;
+}
+
+.bottom-status .v {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 10px;
+  color: var(--cyan-bright);
+  letter-spacing: 6px;
+  font-weight: 600;
+}
+
+.bottom-status .ops {
+  font-size: 9px;
+  color: var(--green);
+  letter-spacing: 3px;
+  margin-top: 4px;
+}
+
+.bottom-controls {
+  position: absolute;
+  bottom: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 14px;
+  opacity: 0;
+  animation: ringIn 0.8s ease-out 5.2s forwards;
+  z-index: 10;
+}
+
+.ctrl-btn {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--bg-2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--cyan-dim);
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.ctrl-btn:hover {
+  background: rgba(76, 201, 255, 0.08);
+  border-color: var(--cyan);
+  color: var(--cyan-bright);
+  box-shadow: 0 0 16px rgba(76, 201, 255, 0.25);
+  transform: translateY(-2px);
+}
+
+/* Corner labels */
+.corner-label {
+  position: absolute;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: var(--text-faint);
+  letter-spacing: 2px;
+  pointer-events: none;
+  opacity: 0;
+  animation: ringIn 0.8s ease-out 5.4s forwards;
+}
+
+/* ────── RIGHT SIDEBAR ────── */
+aside.right {
+  border-left: 1px solid var(--line);
+  padding: 16px 12px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transform: translateX(30px);
+  opacity: 0;
+  animation: rightSlideIn 0.6s ease-out 3.4s forwards;
+}
+
+@keyframes rightSlideIn {
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* Voice recognition */
+.voice-card {
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 14px;
+  background: linear-gradient(145deg, var(--bg-2) 0%, var(--bg-1) 100%);
+}
+
+.voice-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.voice-label .name {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+}
+
+.voice-label .live {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: var(--red);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.voice-label .live::before {
+  content: '';
+  width: 6px; height: 6px;
+  background: var(--red);
+  border-radius: 50%;
+  animation: livePulse 1s infinite;
+}
+
+@keyframes livePulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; box-shadow: 0 0 8px var(--red); }
+}
+
+.waveform {
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.wave-bar {
+  width: 3px;
+  background: var(--cyan);
+  border-radius: 1px;
+  filter: drop-shadow(0 0 2px var(--cyan-glow));
+  transition: height 0.1s;
+}
+
+.listening-text {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--cyan-bright);
+  margin-top: 8px;
+  text-align: center;
+  letter-spacing: 1px;
+}
+
+.listening-text::after {
+  content: '...';
+  display: inline-block;
+  animation: dots 1.5s steps(3, end) infinite;
+  width: 12px;
+  text-align: left;
+}
+
+@keyframes dots {
+  0% { content: '   '; }
+  25% { content: '.  '; }
+  50% { content: '.. '; }
+  75% { content: '...'; }
+}
+
+/* System log */
+.syslog-card {
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 14px;
+  background: linear-gradient(145deg, var(--bg-2) 0%, var(--bg-1) 100%);
+}
+
+.syslog-header {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 8px;
+}
+
+.log-line {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  opacity: 0;
+}
+
+.log-line .key { color: var(--text); letter-spacing: 1px; }
+.log-line .val { color: var(--cyan-bright); font-weight: 500; }
+.log-line .val.done { color: var(--green); }
+.log-line .val.warn { color: var(--gold); }
+
+.log-line:nth-child(2) { animation: logIn 0.4s ease-out 3.7s forwards; }
+.log-line:nth-child(3) { animation: logIn 0.4s ease-out 3.9s forwards; }
+.log-line:nth-child(4) { animation: logIn 0.4s ease-out 4.1s forwards; }
+.log-line:nth-child(5) { animation: logIn 0.4s ease-out 4.3s forwards; }
+.log-line:nth-child(6) { animation: logIn 0.4s ease-out 4.5s forwards; }
+.log-line:nth-child(7) { animation: logIn 0.4s ease-out 4.7s forwards; }
+.log-line:nth-child(8) { animation: logIn 0.4s ease-out 4.9s forwards; }
+
+@keyframes logIn {
+  from { opacity: 0; transform: translateX(8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* Power & Battery */
+.power-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.power-card {
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 10px;
+  background: linear-gradient(145deg, var(--bg-2) 0%, var(--bg-1) 100%);
+  text-align: center;
+}
+
+.power-card .label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+}
+
+.power-card .donut {
+  width: 60px;
+  height: 60px;
+  margin: 0 auto;
+}
+
+.power-card .donut .pct {
+  font-size: 14px;
+}
+
+.power-card .sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: var(--text-dim);
+  margin-top: 6px;
+  letter-spacing: 1px;
+}
+
+/* Suit status */
+.suit-card {
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 14px;
+  background: linear-gradient(145deg, var(--bg-2) 0%, var(--bg-1) 100%);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.suit-header {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+  margin-bottom: 12px;
+}
+
+.suit-body {
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  gap: 14px;
+  align-items: center;
+}
+
+.suit-figure {
+  position: relative;
+  height: 140px;
+}
+
+.suit-figure svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 0 6px var(--cyan-glow));
+}
+
+.suit-figure .arc {
+  fill: var(--cyan-bright);
+  filter: drop-shadow(0 0 8px var(--cyan));
+  animation: arcPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes arcPulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
+.suit-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stat-row {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+}
+
+.stat-row .v {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px;
+  color: var(--cyan-bright);
+  letter-spacing: 2px;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.stat-row .v.green { color: var(--green); }
+.stat-row .v.red { color: var(--red); }
+.stat-row .v.gold { color: var(--gold); }
+
+/* HUD corner ornaments around center */
+.hud-corner {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--cyan);
+  pointer-events: none;
+  opacity: 0;
+  animation: ringIn 0.5s ease-out 5.0s forwards;
+}
+
+.hud-corner.tl { top: 24px; left: 24px; border-right: none; border-bottom: none; }
+.hud-corner.tr { top: 24px; right: 24px; border-left: none; border-bottom: none; }
+.hud-corner.bl { bottom: 24px; left: 24px; border-right: none; border-top: none; }
+.hud-corner.br { bottom: 24px; right: 24px; border-left: none; border-top: none; }
+
+/* Readouts on center bg */
+.readout {
+  position: absolute;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: var(--text-faint);
+  letter-spacing: 2px;
+  opacity: 0;
+  animation: ringIn 0.6s ease-out 5.4s forwards;
+}
+
+@media (max-width: 1280px) {
+  .os { grid-template-columns: 240px 1fr 280px; }
+  .core-wrap { width: 480px; height: 480px; }
+  .ring-1 { width: 460px; height: 460px; }
+  .ring-2 { width: 380px; height: 380px; }
+  .ring-3 { width: 300px; height: 300px; }
+  .ring-4 { width: 220px; height: 220px; }
+  .ring-5 { width: 140px; height: 140px; }
+  .jarvis-logo { font-size: 42px; letter-spacing: 10px; }
+}
+
+/* ════════════════════════════════════════════════════════ */
+/* ════ MIC + AUDIO REACTIVE LAYER (v3 추가) ════════ */
+/* ════════════════════════════════════════════════════════ */
+
+/* Mic 활성화 버튼 */
+.mic-btn {
+  width: 100%;
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: linear-gradient(145deg, var(--bg-3) 0%, var(--bg-2) 100%);
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  color: var(--cyan);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.mic-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, var(--cyan-soft), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.mic-btn:hover { border-color: var(--cyan); color: var(--cyan-bright); transform: translateY(-1px); }
+.mic-btn:hover::before { opacity: 1; }
+
+.mic-btn.active {
+  background: linear-gradient(145deg, rgba(255, 95, 87, 0.15), var(--bg-2));
+  border-color: var(--red);
+  color: #ff8a85;
+  box-shadow: 0 0 16px rgba(255, 95, 87, 0.3);
+}
+
+.mic-btn.active::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border: 1px solid var(--red);
+  border-radius: 5px;
+  animation: micPulse 1.2s ease-out infinite;
+  pointer-events: none;
+}
+
+@keyframes micPulse {
+  0% { opacity: 0.8; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.1); }
+}
+
+.mic-btn .icon {
+  width: 14px; height: 14px;
+  border: 1.5px solid currentColor;
+  border-radius: 6px 6px 8px 8px;
+  position: relative;
+}
+
+.mic-btn .icon::after {
+  content: '';
+  position: absolute;
+  bottom: -5px; left: 50%;
+  transform: translateX(-50%);
+  width: 8px; height: 3px;
+  border: 1.5px solid currentColor;
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+}
+
+/* Voice level meter */
+.voice-meter {
+  margin-top: 10px;
+  height: 6px;
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  position: relative;
+  overflow: hidden;
+}
+
+.voice-meter::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg,
+    var(--green) 0%,
+    var(--cyan-bright) 50%,
+    var(--gold) 80%,
+    var(--red) 100%);
+  transform-origin: left;
+  transform: scaleX(0);
+  transition: transform 0.05s linear;
+}
+
+.voice-meter[data-level] {
+  --level: 0;
+}
+
+.voice-meter[data-level]::before {
+  transform: scaleX(var(--level));
+}
+
+/* Voice metrics row */
+.voice-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 4px;
+  margin-top: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  text-align: center;
+}
+
+.voice-metrics .vm {
+  padding: 4px 2px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: var(--bg-3);
+}
+
+.voice-metrics .vm .lbl {
+  color: var(--text-faint);
+  letter-spacing: 1px;
+  display: block;
+}
+
+.voice-metrics .vm .num {
+  color: var(--cyan-bright);
+  font-weight: 700;
+  font-size: 10px;
+  display: block;
+  margin-top: 2px;
+}
+
+/* Live transcript */
+.transcript {
+  margin-top: 12px;
+  min-height: 40px;
+  max-height: 80px;
+  overflow-y: auto;
+  padding: 8px 10px;
+  background: var(--bg-3);
+  border: 1px dashed var(--line);
+  border-radius: 3px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 12px;
+  color: var(--cyan-bright);
+  line-height: 1.5;
+  display: none;
+}
+
+.transcript.show { display: block; }
+
+.transcript .interim {
+  opacity: 0.55;
+  font-style: italic;
+  color: var(--text-dim);
+}
+
+/* Ripples — peak 발생 시 동심원에서 outward wave */
+.ripples {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.ripple {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border: 2px solid var(--cyan-bright);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  filter: drop-shadow(0 0 8px var(--cyan-glow));
+}
+
+@keyframes rippleOut {
+  0% {
+    width: 100px; height: 100px;
+    opacity: 0.9;
+    border-width: 3px;
+  }
+  100% {
+    width: 700px; height: 700px;
+    opacity: 0;
+    border-width: 0.5px;
+  }
+}
+
+/* JARVIS state classes — body에 set */
+body.jarvis-listening .ring-4 {
+  border-color: var(--cyan-bright);
+  box-shadow:
+    0 0 60px rgba(76, 201, 255, 0.5),
+    inset 0 0 40px rgba(76, 201, 255, 0.3);
+}
+
+body.jarvis-speaking .jarvis-logo {
+  animation:
+    logoIn 1.2s ease-out 4.6s forwards,
+    logoSpeak 0.4s ease-in-out infinite 6s;
+}
+
+@keyframes logoSpeak {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+
+body.jarvis-offline .center-status {
+  color: var(--orange);
+  border-color: rgba(255, 149, 0, 0.4);
+}
+
+body.jarvis-offline .center-status::before {
+  content: 'JARVIS BACKEND OFFLINE — SIMULATION MODE';
+}
+
+/* Wake flash — 마이크 큰 peak 감지 시 풀스크린 cyan 플래시 */
+.wake-flash {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(76, 201, 255, 0.25) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 999;
+  opacity: 0;
+}
+
+.wake-flash.fire {
+  animation: wakeFlash 0.5s ease-out;
+}
+
+@keyframes wakeFlash {
+  0% { opacity: 0; }
+  20% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* JARVIS backend status indicator (헤더) */
+.backend-status {
+  margin-left: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  color: var(--text-dim);
+}
+
+.backend-status.online {
+  color: var(--green);
+  border-color: rgba(40, 201, 59, 0.4);
+  background: rgba(40, 201, 59, 0.06);
+}
+
+.backend-status.offline {
+  color: var(--orange);
+  border-color: rgba(255, 149, 0, 0.4);
+}
+
+/* Frequency spectrum bars (큰 시각화 — 동심원 사이 공간) */
+.spectrum {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.spectrum-bar {
+  position: absolute;
+  bottom: 50%;
+  left: 50%;
+  width: 2.5px;
+  background: linear-gradient(180deg, var(--cyan-bright), var(--cyan-deep));
+  transform-origin: bottom center;
+  border-radius: 1px;
+  filter: drop-shadow(0 0 4px var(--cyan-glow));
+  opacity: 0.85;
+  transition: height 0.05s linear;
+}
+
+/* Reactive scale for ring-4 — bound by JS via CSS var */
+.ring-4 {
+  --reactive-scale: 1;
+  transform: scale(var(--reactive-scale));
+}
+
+/* Logo intensity — bound by JS */
+.jarvis-logo {
+  --glow-intensity: 1;
+}
+
+/* Suit arc reactor — 음량에 반응 */
+.suit-figure .arc {
+  --reactive: 1;
+  transform-origin: center;
+  transform: scale(calc(1 + var(--reactive) * 0.4));
+}
+
+/* 음성 인식 status text 변경 */
+.listening-text.speaking { color: var(--gold); }
+.listening-text.thinking { color: var(--cyan-bright); }
+.listening-text.idle { color: var(--text-dim); }
+
+/* Mic permission denied message */
+.mic-error {
+  margin-top: 8px;
+  padding: 6px 8px;
+  background: rgba(255, 95, 87, 0.08);
+  border-left: 2px solid var(--red);
+  border-radius: 2px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: #ff8a85;
+  letter-spacing: 0.5px;
+  display: none;
+}
+
+.mic-error.show { display: block; }
+
+/* Smooth animation for stat updates */
+.donut .fg, .voice-meter::before {
+  will-change: stroke-dashoffset, transform;
+}
+
+/* ════════════════════════════════════════════════════════ */
+/* ════ v4 — 3D + System Telemetry + JARVIS Activity ════ */
+/* ════════════════════════════════════════════════════════ */
+
+/* ─── 3D core 강화 ─── */
+main.center {
+  perspective: 1600px;
+  perspective-origin: 50% 50%;
+}
+
+.core-wrap {
+  transform-style: preserve-3d;
+  transition: transform 0.15s ease-out;
+  will-change: transform;
+}
+
+/* 각 ring을 다른 z-axis 깊이에 배치 */
+.ring, .core-pulse, .jarvis-logo, .rotate-text, .spectrum {
+  transform-style: preserve-3d;
+}
+
+.ring-1 { transform: translateZ(-180px); }
+.ring-2 { transform: translateZ(-90px); }
+.ring-3 { transform: translateZ(0); }
+.ring-4 { transform: translateZ(80px) scale(var(--reactive-scale, 1)); }
+.ring-5 { transform: translateZ(160px); }
+.core-pulse { transform: translateZ(120px); }
+.jarvis-logo { transform: translateZ(220px); }
+.rotate-text { transform: translateZ(40px); }
+.spectrum { transform: translateZ(60px); }
+
+/* ring 회전을 X축으로 (수평면처럼) — 영화 같은 느낌 */
+@keyframes ringSpin1 {
+  to { transform: translateZ(-180px) rotate(360deg); }
+}
+@keyframes ringSpin2 {
+  to { transform: translateZ(-90px) rotate(360deg) rotateX(8deg); }
+}
+@keyframes ringSpin3 {
+  to { transform: translateZ(0) rotate(360deg) rotateX(-12deg); }
+}
+@keyframes ringSpin4 {
+  0%, 100% { transform: translateZ(80px) rotate(0deg) scale(var(--reactive-scale, 1)); }
+  50% { transform: translateZ(80px) rotate(180deg) scale(var(--reactive-scale, 1)); }
+}
+@keyframes ringSpin5 {
+  to { transform: translateZ(160px) rotate(360deg); }
+}
+
+/* Hexagonal back layer (3D depth 강조) */
+.hex-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transform: translateZ(-300px);
+  opacity: 0;
+  animation: ringIn 1.2s ease-out 5.0s forwards;
+}
+
+.hex-layer svg {
+  width: 100%; height: 100%;
+}
+
+.hex-layer polygon {
+  fill: none;
+  stroke: rgba(76, 201, 255, 0.06);
+  stroke-width: 0.5;
+}
+
+/* Holographic shimmer overlay on logo */
+.jarvis-logo::before {
+  content: 'J.A.R.V.I.S';
+  position: absolute;
+  inset: 0;
+  color: transparent;
+  background: linear-gradient(110deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.85) 45%,
+    rgba(125, 224, 255, 0.6) 50%,
+    rgba(255, 255, 255, 0.85) 55%,
+    transparent 70%);
+  background-size: 200% 100%;
+  background-position: 200% 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: holoShimmer 5s ease-in-out infinite 7s;
+  pointer-events: none;
+}
+
+@keyframes holoShimmer {
+  0% { background-position: 200% 0; }
+  60% { background-position: -200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* 3D ambient orbit — 작은 점 3개가 logo 주위 궤도 */
+.orbit-dot {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--cyan-bright);
+  filter: drop-shadow(0 0 8px var(--cyan-glow));
+  margin: -3px 0 0 -3px;
+  pointer-events: none;
+  opacity: 0;
+  animation: orbitIn 1s ease-out 5.0s forwards;
+}
+
+.orbit-dot.o1 { animation: orbitIn 1s ease-out 5.0s forwards, orbit1 6s linear infinite 6s; }
+.orbit-dot.o2 { animation: orbitIn 1s ease-out 5.2s forwards, orbit2 9s linear infinite 6.2s; }
+.orbit-dot.o3 { animation: orbitIn 1s ease-out 5.4s forwards, orbit3 12s linear infinite 6.4s; }
+
+@keyframes orbitIn { to { opacity: 1; } }
+
+@keyframes orbit1 {
+  from { transform: translateZ(180px) rotateY(0deg) translateX(140px) rotateY(0deg); }
+  to   { transform: translateZ(180px) rotateY(360deg) translateX(140px) rotateY(-360deg); }
+}
+@keyframes orbit2 {
+  from { transform: translateZ(120px) rotateX(20deg) rotateZ(0deg) translateX(180px) rotateZ(0deg); }
+  to   { transform: translateZ(120px) rotateX(20deg) rotateZ(-360deg) translateX(180px) rotateZ(360deg); }
+}
+@keyframes orbit3 {
+  from { transform: translateZ(100px) rotateY(45deg) rotateZ(0deg) translateX(220px); }
+  to   { transform: translateZ(100px) rotateY(45deg) rotateZ(360deg) translateX(220px); }
+}
+
+/* ─── System Telemetry — 좌측 grid ─── */
+.telemetry-card {
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 10px;
+  background: linear-gradient(145deg, var(--bg-2) 0%, var(--bg-1) 100%);
+  margin-top: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.telemetry-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--cyan-dim), transparent);
+}
+
+.telemetry-card .header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+  margin-bottom: 10px;
+}
+
+.telemetry-card .header .stat-tag {
+  font-size: 8px;
+  color: var(--cyan-bright);
+  background: rgba(76, 201, 255, 0.12);
+  padding: 2px 6px;
+  border-radius: 2px;
+}
+
+.tele-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.mini-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--bg-3);
+  position: relative;
+}
+
+.mini-stat .key {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+
+.mini-stat .donut {
+  width: 56px; height: 56px;
+}
+
+.mini-stat .donut .pct {
+  font-size: 11px;
+}
+
+.mini-stat .donut .pct .sym { font-size: 8px; }
+
+.mini-stat .sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  color: var(--text-faint);
+  margin-top: 2px;
+  letter-spacing: 1px;
+}
+
+/* WiFi 5-bar visualizer */
+.wifi-widget {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--bg-3);
+}
+
+.wifi-widget .wifi-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 24px;
+  margin: 4px 0;
+}
+
+.wifi-widget .wifi-bars .bar {
+  width: 4px;
+  background: var(--line);
+  border-radius: 1px;
+  transition: background 0.3s, box-shadow 0.3s;
+}
+
+.wifi-widget .wifi-bars .bar.on {
+  background: var(--cyan);
+  box-shadow: 0 0 4px var(--cyan-glow);
+}
+
+.wifi-widget .wifi-bars .bar:nth-child(1) { height: 6px; }
+.wifi-widget .wifi-bars .bar:nth-child(2) { height: 10px; }
+.wifi-widget .wifi-bars .bar:nth-child(3) { height: 14px; }
+.wifi-widget .wifi-bars .bar:nth-child(4) { height: 18px; }
+.wifi-widget .wifi-bars .bar:nth-child(5) { height: 22px; }
+
+.wifi-widget .ssid {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: var(--cyan-bright);
+  letter-spacing: 1px;
+  font-weight: 500;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wifi-widget .speed {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  color: var(--text-dim);
+}
+
+/* Temperature sparkline */
+.temp-widget {
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--bg-3);
+}
+
+.temp-widget .head {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+
+.temp-widget .head .v {
+  color: var(--cyan-bright);
+  font-weight: 600;
+}
+
+.temp-widget .head .v.warm { color: var(--gold); }
+.temp-widget .head .v.hot { color: var(--red); }
+
+.temp-spark {
+  height: 28px;
+  display: flex;
+  align-items: flex-end;
+  gap: 1.5px;
+}
+
+.temp-spark .pt {
+  flex: 1;
+  background: linear-gradient(180deg, var(--cyan-bright), var(--cyan-deep));
+  border-radius: 1px;
+  filter: drop-shadow(0 0 2px var(--cyan-glow));
+  min-height: 2px;
+  transition: height 0.5s ease;
+}
+
+.temp-spark .pt.warm {
+  background: linear-gradient(180deg, var(--gold), #e09b3a);
+  filter: drop-shadow(0 0 2px rgba(255, 213, 106, 0.6));
+}
+
+.temp-spark .pt.hot {
+  background: linear-gradient(180deg, var(--red), #c93a35);
+  filter: drop-shadow(0 0 3px rgba(255, 95, 87, 0.8));
+}
+
+/* Network UL/DL graph */
+.network-graph {
+  margin-top: 6px;
+  height: 30px;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  padding: 4px 6px;
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+}
+
+.network-graph .net-bar {
+  flex: 1;
+  border-radius: 1px;
+  min-height: 2px;
+  transition: height 0.4s ease;
+}
+
+.network-graph .net-bar.ul { background: var(--green); filter: drop-shadow(0 0 2px var(--green)); }
+.network-graph .net-bar.dl { background: var(--cyan); filter: drop-shadow(0 0 2px var(--cyan-glow)); }
+
+/* ─── JARVIS ACTIVITY (Operation Stream) ─── */
+.activity-card {
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  padding: 14px;
+  background: linear-gradient(145deg, rgba(76, 201, 255, 0.04), var(--bg-1));
+  position: relative;
+  overflow: hidden;
+}
+
+.activity-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--cyan-bright), transparent);
+  animation: activityScan 3s linear infinite;
+}
+
+@keyframes activityScan {
+  0%, 100% { transform: translateX(-100%); opacity: 0; }
+  50% { opacity: 1; }
+  100% { transform: translateX(100%); }
+}
+
+.activity-card .head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.activity-card .title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px;
+  color: var(--cyan-bright);
+  letter-spacing: 3px;
+  font-weight: 700;
+}
+
+.activity-card .status-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 1px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: rgba(40, 201, 59, 0.15);
+  color: var(--green);
+  border: 1px solid rgba(40, 201, 59, 0.3);
+}
+
+.activity-card .status-tag.busy {
+  background: rgba(255, 213, 106, 0.15);
+  color: var(--gold);
+  border-color: rgba(255, 213, 106, 0.3);
+}
+
+.activity-card .status-tag.busy::before {
+  content: '⏵ ';
+  animation: busyDot 1s steps(2) infinite;
+}
+
+@keyframes busyDot {
+  to { opacity: 0.3; }
+}
+
+.op-stream {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 80px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.op-line {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-left: 2px solid var(--line);
+  background: rgba(76, 201, 255, 0.03);
+  border-radius: 0 3px 3px 0;
+  position: relative;
+  opacity: 0;
+  transform: translateX(-8px);
+  animation: opLineIn 0.3s ease-out forwards;
+}
+
+@keyframes opLineIn {
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.op-line .marker {
+  width: 8px; height: 8px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--cyan-dim);
+}
+
+.op-line .text {
+  color: var(--text);
+  flex: 1;
+  letter-spacing: 0.3px;
+}
+
+.op-line .duration {
+  font-size: 9px;
+  color: var(--text-faint);
+  letter-spacing: 1px;
+}
+
+.op-line.active {
+  border-left-color: var(--cyan-bright);
+  background: rgba(76, 201, 255, 0.08);
+  box-shadow: 0 0 12px rgba(76, 201, 255, 0.15);
+}
+
+.op-line.active .marker {
+  background: var(--cyan-bright);
+  box-shadow: 0 0 8px var(--cyan-glow);
+  animation: markerPulse 1s ease-in-out infinite;
+}
+
+@keyframes markerPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.4); }
+}
+
+.op-line.active .text::after {
+  content: '...';
+  display: inline-block;
+  animation: dots 1.5s steps(3, end) infinite;
+  color: var(--cyan-bright);
+}
+
+.op-line.done {
+  border-left-color: var(--green);
+  opacity: 0.7;
+}
+
+.op-line.done .marker {
+  background: var(--green);
+  position: relative;
+}
+
+.op-line.done .marker::after {
+  content: '✓';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--bg-0);
+  font-size: 7px;
+  font-weight: 900;
+}
+
+.op-line.error {
+  border-left-color: var(--red);
+}
+
+.op-line.error .marker { background: var(--red); }
+
+.op-progress {
+  margin-top: 10px;
+  height: 3px;
+  background: var(--bg-3);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+.op-progress::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  width: 0%;
+  background: linear-gradient(90deg, var(--cyan-deep), var(--cyan-bright));
+  border-radius: 2px;
+  transition: width 0.4s ease-out;
+  box-shadow: 0 0 8px var(--cyan-glow);
+}
+
+.op-progress[data-pct="0"]::before { width: 0%; }
+.op-progress[data-pct="20"]::before { width: 20%; }
+.op-progress[data-pct="40"]::before { width: 40%; }
+.op-progress[data-pct="60"]::before { width: 60%; }
+.op-progress[data-pct="80"]::before { width: 80%; }
+.op-progress[data-pct="100"]::before { width: 100%; }
+
+/* Right sidebar: gap 줄이기 (activity card 추가 공간 확보) */
+aside.right { gap: 10px; }
+
+/* Mini icon buttons — for telemetry */
+.tele-icon {
+  width: 14px;
+  height: 14px;
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 4px;
+}
+
+/* ════════════════════════════════════════════════════════ */
+/* ════ v2.1 — OVERFLOW FIX · STATE THEME · CONVO · RESP. ═ */
+/* ════════════════════════════════════════════════════════ */
+
+/* ───────── A. STATE-DRIVEN GLOBAL TINT ───────── */
+:root {
+  --state-c: var(--cyan-bright);
+  --state-c-deep: var(--cyan);
+  --state-glow: var(--cyan-glow);
+  --state-soft: var(--cyan-soft);
+}
+body[data-state="listening"] { --state-c: #7fffd4; --state-c-deep: #43e0b8; --state-glow: rgba(127,255,212,0.55); --state-soft: rgba(127,255,212,0.10); }
+body[data-state="analyzing"] { --state-c: #ffd166; --state-c-deep: #f5b942; --state-glow: rgba(255,209,102,0.55); --state-soft: rgba(255,209,102,0.10); }
+body[data-state="speaking"]  { --state-c: #ff9a4d; --state-c-deep: #ff7b00; --state-glow: rgba(255,138,61,0.55); --state-soft: rgba(255,154,77,0.10); }
+body, body[data-state], body[data-state="idle"] { transition: background 0.5s; }
+body[data-state] header.top::before {
+  background: linear-gradient(90deg, transparent, var(--state-c), transparent);
+}
+body[data-state="listening"] .center-status,
+body[data-state="analyzing"] .center-status,
+body[data-state="speaking"] .center-status {
+  color: var(--state-c);
+  text-shadow: 0 0 12px var(--state-glow);
+}
+body[data-state="listening"] .brand-icon,
+body[data-state="analyzing"] .brand-icon,
+body[data-state="speaking"] .brand-icon {
+  border-color: var(--state-c);
+}
+body[data-state="listening"] .brand-icon::after,
+body[data-state="analyzing"] .brand-icon::after,
+body[data-state="speaking"] .brand-icon::after {
+  background: var(--state-c);
+  box-shadow: 0 0 12px var(--state-glow);
+}
+body[data-state="listening"] .brand-text .title,
+body[data-state="analyzing"] .brand-text .title,
+body[data-state="speaking"] .brand-text .title {
+  color: var(--state-c);
+}
+/* Subtle vignette tint */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 50%, var(--state-soft) 100%);
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  z-index: -1;
+}
+body[data-state="listening"]::after,
+body[data-state="analyzing"]::after,
+body[data-state="speaking"]::after { opacity: 1; }
+
+/* ───────── B. RIGHT COLUMN — fit within 900px viewport ───────── */
+aside.right {
+  gap: 8px;
+  padding: 12px;
+  min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--cyan-dim) transparent;
+}
+aside.right::-webkit-scrollbar { width: 4px; }
+aside.right::-webkit-scrollbar-thumb { background: var(--cyan-dim); border-radius: 2px; }
+aside.right::-webkit-scrollbar-track { background: transparent; }
+
+.voice-card { padding: 10px 12px; }
+.voice-card .waveform { height: 36px; }
+.voice-card .voice-meter { height: 5px; margin-top: 6px; }
+.voice-card .voice-metrics { margin-top: 8px; }
+.voice-card .voice-metrics .vm { padding: 5px 4px; }
+.voice-card .voice-metrics .num { font-size: 12px; }
+.voice-card .mic-btn { padding: 8px 12px; margin-top: 8px; font-size: 10px; }
+.voice-card .listening-text { font-size: 10px; margin-top: 6px; }
+
+.activity-card { padding: 10px 12px; }
+.activity-card .head { margin-bottom: 6px; }
+.activity-card .op-line { padding: 3px 0; }
+
+.syslog-card {
+  padding: 10px 12px;
+  max-height: 168px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.syslog-card::-webkit-scrollbar { width: 3px; }
+.syslog-card::-webkit-scrollbar-thumb { background: var(--cyan-dim); border-radius: 2px; }
+.syslog-card::-webkit-scrollbar-track { background: transparent; }
+.syslog-card .syslog-header { margin-bottom: 6px; padding-bottom: 5px; }
+.syslog-card .log-line { margin-bottom: 3px; font-size: 10px; }
+
+.power-grid { gap: 6px; }
+.power-card { padding: 8px 6px; }
+.power-card .donut { width: 50px; height: 50px; }
+.power-card .donut .pct { font-size: 12px; }
+.power-card .sub { font-size: 8px; margin-top: 3px; }
+.power-card .label { margin-bottom: 4px; }
+
+.suit-card {
+  flex: 0 0 auto;          /* ★ critical: was flex:1 — caused overflow */
+  padding: 10px 12px;
+}
+.suit-card .suit-header { margin-bottom: 6px; padding-bottom: 0; }
+.suit-card .suit-body { grid-template-columns: 70px 1fr; gap: 10px; }
+.suit-card .suit-figure { height: 90px; }
+.suit-card .suit-stats { gap: 5px; }
+.suit-card .stat-row { font-size: 8px; }
+.suit-card .stat-row .v { font-size: 10px; margin-top: 1px; }
+
+/* ───────── C. WORLD MAP — subtle dot-grid globe ───────── */
+.world-map {
+  min-height: 130px;
+  margin-top: 8px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 10px;
+  background: linear-gradient(145deg, var(--bg-2) 0%, var(--bg-1) 100%);
+  position: relative;
+  overflow: hidden;
+}
+.world-map::before {
+  content: 'GEO GRID';
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  position: absolute;
+  top: 8px; left: 10px;
+  z-index: 2;
+}
+.world-map .globe {
+  width: 100%; height: 110px;
+  position: relative;
+  margin-top: 8px;
+}
+.world-map .globe svg { width: 100%; height: 100%; display: block; }
+.world-map .globe svg .land-dot { fill: var(--cyan-dim); opacity: 0.55; }
+.world-map .globe svg .grid-line { stroke: var(--line); fill: none; stroke-width: 0.4; }
+.world-map .globe .ping {
+  position: absolute;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--state-c);
+  box-shadow: 0 0 10px var(--state-glow);
+  transform: translate(-50%, -50%);
+}
+.world-map .globe .ping::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border: 1px solid var(--state-c);
+  border-radius: 50%;
+  animation: pingPulse 2.2s ease-out infinite;
+  opacity: 0;
+}
+@keyframes pingPulse {
+  0%   { transform: scale(0.6); opacity: 1; }
+  100% { transform: scale(3.0); opacity: 0; }
+}
+.world-map .geo-meta {
+  position: absolute;
+  bottom: 8px; left: 10px; right: 10px;
+  display: flex;
+  justify-content: space-between;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  color: var(--text-faint);
+  letter-spacing: 1.2px;
+}
+.world-map .geo-meta .v { color: var(--text-dim); }
+
+/* ───────── D. CONVERSATION PANEL ───────── */
+.convo-strip {
+  margin: 8px auto 6px;
+  width: min(640px, calc(100% - 80px));
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: linear-gradient(145deg, rgba(10,19,32,0.9) 0%, rgba(5,11,22,0.9) 100%);
+  padding: 8px 14px 10px;
+  position: relative;
+  max-height: 120px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.convo-strip::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--state-c), transparent);
+  opacity: 0.7;
+}
+.convo-strip::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0; height: 28px;
+  background: linear-gradient(180deg, transparent, var(--bg-1));
+  pointer-events: none;
+}
+.convo-strip .convo-head {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+.convo-strip .convo-head .pulse {
+  width: 5px; height: 5px;
+  background: var(--state-c);
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 6px;
+  box-shadow: 0 0 6px var(--state-glow);
+  animation: livePulse 1.4s ease-in-out infinite;
+  vertical-align: middle;
+}
+.convo-strip .convo-row {
+  display: grid;
+  grid-template-columns: 60px 1fr;
+  gap: 10px;
+  align-items: start;
+}
+.convo-strip .convo-row .who {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  padding: 2px 0;
+  border-radius: 2px;
+  text-align: center;
+  margin-top: 1px;
+}
+.convo-strip .convo-row .who.user {
+  color: var(--text-dim);
+  border: 1px solid var(--line);
+}
+.convo-strip .convo-row .who.jarvis {
+  color: var(--state-c);
+  border: 1px solid var(--state-c);
+  background: color-mix(in srgb, var(--state-c) 14%, transparent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--state-c) 30%, transparent);
+}
+.convo-strip .convo-row .msg {
+  color: var(--text);
+  font-family: 'Outfit', system-ui, sans-serif;
+  font-size: 12px;
+  line-height: 1.4;
+  word-break: keep-all;
+  font-weight: 400;
+}
+.convo-strip .convo-row .msg.typing::after {
+  content: '▌';
+  color: var(--state-c);
+  margin-left: 2px;
+  animation: caretBlink 1s steps(2, end) infinite;
+}
+@keyframes caretBlink { 50% { opacity: 0; } }
+
+/* ───────── E. RESPONSIVE: tablet (≤1024) ───────── */
+@media (max-width: 1024px) {
+  .os { grid-template-columns: 220px 1fr 270px; }
+  aside.left { padding: 12px 8px; gap: 6px; }
+  .menu-item { padding: 9px 11px; }
+  .menu-item .name { font-size: 10px; letter-spacing: 1.4px; }
+  .menu-item .sub { font-size: 8px; }
+  .menu-item .icon { width: 20px; height: 20px; font-size: 12px; }
+  .core-wrap { width: 420px; height: 420px; }
+  .ring-1 { width: 400px; height: 400px; }
+  .ring-2 { width: 330px; height: 330px; }
+  .ring-3 { width: 260px; height: 260px; }
+  .ring-4 { width: 200px; height: 200px; }
+  .ring-5 { width: 130px; height: 130px; }
+  .jarvis-logo { font-size: 36px; letter-spacing: 8px; }
+}
+
+/* ───────── F. RESPONSIVE: tablet portrait / small (≤900) ───────── */
+@media (max-width: 900px) {
+  html, body { overflow-y: auto; height: auto; cursor: default; }
+  .os {
+    grid-template-columns: 1fr;
+    grid-template-rows: 56px auto auto auto;
+    height: auto;
+    min-height: 100vh;
+  }
+  header.top { grid-column: 1; }
+  aside.left, aside.right, main.center {
+    grid-column: 1;
+    border-left: none;
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+    transform: none !important;
+    opacity: 1 !important;
+    animation: none !important;
+  }
+  aside.left { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 14px; max-height: none; }
+  aside.left .menu-item { padding: 12px; }
+  aside.left .stat-card, aside.left .telemetry-card, aside.left .environment, aside.left .world-map {
+    grid-column: 1 / -1;
+  }
+  aside.right { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 14px; max-height: none; overflow: visible; }
+  aside.right .voice-card, aside.right .syslog-card { grid-column: 1 / -1; }
+  main.center { padding-bottom: 32px; min-height: 540px; }
+  .core-wrap { width: 380px; height: 380px; }
+  .ring-1 { width: 360px; height: 360px; }
+  .ring-2 { width: 290px; height: 290px; }
+  .ring-3 { width: 230px; height: 230px; }
+  .ring-4 { width: 180px; height: 180px; }
+  .ring-5 { width: 120px; height: 120px; }
+  .jarvis-logo { font-size: 30px; letter-spacing: 6px; }
+  .center-status { display: none; }
+  .convo-strip { width: calc(100% - 32px); }
+  .syslog-card { max-height: 220px; }
+}
+
+/* ───────── G. RESPONSIVE: mobile (≤640) ───────── */
+@media (max-width: 640px) {
+  header.top { padding: 0 12px; }
+  .brand-text .title { font-size: 11px; letter-spacing: 2px; }
+  .brand-text .build { font-size: 8px; }
+  .brand-icon { width: 22px; height: 22px; }
+  .brand-icon::before { inset: 3px; }
+  .brand-icon::after { inset: 7px; }
+  .network-status { font-size: 8px; }
+  .network-status .label { display: none; }
+  aside.left, aside.right { grid-template-columns: 1fr; padding: 12px; }
+  .menu-item { padding: 10px; }
+  .menu-item .name { font-size: 10px; }
+  .menu-item .icon { width: 18px; height: 18px; font-size: 11px; }
+  .tele-grid { grid-template-columns: repeat(2, 1fr); }
+  .core-wrap { width: 88vw; height: 88vw; max-width: 380px; max-height: 380px; }
+  .ring-1 { width: 100%; height: 100%; }
+  .ring-2 { width: 80%; height: 80%; }
+  .ring-3 { width: 62%; height: 62%; }
+  .ring-4 { width: 48%; height: 48%; }
+  .ring-5 { width: 32%; height: 32%; }
+  .jarvis-logo { font-size: 24px; letter-spacing: 5px; }
+  .bottom-controls { gap: 8px; }
+  .ctrl-btn { width: 34px; height: 34px; font-size: 14px; }
+  .convo-strip { max-height: 140px; }
+  .convo-strip .convo-row { grid-template-columns: 48px 1fr; gap: 8px; }
+  .convo-strip .convo-row .msg { font-size: 11px; }
+}
+
+/* ───────── H. POLISH: unified corner ornament + glow ───────── */
+.voice-card, .activity-card, .syslog-card, .power-card, .suit-card,
+.telemetry-card, .environment, .world-map, .menu-item, .convo-strip {
+  position: relative;
+}
+.voice-card::after, .activity-card::after, .syslog-card::after,
+.suit-card::after, .telemetry-card::after, .environment::after,
+.world-map::after, .convo-strip::after {
+  /* corner brackets — top-right */
+}
+/* Subtle inner glow on cards (state-tinted) */
+.voice-card.active-state,
+body[data-state="listening"] .activity-card,
+body[data-state="analyzing"] .activity-card,
+body[data-state="speaking"] .activity-card {
+  box-shadow: inset 0 0 18px color-mix(in srgb, var(--state-c) 10%, transparent), 0 0 14px color-mix(in srgb, var(--state-c) 12%, transparent);
+  border-color: color-mix(in srgb, var(--state-c) 30%, var(--line));
+}
+
+/* Header: more dramatic SYSTEM ONLINE label */
+.center-status {
+  font-weight: 600;
+  text-shadow: 0 0 10px var(--cyan-glow);
+}
+.center-status::before, .center-status::after {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--state-c, var(--cyan)) 50%, transparent);
+}
+</style>
+</head>
+<body>
+
+<!-- Boot overlay -->
+<div id="boot-overlay">
+  <div class="boot-logo">J.A.R.V.I.S</div>
+  <div class="boot-line">&gt; INITIATING SYSTEM BOOT...</div>
+  <div class="boot-line">&gt; LOADING CORE MODULES........[OK]</div>
+  <div class="boot-line">&gt; CALIBRATING AI ENGINE.......[OK]</div>
+  <div class="boot-line">&gt; CONNECTING DATABASE.........[OK]</div>
+  <div class="boot-line">&gt; ESTABLISHING NETWORK........[OK]</div>
+  <div class="boot-line">&gt; ACTIVATING SECURITY.........[OK]</div>
+  <div class="boot-line">&gt; RUNNING DIAGNOSTICS.........[OK]</div>
+  <div class="boot-line" style="color: var(--cyan-bright); font-weight: 700;">&gt; ALL SYSTEMS OPERATIONAL — WELCOME, SIR.</div>
+</div>
+
+<div class="scanlines"></div>
+<div class="scanline-sweep"></div>
+
+<div class="os">
+  <!-- ─────── HEADER ─────── -->
+  <header class="top">
+    <div class="brand">
+      <div class="brand-icon"></div>
+      <div class="brand-text">
+        <div class="title">JARVIS OS v2.0.0</div>
+        <div class="build">BUILD 2.0.0.47</div>
+      </div>
+    </div>
+    <div class="center-status">SYSTEM ONLINE</div>
+    <div class="network-status">
+      <span class="label">NETWORK STATUS</span>
+      <span class="value">
+        ONLINE
+        <span class="wifi-icon"><i></i></span>
+      </span>
+      <span class="backend-status" id="backend-status">JARVIS: CHECKING…</span>
+    </div>
+  </header>
+
+  <!-- ─────── LEFT SIDEBAR ─────── -->
+  <aside class="left">
+    <div class="menu-item">
+      <div class="icon">◉</div>
+      <div>
+        <div class="name">SYSTEM</div>
+        <div class="sub">Dashboard</div>
+      </div>
+    </div>
+    <div class="menu-item">
+      <div class="icon">▣</div>
+      <div>
+        <div class="name">SUIT</div>
+        <div class="sub">Status</div>
+      </div>
+    </div>
+    <div class="menu-item">
+      <div class="icon">⌬</div>
+      <div>
+        <div class="name">COMMUNICATION</div>
+        <div class="sub">Messages / Calls</div>
+      </div>
+    </div>
+    <div class="menu-item">
+      <div class="icon">⊞</div>
+      <div>
+        <div class="name">SYSTEM PROCESS</div>
+        <div class="sub">Running</div>
+      </div>
+    </div>
+    <div class="menu-item">
+      <div class="icon">⬡</div>
+      <div>
+        <div class="name">ARTIFICIAL INTEL.</div>
+        <div class="sub">J.A.R.V.I.S</div>
+      </div>
+    </div>
+    <div class="menu-item">
+      <div class="icon">≡</div>
+      <div>
+        <div class="name">FILES</div>
+        <div class="sub">Documents</div>
+      </div>
+    </div>
+    <div class="menu-item">
+      <div class="icon">⚙</div>
+      <div>
+        <div class="name">SETTINGS</div>
+        <div class="sub">Configuration</div>
+      </div>
+    </div>
+
+    <!-- System Telemetry — CPU / GPU / MEM / Battery / WiFi / Storage -->
+    <div class="telemetry-card">
+      <div class="header">
+        <span>SYSTEM TELEMETRY</span>
+        <span class="stat-tag" id="tele-tag">LIVE</span>
+      </div>
+      <div class="tele-grid">
+        <!-- CPU -->
+        <div class="mini-stat">
+          <div class="key">CPU</div>
+          <div class="donut">
+            <svg viewBox="0 0 100 100">
+              <circle class="bg" cx="50" cy="50" r="42" />
+              <circle class="fg" id="cpu-donut" cx="50" cy="50" r="42"
+                stroke-dasharray="263.89" stroke-dashoffset="208.5" />
+            </svg>
+            <div class="pct"><span id="cpu-val">21</span><span class="sym">%</span></div>
+          </div>
+          <div class="sub" id="cpu-meta">2.3 GHZ</div>
+        </div>
+        <!-- GPU -->
+        <div class="mini-stat">
+          <div class="key">GPU</div>
+          <div class="donut">
+            <svg viewBox="0 0 100 100">
+              <circle class="bg" cx="50" cy="50" r="42" />
+              <circle class="fg" id="gpu-donut" cx="50" cy="50" r="42"
+                stroke-dasharray="263.89" stroke-dashoffset="200" style="stroke: #b074ff; filter: drop-shadow(0 0 4px #b074ff);" />
+            </svg>
+            <div class="pct" style="color: #d2a8ff;"><span id="gpu-val">24</span><span class="sym">%</span></div>
+          </div>
+          <div class="sub" id="gpu-meta">M2 PRO</div>
+        </div>
+        <!-- MEM -->
+        <div class="mini-stat">
+          <div class="key">MEM</div>
+          <div class="donut">
+            <svg viewBox="0 0 100 100">
+              <circle class="bg" cx="50" cy="50" r="42" />
+              <circle class="fg" id="mem-donut" cx="50" cy="50" r="42"
+                stroke-dasharray="263.89" stroke-dashoffset="87.1" />
+            </svg>
+            <div class="pct"><span id="mem-val">67</span><span class="sym">%</span></div>
+          </div>
+          <div class="sub" id="mem-meta">10.7 GB</div>
+        </div>
+        <!-- Battery -->
+        <div class="mini-stat">
+          <div class="key">PWR</div>
+          <div class="donut">
+            <svg viewBox="0 0 100 100">
+              <circle class="bg" cx="50" cy="50" r="42" />
+              <circle class="fg" id="sys-bat-donut" cx="50" cy="50" r="42"
+                stroke-dasharray="263.89" stroke-dashoffset="21.1"
+                style="stroke: var(--green); filter: drop-shadow(0 0 4px var(--green));" />
+            </svg>
+            <div class="pct" style="color: var(--green);"><span id="sys-bat-val">92</span><span class="sym" style="color: var(--green);">%</span></div>
+          </div>
+          <div class="sub" id="sys-bat-status">CHARGING</div>
+        </div>
+      </div>
+
+      <!-- WiFi 5-bar visualizer -->
+      <div class="wifi-widget" style="margin-top: 8px;">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 8px; color: var(--text-dim); letter-spacing: 1px;">WIFI / NETWORK</div>
+        <div class="wifi-bars">
+          <div class="bar on"></div>
+          <div class="bar on"></div>
+          <div class="bar on"></div>
+          <div class="bar on"></div>
+          <div class="bar"></div>
+        </div>
+        <div class="ssid" id="wifi-ssid">Stark_5G_Hangar</div>
+        <div class="speed" id="wifi-speed">↓ 247 Mbps</div>
+      </div>
+
+      <!-- Temperature sparkline -->
+      <div class="temp-widget" style="margin-top: 8px;">
+        <div class="head">
+          <span>CPU TEMP</span>
+          <span class="v" id="temp-cpu-val">62°C</span>
+        </div>
+        <div class="temp-spark" id="temp-cpu-spark"></div>
+        <div class="head" style="margin-top: 6px;">
+          <span>GPU TEMP</span>
+          <span class="v" id="temp-gpu-val">54°C</span>
+        </div>
+        <div class="temp-spark" id="temp-gpu-spark"></div>
+      </div>
+
+      <!-- Network UL/DL graph -->
+      <div style="margin-top: 8px;">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 8px; color: var(--text-dim); letter-spacing: 1px; display: flex; justify-content: space-between;">
+          <span>NET <span style="color: var(--green);">▲</span> <span id="ul-rate">2.7</span></span>
+          <span><span style="color: var(--cyan);">▼</span> <span id="dl-rate">3.6</span> MB/s</span>
+        </div>
+        <div class="network-graph" id="net-graph"></div>
+      </div>
+
+      <!-- Storage compact -->
+      <div style="margin-top: 8px; padding: 8px; border: 1px solid var(--line); border-radius: 3px; background: var(--bg-3); display: flex; align-items: center; gap: 10px;">
+        <div class="donut" style="width: 38px; height: 38px;">
+          <svg viewBox="0 0 100 100">
+            <circle class="bg" cx="50" cy="50" r="42" />
+            <circle class="fg" cx="50" cy="50" r="42" stroke-dasharray="263.89" stroke-dashoffset="60.7" />
+          </svg>
+          <div class="pct" style="font-size: 10px;">77<span class="sym" style="font-size: 7px;">%</span></div>
+        </div>
+        <div style="flex: 1;">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--text-dim); letter-spacing: 1px;">STORAGE</div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--cyan-bright); margin-top: 2px;">582 / 756 GB</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="environment">
+      <div class="label" style="font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--text-dim); letter-spacing:2px; margin-bottom:8px;">ENVIRONMENT</div>
+      <div class="env-temp">
+        <div class="big" id="temp-val">25°C</div>
+        <div class="cond">Scattered Clouds</div>
+        <svg class="cloud-icon" viewBox="0 0 36 36" fill="none" stroke="var(--cyan)" stroke-width="1.5">
+          <path d="M9 20 Q5 20 5 16 Q5 12 9 12 Q10 8 15 8 Q22 8 23 14 Q28 14 28 18 Q28 22 23 22 L9 22 Z" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="env-stats">
+        <span class="key">HUMIDITY</span><span class="val" id="hum-val">45 %</span>
+        <span class="key">WIND</span><span class="val" id="wind-val">6.3 km/h</span>
+        <span class="key">PRESSURE</span><span class="val">1012 hPa</span>
+        <span class="key">VISIBILITY</span><span class="val">16.1 km</span>
+      </div>
+    </div>
+
+    <div class="world-map">
+      <div class="globe">
+        <svg viewBox="0 0 200 80" preserveAspectRatio="xMidYMid meet">
+          <!-- Stylized world map outline -->
+          <g fill="none" stroke="rgba(76,201,255,0.22)" stroke-width="0.5">
+            <path d="M15 18 L25 14 L40 16 L45 22 L42 32 L30 38 L20 36 L12 28 Z"/>
+            <path d="M40 42 L48 40 L52 50 L48 65 L40 68 L36 58 L38 48 Z"/>
+            <path d="M85 20 L100 16 L108 22 L105 30 L92 32 L82 28 Z"/>
+            <path d="M88 38 L105 36 L112 50 L106 65 L92 64 L82 50 Z"/>
+            <path d="M110 14 L160 14 L175 22 L170 38 L150 42 L120 38 L108 28 Z"/>
+            <path d="M155 55 L175 56 L180 65 L172 70 L158 68 Z"/>
+          </g>
+          <!-- Latitude/longitude crosshair grid -->
+          <g class="grid-line">
+            <line x1="0" y1="20" x2="200" y2="20"/>
+            <line x1="0" y1="40" x2="200" y2="40"/>
+            <line x1="0" y1="60" x2="200" y2="60"/>
+            <line x1="50" y1="0" x2="50" y2="80"/>
+            <line x1="100" y1="0" x2="100" y2="80"/>
+            <line x1="150" y1="0" x2="150" y2="80"/>
+          </g>
+          <!-- Active node pings -->
+          <circle class="dot" cx="32" cy="26" r="1.5"/>
+          <circle class="dot" cx="48" cy="55" r="1.5" style="animation-delay:0.3s"/>
+          <circle class="dot" cx="92" cy="24" r="1.5" style="animation-delay:0.6s"/>
+          <circle class="dot" cx="98" cy="50" r="1.5" style="animation-delay:0.9s"/>
+          <circle class="dot" cx="135" cy="28" r="1.5" style="animation-delay:1.2s"/>
+          <circle class="dot" cx="155" cy="34" r="1.5" style="animation-delay:1.5s"/>
+          <circle class="dot" cx="168" cy="62" r="1.5" style="animation-delay:1.8s"/>
+        </svg>
+        <!-- User-location ping (Seoul ≈ x=147,y=27 in viewBox → ~73.5%, 33.75%) -->
+        <span class="ping" id="user-geo-ping" style="left:73.5%;top:33.75%;"></span>
+      </div>
+      <div class="geo-meta">
+        <span>SEOUL · KR</span>
+        <span class="v" id="geo-time">—</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ─────── CENTER (J.A.R.V.I.S) ─────── -->
+  <main class="center">
+    <div class="hud-corner tl"></div>
+    <div class="hud-corner tr"></div>
+    <div class="hud-corner bl"></div>
+    <div class="hud-corner br"></div>
+
+    <div class="readout" style="top: 30%; left: 8%;">02.1</div>
+    <div class="readout" style="top: 30%; right: 8%;">02.1</div>
+    <div class="readout" style="bottom: 36%; left: 6%;">05.6</div>
+    <div class="readout" style="bottom: 36%; right: 6%;">05.6</div>
+    <div class="readout" style="top: 50%; left: 4%;">09.8</div>
+    <div class="readout" style="top: 50%; right: 4%;">05.9</div>
+    <div class="readout" style="top: 60%; left: 8%;">05.3</div>
+    <div class="readout" style="bottom: 28%; left: 14%;">03.2</div>
+    <div class="readout" style="bottom: 28%; right: 14%;">05.8</div>
+
+    <div class="core-wrap" id="core-wrap">
+      <!-- 3D Hexagonal back layer (translateZ -300px, depth 강조) -->
+      <div class="hex-layer">
+        <svg viewBox="0 0 600 600">
+          <g>
+            <!-- Hex grid pattern, 18개 ring으로 우주 깊이 -->
+            <polygon points="300,180 380,225 380,315 300,360 220,315 220,225"/>
+            <polygon points="300,140 410,200 410,320 300,380 190,320 190,200"/>
+            <polygon points="300,100 440,180 440,340 300,420 160,340 160,180"/>
+            <polygon points="300,60 470,160 470,360 300,460 130,360 130,160"/>
+            <polygon points="300,20 500,140 500,380 300,500 100,380 100,140"/>
+            <polygon points="300,-20 530,120 530,400 300,540 70,400 70,120"/>
+          </g>
+        </svg>
+      </div>
+
+      <div class="ring ring-1"></div>
+      <div class="ring ring-2"></div>
+      <div class="ring ring-3"></div>
+      <div class="ring ring-4"></div>
+      <div class="ring ring-5"></div>
+
+      <!-- 3D 궤도 점 — JARVIS 로고 주위를 3D로 도는 점들 -->
+      <div class="orbit-dot o1"></div>
+      <div class="orbit-dot o2"></div>
+      <div class="orbit-dot o3"></div>
+
+      <!-- Rotating text on rings -->
+      <div class="rotate-text">
+        <svg viewBox="0 0 600 600">
+          <defs>
+            <path id="circle-outer" d="M 300,300 m -270,0 a 270,270 0 1,1 540,0 a 270,270 0 1,1 -540,0" />
+            <path id="circle-mid" d="M 300,300 m -210,0 a 210,210 0 1,1 420,0 a 210,210 0 1,1 -420,0" />
+            <path id="circle-inner" d="M 300,300 m -150,0 a 150,150 0 1,1 300,0 a 150,150 0 1,1 -300,0" />
+          </defs>
+          <g class="rt-outer">
+            <text class="rt"><textPath href="#circle-outer">
+              · BIG DATA · IMAGE LANGUAGE PROCESSING · MACHINE LEARNING · MODEL ANALYTICS · NEURAL NETWORK · NATURAL LANGUAGE PROCESSING ·
+            </textPath></text>
+          </g>
+          <g class="rt-mid">
+            <text class="rt"><textPath href="#circle-mid">
+              · SECURITY · DIAGNOSTICS · INTERFACE · OBJECT RECOGNITION · IMAGE RECOGNITION · SYSTEMS OPTIMIZATION ·
+            </textPath></text>
+          </g>
+          <g class="rt-inner">
+            <text class="rt" style="font-size: 8px;"><textPath href="#circle-inner">
+              · ARC REACTOR · MARK 50 · STARK INDUSTRIES · OPERATIONAL · STANDBY MODE · ALL CLEAR ·
+            </textPath></text>
+          </g>
+        </svg>
+      </div>
+
+      <div class="core-pulse"></div>
+      <div class="jarvis-logo">J.A.R.V.I.S</div>
+      <div class="particles" id="particles"></div>
+      <div class="ripples" id="ripples"></div>
+      <div class="spectrum" id="spectrum"></div>
+    </div>
+    <div class="wake-flash" id="wake-flash"></div>
+
+    <!-- Conversation strip — latest user ↔ JARVIS exchange -->
+    <div class="convo-strip" id="convo-strip">
+      <div class="convo-head">
+        <span><span class="pulse"></span>LAST INTERACTION</span>
+        <span id="convo-ts">—</span>
+      </div>
+      <div class="convo-row">
+        <span class="who user">YOU</span>
+        <span class="msg" id="convo-user">—</span>
+      </div>
+      <div class="convo-row">
+        <span class="who jarvis">JARVIS</span>
+        <span class="msg" id="convo-jarvis">대화를 시작해 주세요, 주인님.</span>
+      </div>
+    </div>
+
+    <div class="bottom-controls">
+      <button class="ctrl-btn" title="Camera">⊡</button>
+      <button class="ctrl-btn" title="Mic">⏺</button>
+      <button class="ctrl-btn" title="Scan">⊕</button>
+      <button class="ctrl-btn" title="Settings">⚙</button>
+      <button class="ctrl-btn" title="Power">⏻</button>
+    </div>
+
+    <div class="bottom-status">
+      <div class="v">JARVIS AI 2.0.0</div>
+      <div class="ops">ALL SYSTEMS OPERATIONAL</div>
+    </div>
+  </main>
+
+  <!-- ─────── RIGHT SIDEBAR ─────── -->
+  <aside class="right">
+    <div class="voice-card">
+      <div class="voice-label">
+        <span class="name">VOICE RECOGNITION</span>
+        <span class="live" id="voice-live">REC</span>
+      </div>
+      <div class="waveform" id="waveform"></div>
+      <div class="voice-meter" id="voice-meter" data-level="0"></div>
+      <div class="voice-metrics">
+        <div class="vm"><span class="lbl">RMS</span><span class="num" id="vm-rms">0.00</span></div>
+        <div class="vm"><span class="lbl">PEAK Hz</span><span class="num" id="vm-peak">0</span></div>
+        <div class="vm"><span class="lbl">DB</span><span class="num" id="vm-db">-∞</span></div>
+      </div>
+      <button class="mic-btn" id="mic-btn">
+        <span class="icon"></span>
+        <span id="mic-btn-text">ACTIVATE MIC</span>
+      </button>
+      <div class="mic-error" id="mic-error">마이크 권한이 거부되었습니다. 브라우저 설정에서 허용해주세요.</div>
+      <div class="transcript" id="transcript"></div>
+      <div class="listening-text" id="listening-text">Standby</div>
+    </div>
+
+    <!-- JARVIS ACTIVITY — Operation Stream (자비스가 수행하는 작업의 narration) -->
+    <div class="activity-card" id="activity-card">
+      <div class="head">
+        <span class="title">JARVIS ACTIVITY</span>
+        <span class="status-tag" id="activity-status">IDLE</span>
+      </div>
+      <div class="op-stream" id="op-stream">
+        <div class="op-line done">
+          <span class="marker"></span>
+          <span class="text">시스템 부팅 완료</span>
+          <span class="duration">3.2s</span>
+        </div>
+        <div class="op-line">
+          <span class="marker"></span>
+          <span class="text">대기 중</span>
+        </div>
+      </div>
+      <div class="op-progress" id="op-progress" data-pct="0"></div>
+    </div>
+
+    <div class="syslog-card">
+      <div class="syslog-header">SYSTEM LOG</div>
+      <div class="log-line"><span class="key">&gt; SYSTEM BOOT</span><span class="val done">[DONE]</span></div>
+      <div class="log-line"><span class="key">&gt; CORE MODULE</span><span class="val">[LOADED]</span></div>
+      <div class="log-line"><span class="key">&gt; AI ENGINE</span><span class="val done">[ONLINE]</span></div>
+      <div class="log-line"><span class="key">&gt; DATABASE</span><span class="val">[CONNECTED]</span></div>
+      <div class="log-line"><span class="key">&gt; NETWORK</span><span class="val done">[ONLINE]</span></div>
+      <div class="log-line"><span class="key">&gt; SECURITY</span><span class="val">[ACTIVE]</span></div>
+      <div class="log-line"><span class="key">&gt; DIAGNOSTICS</span><span class="val done">[COMPLETE]</span></div>
+    </div>
+
+    <div class="power-grid">
+      <div class="power-card">
+        <div class="label">POWER</div>
+        <div class="donut">
+          <svg viewBox="0 0 100 100">
+            <circle class="bg" cx="50" cy="50" r="42" />
+            <circle class="fg" cx="50" cy="50" r="42"
+              stroke-dasharray="263.89" stroke-dashoffset="0" />
+          </svg>
+          <div class="pct">100<span class="sym">%</span></div>
+        </div>
+        <div class="sub">Arc Reactor</div>
+      </div>
+      <div class="power-card">
+        <div class="label">BATTERY</div>
+        <div class="donut">
+          <svg viewBox="0 0 100 100">
+            <circle class="bg" cx="50" cy="50" r="42" />
+            <circle class="fg" id="bat-donut" cx="50" cy="50" r="42"
+              stroke-dasharray="263.89" stroke-dashoffset="21.1" style="stroke: var(--green); filter: drop-shadow(0 0 4px var(--green));" />
+          </svg>
+          <div class="pct" style="color: var(--green);"><span id="bat-val">92</span><span class="sym" style="color: var(--green);">%</span></div>
+        </div>
+        <div class="sub">Charging</div>
+      </div>
+    </div>
+
+    <div class="suit-card">
+      <div class="suit-header">SUIT STATUS</div>
+      <div class="suit-body">
+        <div class="suit-figure">
+          <svg viewBox="0 0 100 140" fill="none" stroke="var(--cyan)" stroke-width="1.2">
+            <!-- Iron Man suit wireframe (simplified) -->
+            <!-- Helmet -->
+            <ellipse cx="50" cy="18" rx="14" ry="16" fill="rgba(76,201,255,0.05)"/>
+            <line x1="44" y1="18" x2="56" y2="18" stroke-width="1.5"/>
+            <!-- Eyes -->
+            <ellipse cx="44" cy="16" rx="3" ry="1.5" fill="var(--cyan-bright)" stroke="none" opacity="0.9"/>
+            <ellipse cx="56" cy="16" rx="3" ry="1.5" fill="var(--cyan-bright)" stroke="none" opacity="0.9"/>
+            <!-- Neck -->
+            <line x1="46" y1="34" x2="46" y2="40"/>
+            <line x1="54" y1="34" x2="54" y2="40"/>
+            <!-- Torso -->
+            <path d="M30 42 L70 42 L72 70 L65 90 L35 90 L28 70 Z" fill="rgba(76,201,255,0.05)"/>
+            <!-- Arc reactor -->
+            <circle class="arc" cx="50" cy="60" r="6"/>
+            <circle cx="50" cy="60" r="9" stroke="var(--cyan-bright)" stroke-width="0.8" fill="none"/>
+            <!-- Shoulders/arms -->
+            <path d="M28 42 L18 50 L16 78 L20 95 L26 95 L27 75"/>
+            <path d="M72 42 L82 50 L84 78 L80 95 L74 95 L73 75"/>
+            <!-- Hands -->
+            <ellipse cx="22" cy="100" rx="6" ry="5" fill="rgba(76,201,255,0.08)"/>
+            <ellipse cx="78" cy="100" rx="6" ry="5" fill="rgba(76,201,255,0.08)"/>
+            <!-- Repulsor glow -->
+            <circle cx="22" cy="100" r="2" fill="var(--cyan-bright)" stroke="none" opacity="0.7"/>
+            <circle cx="78" cy="100" r="2" fill="var(--cyan-bright)" stroke="none" opacity="0.7"/>
+            <!-- Hips/legs -->
+            <path d="M35 90 L33 110 L36 130 L42 132 L44 105"/>
+            <path d="M65 90 L67 110 L64 130 L58 132 L56 105"/>
+            <line x1="44" y1="105" x2="56" y2="105"/>
+            <!-- Boots -->
+            <ellipse cx="39" cy="135" rx="6" ry="4" fill="rgba(76,201,255,0.1)"/>
+            <ellipse cx="61" cy="135" rx="6" ry="4" fill="rgba(76,201,255,0.1)"/>
+          </svg>
+        </div>
+        <div class="suit-stats">
+          <div class="stat-row">
+            ARMOR INTEGRITY
+            <div class="v green">100%</div>
+          </div>
+          <div class="stat-row">
+            SYSTEMS
+            <div class="v green">ONLINE</div>
+          </div>
+          <div class="stat-row">
+            WEAPONS
+            <div class="v gold">ARMED</div>
+          </div>
+          <div class="stat-row">
+            MOBILITY
+            <div class="v green">OPTIMAL</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<script>
+'use strict';
+
+// ════════════════════════════════════════════════════════════
+// JARVIS OS — Reactive Dashboard v3.0
+// 마이크 실시간 분석 + Speech Recognition + jarvis 백엔드 polling
+// ════════════════════════════════════════════════════════════
+
+const CFG = {
+  WAVE_BARS: 32,
+  SPECTRUM_BARS: 36,
+  PEAK_THRESHOLD: 0.18,    // 이 RMS 이상이면 ripple emit
+  WAKE_THRESHOLD: 0.45,    // 이 RMS 이상이면 wake flash
+  RIPPLE_COOLDOWN: 350,    // ms
+  JARVIS_HOST: 'http://localhost:41417',
+  POLL_INTERVAL: 5000,
+};
+
+// ────── DOM refs ──────
+const D = {
+  waveform: document.getElementById('waveform'),
+  spectrum: document.getElementById('spectrum'),
+  ripples: document.getElementById('ripples'),
+  particles: document.getElementById('particles'),
+  micBtn: document.getElementById('mic-btn'),
+  micBtnText: document.getElementById('mic-btn-text'),
+  micError: document.getElementById('mic-error'),
+  voiceMeter: document.getElementById('voice-meter'),
+  vmRMS: document.getElementById('vm-rms'),
+  vmPeak: document.getElementById('vm-peak'),
+  vmDB: document.getElementById('vm-db'),
+  voiceLive: document.getElementById('voice-live'),
+  transcript: document.getElementById('transcript'),
+  listeningText: document.getElementById('listening-text'),
+  wakeFlash: document.getElementById('wake-flash'),
+  backendStatus: document.getElementById('backend-status'),
+  cpuVal: document.getElementById('cpu-val'),
+  cpuDonut: document.getElementById('cpu-donut'),
+  cpuMeta: document.getElementById('cpu-meta'),
+  memVal: document.getElementById('mem-val'),
+  memDonut: document.getElementById('mem-donut'),
+  memMeta: document.getElementById('mem-meta'),
+  ulRate: document.getElementById('ul-rate'),
+  dlRate: document.getElementById('dl-rate'),
+  batVal: document.getElementById('bat-val'),
+  batDonut: document.getElementById('bat-donut'),
+  tempVal: document.getElementById('temp-val'),
+  humVal: document.getElementById('hum-val'),
+  windVal: document.getElementById('wind-val'),
+  ring4: document.querySelector('.ring-4'),
+  jarvisLogo: document.querySelector('.jarvis-logo'),
+  corePulse: document.querySelector('.core-pulse'),
+  arc: document.querySelector('.suit-figure .arc'),
+  centerStatus: document.querySelector('.center-status'),
+  brandBuild: document.querySelector('.brand-text .build'),
+  syslogCard: document.querySelector('.syslog-card'),
+  syslogHeader: document.querySelector('.syslog-header'),
+};
+
+// ────── 1. Wave + Spectrum bar 생성 ──────
+for (let i = 0; i < CFG.WAVE_BARS; i++) {
+  const b = document.createElement('div');
+  b.className = 'wave-bar';
+  b.style.height = '3px';
+  D.waveform.appendChild(b);
+}
+const waveBars = D.waveform.querySelectorAll('.wave-bar');
+
+// 동심원 사이 spectrum bars (라디얼 배치)
+for (let i = 0; i < CFG.SPECTRUM_BARS; i++) {
+  const b = document.createElement('div');
+  b.className = 'spectrum-bar';
+  const angle = (i / CFG.SPECTRUM_BARS) * 360;
+  b.style.transform = `translateX(-50%) rotate(${angle}deg) translateY(-180px)`;
+  b.style.height = '2px';
+  D.spectrum.appendChild(b);
+}
+const spectrumBars = D.spectrum.querySelectorAll('.spectrum-bar');
+
+// ────── 2. Mock 데이터 simulation (마이크 OFF 일 때 사용) ──────
+let micActive = false;
+let mockMode = true;
+
+function mockWaveLevel() {
+  // sin 기반 + noise — 마이크 OFF 일 때 fallback
+  const t = Date.now() / 200;
+  const arr = new Array(CFG.WAVE_BARS);
+  for (let i = 0; i < CFG.WAVE_BARS; i++) {
+    const phase = i / CFG.WAVE_BARS * Math.PI * 4;
+    const base = (Math.sin(t + phase) + 1) * 0.15;
+    arr[i] = Math.min(1, base + Math.random() * 0.18);
+  }
+  return arr;
+}
+
+// ────── 3. Web Audio: 마이크 캡처 + analyser ──────
+let audioCtx = null, analyser = null, micStream = null, mediaSource = null;
+let freqData = null, timeData = null;
+let lastPeakTime = 0;
+let lastWakeTime = 0;
+let ripplePhases = [];
+
+async function activateMic() {
+  if (micActive) {
+    deactivateMic();
+    return;
+  }
+  D.micError.classList.remove('show');
+  try {
+    micStream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: false,
+        autoGainControl: false,
+      },
+    });
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    mediaSource = audioCtx.createMediaStreamSource(micStream);
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 1024;
+    analyser.smoothingTimeConstant = 0.6;
+    mediaSource.connect(analyser);
+    freqData = new Uint8Array(analyser.frequencyBinCount);
+    timeData = new Uint8Array(analyser.fftSize);
+
+    micActive = true;
+    mockMode = false;
+    D.micBtn.classList.add('active');
+    D.micBtnText.textContent = 'DEACTIVATE';
+    D.listeningText.textContent = 'Listening';
+    D.listeningText.className = 'listening-text';
+    document.body.classList.add('jarvis-listening');
+    D.voiceLive.style.display = '';
+
+    // Speech Recognition (선택적, Chrome/Edge native)
+    startSpeechRecognition();
+
+    appendSyslog('> MICROPHONE', '[ARMED]', 'done');
+  } catch (e) {
+    D.micError.classList.add('show');
+    D.micError.textContent = '마이크 접근 실패: ' + (e.name || e.message);
+    appendSyslog('> MIC AUTH', '[DENIED]', 'warn');
+  }
+}
+
+function deactivateMic() {
+  if (!micActive) return;
+  micActive = false;
+  mockMode = true;
+  if (micStream) micStream.getTracks().forEach(t => t.stop());
+  if (audioCtx) audioCtx.close();
+  audioCtx = null; analyser = null; micStream = null; mediaSource = null;
+  D.micBtn.classList.remove('active');
+  D.micBtnText.textContent = 'ACTIVATE MIC';
+  D.listeningText.textContent = 'Standby';
+  D.listeningText.className = 'listening-text idle';
+  document.body.classList.remove('jarvis-listening', 'jarvis-speaking');
+  D.transcript.classList.remove('show');
+  D.transcript.innerHTML = '';
+  stopSpeechRecognition();
+  appendSyslog('> MICROPHONE', '[STANDBY]', '');
+}
+
+D.micBtn.addEventListener('click', activateMic);
+
+// ────── 4. Audio analysis loop (60fps) ──────
+function emitRipple() {
+  const now = performance.now();
+  if (now - lastPeakTime < CFG.RIPPLE_COOLDOWN) return;
+  lastPeakTime = now;
+  const r = document.createElement('div');
+  r.className = 'ripple';
+  r.style.animation = 'rippleOut 1.6s ease-out forwards';
+  D.ripples.appendChild(r);
+  setTimeout(() => r.remove(), 1700);
+}
+
+function fireWakeFlash() {
+  const now = performance.now();
+  if (now - lastWakeTime < 1500) return;
+  lastWakeTime = now;
+  D.wakeFlash.classList.remove('fire');
+  void D.wakeFlash.offsetWidth;  // reflow
+  D.wakeFlash.classList.add('fire');
+  appendSyslog('> WAKE EVENT', '[DETECTED]', 'warn');
+}
+
+function audioFrame() {
+  let levels;             // 0..1 array length WAVE_BARS
+  let spectrumLevels;     // 0..1 array length SPECTRUM_BARS
+  let rms = 0;
+  let peakBin = 0, peakVal = 0;
+
+  if (micActive && analyser) {
+    analyser.getByteFrequencyData(freqData);
+    analyser.getByteTimeDomainData(timeData);
+
+    // RMS (time domain)
+    let sum = 0;
+    for (let i = 0; i < timeData.length; i++) {
+      const v = (timeData[i] - 128) / 128;
+      sum += v * v;
+    }
+    rms = Math.sqrt(sum / timeData.length);
+
+    // Peak frequency bin
+    for (let i = 0; i < freqData.length; i++) {
+      if (freqData[i] > peakVal) { peakVal = freqData[i]; peakBin = i; }
+    }
+    const nyquist = audioCtx.sampleRate / 2;
+    const peakHz = (peakBin / freqData.length) * nyquist;
+
+    // Wave levels — first WAVE_BARS frequency bins
+    levels = new Array(CFG.WAVE_BARS);
+    const step = Math.floor(freqData.length / CFG.WAVE_BARS);
+    for (let i = 0; i < CFG.WAVE_BARS; i++) {
+      let avg = 0;
+      for (let j = 0; j < step; j++) avg += freqData[i * step + j];
+      levels[i] = (avg / step) / 255;
+    }
+    // Spectrum levels — same source, different binning
+    spectrumLevels = new Array(CFG.SPECTRUM_BARS);
+    const sstep = Math.floor(freqData.length / CFG.SPECTRUM_BARS / 2);
+    for (let i = 0; i < CFG.SPECTRUM_BARS; i++) {
+      let avg = 0;
+      for (let j = 0; j < sstep; j++) avg += freqData[i * sstep + j];
+      spectrumLevels[i] = (avg / sstep) / 255;
+    }
+
+    // Update metrics
+    D.vmRMS.textContent = rms.toFixed(2);
+    D.vmPeak.textContent = Math.round(peakHz);
+    const db = rms > 0.0001 ? (20 * Math.log10(rms)).toFixed(0) : '-∞';
+    D.vmDB.textContent = db;
+
+    // Peak / wake detection
+    if (rms > CFG.PEAK_THRESHOLD) emitRipple();
+    if (rms > CFG.WAKE_THRESHOLD) fireWakeFlash();
+  } else {
+    // Mock fallback
+    levels = mockWaveLevel();
+    spectrumLevels = mockWaveLevel().concat(mockWaveLevel()).slice(0, CFG.SPECTRUM_BARS);
+    rms = levels.reduce((a, b) => a + b, 0) / CFG.WAVE_BARS * 0.4;
+    D.vmRMS.textContent = rms.toFixed(2);
+    D.vmPeak.textContent = '—';
+    D.vmDB.textContent = '—';
+  }
+
+  // Render waveform
+  for (let i = 0; i < waveBars.length; i++) {
+    const lvl = levels[i] || 0;
+    const h = Math.max(3, lvl * 50);
+    waveBars[i].style.height = h + 'px';
+    const dist = Math.abs(i - waveBars.length / 2) / (waveBars.length / 2);
+    waveBars[i].style.opacity = (0.4 + (1 - dist) * 0.6) * (0.6 + lvl * 0.4);
+  }
+
+  // Render spectrum (radial bars around center)
+  for (let i = 0; i < spectrumBars.length; i++) {
+    const lvl = spectrumLevels[i] || 0;
+    const h = Math.max(2, lvl * 40);
+    spectrumBars[i].style.height = h + 'px';
+    spectrumBars[i].style.opacity = micActive ? (0.4 + lvl * 0.6) : 0.12;
+  }
+
+  // Voice meter
+  D.voiceMeter.style.setProperty('--level', Math.min(1, rms * 3).toFixed(3));
+
+  // JARVIS logo + ring scale + arc reactor 모두 음량 반응
+  const intensity = Math.min(1, rms * 3);
+  D.ring4.style.setProperty('--reactive-scale', (1 + intensity * 0.08).toFixed(3));
+  D.jarvisLogo.style.setProperty('--glow-intensity', intensity.toFixed(2));
+  D.jarvisLogo.style.textShadow = `
+    0 0 ${10 + intensity * 20}px var(--cyan-bright),
+    0 0 ${25 + intensity * 40}px var(--cyan-glow),
+    0 0 ${50 + intensity * 80}px var(--cyan-glow),
+    0 0 ${100 + intensity * 100}px var(--cyan)`;
+  D.corePulse.style.transform = `scale(${(1 + intensity * 0.4).toFixed(3)})`;
+  D.corePulse.style.opacity = (0.5 + intensity * 0.5).toFixed(2);
+  if (D.arc) {
+    D.arc.style.setProperty('--reactive', intensity.toFixed(2));
+    D.arc.style.opacity = (0.7 + intensity * 0.3).toFixed(2);
+  }
+
+  requestAnimationFrame(audioFrame);
+}
+requestAnimationFrame(audioFrame);
+
+// ────── 5. Speech Recognition (Web Speech API) ──────
+let recognition = null;
+function startSpeechRecognition() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    appendSyslog('> SPEECH API', '[UNAVAILABLE]', 'warn');
+    return;
+  }
+  recognition = new SR();
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.lang = navigator.language || 'ko-KR';
+
+  recognition.onresult = (e) => {
+    let final = '';
+    let interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const t = e.results[i][0].transcript;
+      if (e.results[i].isFinal) final += t + ' ';
+      else interim += t;
+    }
+    D.transcript.classList.add('show');
+    if (final) {
+      D.transcript.innerHTML = `<div>${escapeHtml(final.trim())}</div>` + D.transcript.innerHTML;
+      // Wake word 감지
+      if (/자비스|jarvis/i.test(final)) {
+        fireWakeFlash();
+        appendSyslog('> WAKE WORD', '[" Jarvis "]', 'done');
+      }
+      // 5개 이상 누적되면 오래된 것 제거
+      const items = D.transcript.querySelectorAll('div');
+      if (items.length > 4) items[items.length - 1].remove();
+    }
+    if (interim) {
+      const interimEl = D.transcript.querySelector('.interim');
+      if (interimEl) interimEl.textContent = interim;
+      else D.transcript.insertAdjacentHTML('afterbegin',
+        `<div class="interim">${escapeHtml(interim)}</div>`);
+    } else {
+      const interimEl = D.transcript.querySelector('.interim');
+      if (interimEl) interimEl.remove();
+    }
+  };
+
+  recognition.onerror = (e) => {
+    if (e.error === 'no-speech' || e.error === 'aborted') return;
+    appendSyslog('> SPEECH ERR', `[${e.error}]`, 'warn');
+  };
+
+  recognition.onend = () => {
+    if (micActive) {
+      // 자동 재시작 (continuous 깨지는 경우 대응)
+      try { recognition.start(); } catch (e) { /* already started */ }
+    }
+  };
+
+  try {
+    recognition.start();
+    appendSyslog('> SPEECH API', '[ACTIVE]', 'done');
+  } catch (e) { /* already started */ }
+}
+
+function stopSpeechRecognition() {
+  if (recognition) {
+    try { recognition.stop(); } catch (e) {}
+    recognition = null;
+  }
+}
+
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[c]));
+}
+
+// ────── 6. JARVIS health server polling ──────
+let backendOnline = false;
+async function pollBackend() {
+  try {
+    const r = await fetch(`${CFG.JARVIS_HOST}/healthz`, { signal: AbortSignal.timeout(2000) });
+    if (r.ok) {
+      if (!backendOnline) {
+        backendOnline = true;
+        D.backendStatus.textContent = 'JARVIS: ONLINE';
+        D.backendStatus.classList.remove('offline');
+        D.backendStatus.classList.add('online');
+        document.body.classList.remove('jarvis-offline');
+        appendSyslog('> JARVIS LINK', '[ESTABLISHED]', 'done');
+      }
+      // metrics + tools 가져오기
+      try {
+        const m = await fetch(`${CFG.JARVIS_HOST}/metrics`, { signal: AbortSignal.timeout(1500) });
+        if (m.ok) {
+          const data = await m.json().catch(() => null);
+          if (data) updateBackendMetrics(data);
+        }
+      } catch (e) {}
+      try {
+        const t = await fetch(`${CFG.JARVIS_HOST}/tools`, { signal: AbortSignal.timeout(1500) });
+        if (t.ok) {
+          const data = await t.json().catch(() => null);
+          if (data && data.count) {
+            // SYSTEM PROCESS sub label에 tools count 반영
+            const proc = document.querySelectorAll('.menu-item')[3];
+            if (proc) proc.querySelector('.sub').textContent = `${data.count} tools`;
+          }
+        }
+      } catch (e) {}
+      try {
+        const h = await fetch(`${CFG.JARVIS_HOST}/history`, { signal: AbortSignal.timeout(1500) });
+        if (h.ok) {
+          const data = await h.json().catch(() => null);
+          if (data && Array.isArray(data) && data.length) {
+            const last = data[data.length - 1];
+            if (last && last.role === 'assistant') {
+              appendSyslog('> LAST RESPONSE', `[${(last.content || '').slice(0, 18)}…]`, '');
+            }
+          }
+        }
+      } catch (e) {}
+    }
+  } catch (e) {
+    if (backendOnline) {
+      backendOnline = false;
+      D.backendStatus.textContent = 'JARVIS: OFFLINE';
+      D.backendStatus.classList.remove('online');
+      D.backendStatus.classList.add('offline');
+      document.body.classList.add('jarvis-offline');
+      appendSyslog('> JARVIS LINK', '[LOST]', 'warn');
+    } else if (D.backendStatus.textContent.includes('CHECKING')) {
+      // 첫 시도 실패
+      D.backendStatus.textContent = 'JARVIS: SIM MODE';
+      D.backendStatus.classList.add('offline');
+    }
+  }
+}
+
+function updateBackendMetrics(m) {
+  // jarvis health server가 어떤 형태로 metrics를 주는지 다양 — best-effort 매핑
+  if (typeof m.cpu_pct === 'number') {
+    D.cpuVal.textContent = Math.round(m.cpu_pct);
+    D.cpuDonut.style.strokeDashoffset = (263.89 * (1 - m.cpu_pct / 100)).toFixed(2);
+  }
+  if (typeof m.mem_pct === 'number') {
+    D.memVal.textContent = Math.round(m.mem_pct);
+    D.memDonut.style.strokeDashoffset = (263.89 * (1 - m.mem_pct / 100)).toFixed(2);
+  }
+  if (typeof m.uptime === 'number') {
+    const h = Math.floor(m.uptime / 3600);
+    const min = Math.floor((m.uptime % 3600) / 60);
+    D.cpuMeta.textContent = `UP ${h}h ${min}m`;
+  }
+}
+
+// 폴링 시작
+setTimeout(() => {
+  pollBackend();
+  setInterval(pollBackend, CFG.POLL_INTERVAL);
+}, 4000);
+
+// ────── 7. CPU/MEM/Battery/Env mock 변동 (백엔드 OFFLINE 시) ──────
+let cpu = 21, mem = 67, bat = 92, temp = 25;
+function updateMockStats() {
+  if (backendOnline) return;  // 실제 metrics가 있으면 mock skip
+  cpu = Math.max(15, Math.min(40, cpu + (Math.random() - 0.5) * 4));
+  mem = Math.max(60, Math.min(75, mem + (Math.random() - 0.5) * 1.5));
+  D.cpuVal.textContent = Math.round(cpu);
+  D.memVal.textContent = Math.round(mem);
+  D.cpuDonut.style.strokeDashoffset = (263.89 * (1 - cpu / 100)).toFixed(2);
+  D.memDonut.style.strokeDashoffset = (263.89 * (1 - mem / 100)).toFixed(2);
+  const ghz = (2.3 + Math.random() * 0.4).toFixed(1);
+  D.cpuMeta.textContent = `${ghz} GHZ / 2.7 GHZ`;
+  const memGB = (10 + Math.random() * 1.5).toFixed(1);
+  D.memMeta.textContent = `${memGB} GB / 16 GB`;
+  D.ulRate.textContent = (2 + Math.random() * 3).toFixed(1) + ' MB/s';
+  D.dlRate.textContent = (3 + Math.random() * 4).toFixed(1) + ' MB/s';
+}
+setInterval(updateMockStats, 1500);
+
+function updateBattery() {
+  bat = Math.min(100, bat + 0.05);
+  D.batVal.textContent = Math.round(bat);
+  D.batDonut.style.strokeDashoffset = (263.89 * (1 - bat / 100)).toFixed(2);
+}
+setInterval(updateBattery, 3000);
+
+function updateEnv() {
+  temp = Math.max(20, Math.min(28, temp + (Math.random() - 0.5) * 0.3));
+  D.tempVal.textContent = temp.toFixed(1) + '°C';
+  D.humVal.textContent = (40 + Math.random() * 12).toFixed(0) + ' %';
+  D.windVal.textContent = (5 + Math.random() * 3).toFixed(1) + ' km/h';
+}
+setInterval(updateEnv, 4000);
+
+// ────── 8. Particles ──────
+function spawnParticle() {
+  const p = document.createElement('div');
+  p.className = 'particle';
+  const angle = Math.random() * Math.PI * 2;
+  const startR = 280 + Math.random() * 30;
+  const wrap = document.querySelector('.core-wrap');
+  const cx = wrap.offsetWidth / 2;
+  const cy = wrap.offsetHeight / 2;
+  p.style.left = (cx + Math.cos(angle) * startR) + 'px';
+  p.style.top = (cy + Math.sin(angle) * startR) + 'px';
+  p.style.transform = 'scale(0)';
+  D.particles.appendChild(p);
+  const duration = 3000 + Math.random() * 2000;
+  requestAnimationFrame(() => {
+    p.style.transition = `all ${duration}ms cubic-bezier(0.4, 0, 0.6, 1)`;
+    p.style.left = cx + 'px';
+    p.style.top = cy + 'px';
+    p.style.opacity = '0';
+    p.style.transform = 'scale(1.5)';
+  });
+  setTimeout(() => p.remove(), duration + 100);
+}
+setTimeout(() => setInterval(spawnParticle, 200), 5000);
+
+// ────── 9. SYSTEM LOG 자동 추가 ──────
+const ambientLogs = [
+  { key: '> NETWORK PING', val: '[12ms]', cls: '' },
+  { key: '> CPU CORE 4', val: '[NORMAL]', cls: 'done' },
+  { key: '> MEMORY SCAN', val: '[CLEAR]', cls: 'done' },
+  { key: '> THREAT DETECT', val: '[NONE]', cls: 'done' },
+  { key: '> AI INFERENCE', val: '[2.4s]', cls: '' },
+  { key: '> ENCRYPTION', val: '[AES-256]', cls: 'done' },
+  { key: '> BIOMETRIC', val: '[VERIFIED]', cls: 'done' },
+];
+
+function appendSyslog(key, val, cls) {
+  const line = document.createElement('div');
+  line.className = 'log-line';
+  line.innerHTML = `<span class="key">${key}</span><span class="val ${cls}">${val}</span>`;
+  line.style.opacity = '0';
+  line.style.transform = 'translateX(8px)';
+  D.syslogHeader.insertAdjacentElement('afterend', line);
+  requestAnimationFrame(() => {
+    line.style.transition = 'all 0.4s ease-out';
+    line.style.opacity = '1';
+    line.style.transform = 'translateX(0)';
+  });
+  const all = D.syslogCard.querySelectorAll('.log-line');
+  if (all.length > 9) {
+    const last = all[all.length - 1];
+    last.style.transition = 'all 0.4s ease-in';
+    last.style.opacity = '0';
+    last.style.transform = 'translateX(-8px)';
+    setTimeout(() => last.remove(), 400);
+  }
+}
+
+setTimeout(() => {
+  setInterval(() => {
+    const e = ambientLogs[Math.floor(Math.random() * ambientLogs.length)];
+    appendSyslog(e.key, e.val, e.cls);
+  }, 5000);
+}, 6000);
+
+// ────── 10. Listening text 회전 (마이크 OFF 시) ──────
+const listenTexts = ['Standby', 'Idle', 'Awaiting input', 'Standby'];
+let textIdx = 0;
+setTimeout(() => {
+  setInterval(() => {
+    if (micActive) return;
+    textIdx = (textIdx + 1) % listenTexts.length;
+    D.listeningText.textContent = listenTexts[textIdx];
+  }, 5000);
+}, 8000);
+
+// ────── 11. Center status 깜빡 ──────
+setTimeout(() => {
+  setInterval(() => {
+    D.centerStatus.style.transition = 'opacity 0.15s';
+    D.centerStatus.style.opacity = '0.3';
+    setTimeout(() => D.centerStatus.style.opacity = '1', 150);
+  }, 7000);
+}, 5000);
+
+// ────── 12. 3D Mouse parallax (core-wrap을 마우스 따라 tilt) ──────
+let mouseX = 0, mouseY = 0;
+let smoothX = 0, smoothY = 0;
+const coreWrap = document.getElementById('core-wrap');
+const center = document.querySelector('main.center');
+
+center.addEventListener('mousemove', (e) => {
+  const rect = center.getBoundingClientRect();
+  // -1 ~ 1 normalized
+  mouseX = ((e.clientX - rect.left) / rect.width - 0.5) * 2;
+  mouseY = ((e.clientY - rect.top) / rect.height - 0.5) * 2;
+});
+center.addEventListener('mouseleave', () => {
+  mouseX = 0; mouseY = 0;
+});
+
+function updateParallax() {
+  // Smooth approach (lerp)
+  smoothX += (mouseX - smoothX) * 0.08;
+  smoothY += (mouseY - smoothY) * 0.08;
+  const rotY = smoothX * 14;   // ±14deg horizontal
+  const rotX = -smoothY * 10;  // ±10deg vertical
+  if (coreWrap) {
+    coreWrap.style.transform = `rotateX(${rotX.toFixed(2)}deg) rotateY(${rotY.toFixed(2)}deg)`;
+  }
+  document.body.style.setProperty('--mx', (smoothX * 6).toFixed(2) + 'px');
+  document.body.style.setProperty('--my', (smoothY * 6).toFixed(2) + 'px');
+  requestAnimationFrame(updateParallax);
+}
+updateParallax();
+
+// ────── 16. Battery API (실제 배터리 상태) ──────
+async function initBatteryAPI() {
+  if (!navigator.getBattery) return;
+  try {
+    const battery = await navigator.getBattery();
+    const update = () => {
+      const pct = Math.round(battery.level * 100);
+      const charging = battery.charging;
+      // 우측 작은 battery card
+      D.batVal.textContent = pct;
+      D.batDonut.style.strokeDashoffset = (263.89 * (1 - pct / 100)).toFixed(2);
+      // 좌측 telemetry battery
+      const sysBatVal = document.getElementById('sys-bat-val');
+      const sysBatDonut = document.getElementById('sys-bat-donut');
+      const sysBatStatus = document.getElementById('sys-bat-status');
+      if (sysBatVal) sysBatVal.textContent = pct;
+      if (sysBatDonut) sysBatDonut.style.strokeDashoffset = (263.89 * (1 - pct / 100)).toFixed(2);
+      if (sysBatStatus) sysBatStatus.textContent = charging ? 'CHARGING' : 'DISCHARGING';
+      // 색상 — 낮으면 빨강, 충전 중이면 초록
+      const color = pct < 20 ? 'var(--red)' : (charging ? 'var(--green)' : 'var(--cyan-bright)');
+      if (sysBatDonut) sysBatDonut.style.stroke = color.replace('var(--red)', '#ff5f57').replace('var(--green)', '#28c93b').replace('var(--cyan-bright)', '#7de0ff');
+    };
+    update();
+    battery.addEventListener('levelchange', update);
+    battery.addEventListener('chargingchange', update);
+    appendSyslog('> BATTERY API', '[CONNECTED]', 'done');
+  } catch (e) { /* unsupported */ }
+}
+initBatteryAPI();
+
+// ────── 17. Network Information API + WiFi 시각화 ──────
+function updateNetworkInfo() {
+  const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+  if (!conn) return;
+  const speed = document.getElementById('wifi-speed');
+  if (speed && typeof conn.downlink === 'number') {
+    speed.textContent = `↓ ${conn.downlink.toFixed(0)} Mbps`;
+  }
+  // Effective type → bar 갯수 결정
+  const map = { '4g': 5, '3g': 3, '2g': 2, 'slow-2g': 1 };
+  const bars = map[conn.effectiveType] || 4;
+  const barEls = document.querySelectorAll('.wifi-bars .bar');
+  barEls.forEach((b, i) => {
+    if (i < bars) b.classList.add('on');
+    else b.classList.remove('on');
+  });
+}
+updateNetworkInfo();
+if (navigator.connection) {
+  navigator.connection.addEventListener('change', updateNetworkInfo);
+}
+
+// WiFi 신호 시뮬레이션 — 일정 주기로 살짝 변동 (실제 RSSI mock)
+setInterval(() => {
+  const barEls = document.querySelectorAll('.wifi-bars .bar');
+  // 4-5 bar 사이 가끔 변동
+  const numOn = 4 + (Math.random() > 0.7 ? 1 : 0);
+  barEls.forEach((b, i) => {
+    b.classList.toggle('on', i < numOn);
+  });
+  // SSID — Stark_5G_Hangar 유지, speed만 변동
+  const speed = document.getElementById('wifi-speed');
+  if (speed && !navigator.connection) {
+    speed.textContent = `↓ ${Math.round(200 + Math.random() * 100)} Mbps`;
+  }
+}, 4000);
+
+// ────── 18. GPU mock + telemetry (실제 GPU API 없음, simulation) ──────
+let gpu = 24;
+function updateGPU() {
+  // 마이크 활성 시 GPU usage 살짝 올라감 (whisper inference 시뮬)
+  const target = micActive ? 35 + Math.random() * 25 : 18 + Math.random() * 12;
+  gpu += (target - gpu) * 0.3;
+  document.getElementById('gpu-val').textContent = Math.round(gpu);
+  document.getElementById('gpu-donut').style.strokeDashoffset = (263.89 * (1 - gpu / 100)).toFixed(2);
+}
+setInterval(updateGPU, 1500);
+
+// ────── 19. Temperature sparklines (CPU/GPU temp history) ──────
+const tempCpuSpark = document.getElementById('temp-cpu-spark');
+const tempGpuSpark = document.getElementById('temp-gpu-spark');
+const tempCpuVal = document.getElementById('temp-cpu-val');
+const tempGpuVal = document.getElementById('temp-gpu-val');
+
+const SPARK_LEN = 24;
+const cpuTempHistory = new Array(SPARK_LEN).fill(58);
+const gpuTempHistory = new Array(SPARK_LEN).fill(50);
+
+// Initial bars
+for (let i = 0; i < SPARK_LEN; i++) {
+  const c = document.createElement('div'); c.className = 'pt'; tempCpuSpark.appendChild(c);
+  const g = document.createElement('div'); g.className = 'pt'; tempGpuSpark.appendChild(g);
+}
+
+function updateTemps() {
+  // CPU temp — 50-90°C, busy 시 더 높음
+  const targetCpu = 55 + cpu * 0.4 + (Math.random() - 0.5) * 4;
+  const targetGpu = 45 + gpu * 0.5 + (Math.random() - 0.5) * 4;
+  cpuTempHistory.shift(); cpuTempHistory.push(targetCpu);
+  gpuTempHistory.shift(); gpuTempHistory.push(targetGpu);
+
+  const cpuTempEls = tempCpuSpark.querySelectorAll('.pt');
+  const gpuTempEls = tempGpuSpark.querySelectorAll('.pt');
+  cpuTempHistory.forEach((t, i) => {
+    const norm = Math.max(0, Math.min(1, (t - 40) / 50));
+    cpuTempEls[i].style.height = `${Math.max(2, norm * 26)}px`;
+    cpuTempEls[i].className = 'pt' + (t > 80 ? ' hot' : t > 70 ? ' warm' : '');
+  });
+  gpuTempHistory.forEach((t, i) => {
+    const norm = Math.max(0, Math.min(1, (t - 40) / 50));
+    gpuTempEls[i].style.height = `${Math.max(2, norm * 26)}px`;
+    gpuTempEls[i].className = 'pt' + (t > 80 ? ' hot' : t > 70 ? ' warm' : '');
+  });
+
+  const cpuT = cpuTempHistory[SPARK_LEN - 1];
+  const gpuT = gpuTempHistory[SPARK_LEN - 1];
+  tempCpuVal.textContent = `${cpuT.toFixed(0)}°C`;
+  tempGpuVal.textContent = `${gpuT.toFixed(0)}°C`;
+  tempCpuVal.className = 'v' + (cpuT > 80 ? ' hot' : cpuT > 70 ? ' warm' : '');
+  tempGpuVal.className = 'v' + (gpuT > 80 ? ' hot' : gpuT > 70 ? ' warm' : '');
+}
+setInterval(updateTemps, 1500);
+updateTemps();
+
+// ────── 20. Network UL/DL graph (24개 bar, 시계열) ──────
+const netGraph = document.getElementById('net-graph');
+const NET_LEN = 24;
+const ulHistory = new Array(NET_LEN).fill(0);
+const dlHistory = new Array(NET_LEN).fill(0);
+for (let i = 0; i < NET_LEN; i++) {
+  const ul = document.createElement('div'); ul.className = 'net-bar ul';
+  const dl = document.createElement('div'); dl.className = 'net-bar dl';
+  netGraph.appendChild(ul);
+  netGraph.appendChild(dl);
+}
+
+function updateNetGraph() {
+  const ul = parseFloat(D.ulRate.textContent) || 2.5;
+  const dl = parseFloat(D.dlRate.textContent) || 3.5;
+  ulHistory.shift(); ulHistory.push(ul);
+  dlHistory.shift(); dlHistory.push(dl);
+  const bars = netGraph.querySelectorAll('.net-bar');
+  for (let i = 0; i < NET_LEN; i++) {
+    const ulNorm = Math.min(1, ulHistory[i] / 8);
+    const dlNorm = Math.min(1, dlHistory[i] / 12);
+    bars[i * 2].style.height = (Math.max(2, ulNorm * 22)) + 'px';
+    bars[i * 2 + 1].style.height = (Math.max(2, dlNorm * 22)) + 'px';
+  }
+}
+setInterval(updateNetGraph, 1500);
+
+// ────── 21. JARVIS ACTIVITY — Operation Stream (narration sequencer) ──────
+const opStream = document.getElementById('op-stream');
+const opProgress = document.getElementById('op-progress');
+const activityStatus = document.getElementById('activity-status');
+
+function setActivityStatus(state) {
+  if (state === 'busy') {
+    activityStatus.textContent = 'PROCESSING';
+    activityStatus.classList.add('busy');
+  } else {
+    activityStatus.textContent = 'IDLE';
+    activityStatus.classList.remove('busy');
+  }
+}
+
+function setProgress(pct) {
+  opProgress.setAttribute('data-pct', String(Math.round(pct / 20) * 20));
+  opProgress.style.setProperty('--pct', pct);
+  opProgress.firstElementChild ? null : null;
+  opProgress.style.cssText = `--pct: ${pct}%;`;
+  // 직접 width 설정 (CSS data-pct discrete fallback이 있지만 smooth는 직접)
+  if (opProgress.children.length === 0) {
+    const inner = document.createElement('div');
+    inner.style.cssText = 'position:absolute;top:0;left:0;bottom:0;background:linear-gradient(90deg,var(--cyan-deep),var(--cyan-bright));border-radius:2px;box-shadow:0 0 8px var(--cyan-glow);transition:width 0.4s ease-out;';
+    opProgress.appendChild(inner);
+  }
+  opProgress.firstElementChild.style.width = pct + '%';
+}
+setProgress(0);
+
+function pushOpLine(text, opts = {}) {
+  // 마지막 active line은 done으로 마킹
+  const lastActive = opStream.querySelector('.op-line.active');
+  if (lastActive && !opts.keepActive) {
+    lastActive.classList.remove('active');
+    lastActive.classList.add('done');
+    const startedAt = parseFloat(lastActive.dataset.start || '0');
+    const dur = ((performance.now() - startedAt) / 1000).toFixed(1) + 's';
+    const durEl = lastActive.querySelector('.duration');
+    if (durEl) durEl.textContent = dur;
+    else lastActive.insertAdjacentHTML('beforeend', `<span class="duration">${dur}</span>`);
+  }
+
+  const line = document.createElement('div');
+  line.className = 'op-line ' + (opts.cls || 'active');
+  line.dataset.start = String(performance.now());
+  line.innerHTML = `
+    <span class="marker"></span>
+    <span class="text">${escapeHtml(text)}</span>
+    ${opts.duration ? `<span class="duration">${opts.duration}</span>` : ''}
+  `;
+  opStream.appendChild(line);
+  // 7개 이상 스크롤 + 가장 오래된 거 페이드 제거
+  const lines = opStream.querySelectorAll('.op-line');
+  if (lines.length > 7) {
+    const old = lines[0];
+    old.style.transition = 'all 0.4s ease-out';
+    old.style.opacity = '0';
+    old.style.transform = 'translateX(-12px)';
+    setTimeout(() => old.remove(), 400);
+  }
+  // 자동 스크롤
+  opStream.scrollTop = opStream.scrollHeight;
+  return line;
+}
+
+// 자비스 작업 시퀀스 — 음성 입력 → 분석 → 도구 검색 → 실행 → 응답
+const STEP_SEQUENCES = {
+  voice_input: [
+    { text: '음성 신호를 캡처하고 있습니다', dur: 800, pct: 15 },
+    { text: 'Whisper 모델로 음성을 텍스트로 변환하고 있습니다', dur: 1200, pct: 35 },
+    { text: '사용자 의도를 파악하고 있습니다', dur: 900, pct: 50 },
+    { text: '350개 도구 중 관련 도구를 검색하고 있습니다', dur: 1100, pct: 70 },
+    { text: '도구를 호출하고 응답을 생성하고 있습니다', dur: 1500, pct: 90 },
+    { text: '주인님께 답변을 전달했습니다', dur: 600, pct: 100, cls: 'done' },
+  ],
+  text_search: [
+    { text: '쿼리를 분석하고 있습니다', dur: 600, pct: 20 },
+    { text: 'web_search 도구를 호출하고 있습니다', dur: 1500, pct: 50 },
+    { text: '검색 결과를 요약하고 있습니다', dur: 1000, pct: 80 },
+    { text: '주인님께 답변을 전달했습니다', dur: 500, pct: 100, cls: 'done' },
+  ],
+  file_op: [
+    { text: '파일 시스템을 스캔하고 있습니다', dur: 700, pct: 25 },
+    { text: '관련 파일을 찾고 있습니다', dur: 900, pct: 55 },
+    { text: 'read_file 도구를 호출하고 있습니다', dur: 600, pct: 80 },
+    { text: '파일 내용을 분석했습니다', dur: 400, pct: 100, cls: 'done' },
+  ],
+  scheduling: [
+    { text: '캘린더를 조회하고 있습니다', dur: 700, pct: 30 },
+    { text: '시간 충돌을 검사하고 있습니다', dur: 600, pct: 60 },
+    { text: 'calendar_add 도구로 일정을 등록하고 있습니다', dur: 800, pct: 90 },
+    { text: '일정 등록 완료', dur: 400, pct: 100, cls: 'done' },
+  ],
+  ambient: [
+    { text: '시스템 상태를 모니터링하고 있습니다', dur: 1200, pct: 50 },
+    { text: '백그라운드 진단 완료', dur: 500, pct: 100, cls: 'done' },
+  ],
+};
+
+let runningSeq = false;
+async function runSequence(name) {
+  if (runningSeq) return;
+  runningSeq = true;
+  setActivityStatus('busy');
+  const steps = STEP_SEQUENCES[name] || STEP_SEQUENCES.ambient;
+  for (const s of steps) {
+    pushOpLine(s.text, { cls: s.cls });
+    setProgress(s.pct);
+    await new Promise(r => setTimeout(r, s.dur));
+  }
+  setActivityStatus('idle');
+  setTimeout(() => {
+    setProgress(0);
+    pushOpLine('대기 중', { cls: '' });
+  }, 1500);
+  runningSeq = false;
+}
+
+// 초기 부팅 narration
+setTimeout(() => {
+  // 기존 placeholder 제거
+  opStream.querySelectorAll('.op-line:not(.done)').forEach(l => l.remove());
+  pushOpLine('AI 엔진 초기화', { cls: 'done', duration: '0.4s' });
+  pushOpLine('도구 350개 등록', { cls: 'done', duration: '0.6s' });
+  pushOpLine('대기 중', { cls: '' });
+}, 5500);
+
+// 음성 인식 결과(final)에 따라 시퀀스 자동 시작
+const _origRecognitionHandler = null;
+function bindActivityToVoice() {
+  // recognition이 활성화 되면 hook
+  const origStart = startSpeechRecognition;
+  // hook이 이미 처리되니, recognition.onresult에서 final이 나올 때 직접 trigger
+}
+
+// MutationObserver: transcript에 final 추가되면 시퀀스 시작
+const transcriptObserver = new MutationObserver((mutations) => {
+  for (const m of mutations) {
+    for (const node of m.addedNodes) {
+      if (node.nodeType === 1 && !node.classList.contains('interim')) {
+        const text = (node.textContent || '').toLowerCase();
+        let seqName = 'voice_input';
+        if (/검색|찾|search|find/.test(text)) seqName = 'text_search';
+        else if (/파일|읽|file|read/.test(text)) seqName = 'file_op';
+        else if (/일정|schedule|약속|calendar/.test(text)) seqName = 'scheduling';
+        runSequence(seqName);
+        break;
+      }
+    }
+  }
+});
+transcriptObserver.observe(D.transcript, { childList: true });
+
+// Wake flash 발생 시도 시퀀스 시작 (음성 큰 peak)
+let lastWakeSequence = 0;
+const origFireWakeFlash = fireWakeFlash;
+fireWakeFlash = function() {
+  origFireWakeFlash.apply(this, arguments);
+  const now = performance.now();
+  if (now - lastWakeSequence > 5000) {
+    lastWakeSequence = now;
+    runSequence('voice_input');
+  }
+};
+
+// Ambient: 마이크 OFF 시 가끔 ambient 시퀀스 (시스템 모니터링 narration)
+setInterval(() => {
+  if (!micActive && !runningSeq && Math.random() > 0.7) {
+    runSequence('ambient');
+  }
+}, 25000);
+
+// ────── 13. Live clock ──────
+function updateClock() {
+  const time = new Date().toTimeString().slice(0, 8);
+  D.brandBuild.textContent = `BUILD 2.0.0.47  •  ${time}`;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ────── 14. Keyboard shortcut: M = mic toggle, Esc = deactivate ──────
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (e.key === 'm' || e.key === 'M') activateMic();
+  if (e.key === 'Escape' && micActive) deactivateMic();
+});
+
+// ════════════════════════════════════════════════════════════
+// v2.1 — Global state theming + Conversation panel + Geo clock
+// ════════════════════════════════════════════════════════════
+
+// ────── State driver: body[data-state] ──────
+const JARVIS_STATE = { current: 'idle' };
+function setJarvisState(state) {
+  if (!['idle','listening','analyzing','speaking'].includes(state)) state = 'idle';
+  if (JARVIS_STATE.current === state) return;
+  JARVIS_STATE.current = state;
+  document.body.dataset.state = state;
+  // Keep existing activity-status tag in sync
+  const tag = document.getElementById('activity-status');
+  if (tag) {
+    tag.textContent = state.toUpperCase();
+    tag.classList.toggle('busy', state !== 'idle');
+  }
+}
+setJarvisState('idle');
+
+// Listen for state events the daemon might emit. Backend /healthz can be
+// extended to return {state}; we accept either {state} on /healthz or a
+// dedicated /state endpoint. Fallback: derive from mic activity / op-stream.
+async function pollJarvisState() {
+  try {
+    const r = await fetch(`${CFG.JARVIS_HOST}/healthz`, { signal: AbortSignal.timeout(1200) });
+    if (r.ok) {
+      const data = await r.json().catch(() => null);
+      if (data && typeof data.state === 'string') {
+        setJarvisState(data.state);
+        return;
+      }
+    }
+  } catch (e) {}
+}
+setTimeout(() => { pollJarvisState(); setInterval(pollJarvisState, 1500); }, 4500);
+
+// ────── Conversation panel wiring ──────
+const CONVO = {
+  user: document.getElementById('convo-user'),
+  jarvis: document.getElementById('convo-jarvis'),
+  ts: document.getElementById('convo-ts'),
+  lastSig: '',
+};
+function fmtRelTime(d) {
+  if (!d) return '—';
+  const delta = (Date.now() - d) / 1000;
+  if (delta < 60) return `${Math.floor(delta)}초 전`;
+  if (delta < 3600) return `${Math.floor(delta / 60)}분 전`;
+  return `${Math.floor(delta / 3600)}시간 전`;
+}
+function typeInto(el, text, speed = 14) {
+  if (!el) return;
+  el.textContent = '';
+  el.classList.add('typing');
+  let i = 0;
+  const tick = () => {
+    if (i >= text.length) { el.classList.remove('typing'); return; }
+    el.textContent += text[i++];
+    setTimeout(tick, speed + Math.random() * 12);
+  };
+  tick();
+}
+function applyConversation(userMsg, jarvisMsg, when) {
+  const sig = (userMsg || '') + '|' + (jarvisMsg || '');
+  if (sig === CONVO.lastSig) return;
+  CONVO.lastSig = sig;
+  if (CONVO.user) CONVO.user.textContent = userMsg || '—';
+  if (jarvisMsg) typeInto(CONVO.jarvis, jarvisMsg, 16);
+  if (CONVO.ts) CONVO.ts.textContent = fmtRelTime(when || Date.now());
+}
+async function pollConversation() {
+  try {
+    const h = await fetch(`${CFG.JARVIS_HOST}/history`, { signal: AbortSignal.timeout(1500) });
+    if (!h.ok) return;
+    const data = await h.json().catch(() => null);
+    if (!data || !Array.isArray(data) || data.length === 0) return;
+    // last assistant + previous user
+    let assistant = null, user = null;
+    for (let i = data.length - 1; i >= 0; i--) {
+      const m = data[i];
+      if (!assistant && m.role === 'assistant') assistant = m;
+      else if (assistant && m.role === 'user') { user = m; break; }
+    }
+    applyConversation(
+      user ? (user.content || '').slice(0, 200) : null,
+      assistant ? (assistant.content || '').slice(0, 240) : null,
+      assistant && assistant.ts ? new Date(assistant.ts).getTime() : Date.now(),
+    );
+  } catch (e) {}
+}
+setTimeout(() => { pollConversation(); setInterval(pollConversation, 6000); }, 5200);
+// Refresh relative timestamp every 30s
+setInterval(() => { if (CONVO.ts && CONVO.lastSig) CONVO.ts.textContent = fmtRelTime(); }, 30000);
+
+// ────── Geo time (Seoul) ──────
+const geoTime = document.getElementById('geo-time');
+function updateGeoTime() {
+  if (!geoTime) return;
+  const d = new Date();
+  geoTime.textContent =
+    String(d.getHours()).padStart(2,'0') + ':' +
+    String(d.getMinutes()).padStart(2,'0') + ' KST';
+}
+updateGeoTime();
+setInterval(updateGeoTime, 30000);
+
+// ────── 15. Console banner ──────
+console.log('%c J.A.R.V.I.S ', 'background: linear-gradient(90deg, #4cc9ff, #0084c7); color: white; font-size: 24px; font-weight: 900; padding: 12px 24px; letter-spacing: 8px;');
+console.log('%c v3.1 — Responsive · Conversation · State Theme', 'color: #4cc9ff; font-family: monospace; font-size: 14px;');
+console.log('%c Press M to activate microphone · Esc to deactivate', 'color: #5fb4d4; font-family: monospace; font-size: 12px;');
+console.log('%c jarvis backend: ' + CFG.JARVIS_HOST, 'color: #7896a4; font-family: monospace; font-size: 11px;');
+</script>
+
+</body>
+</html>

@@ -33,7 +33,8 @@ class Settings(BaseSettings):
     )
 
     anthropic_api_key: str = ""
-    model: str = "claude-opus-4-7"
+    # 기본은 auto 라우터: 짧은 질문은 fast, 복잡한 작업은 premium, 일반 대화는 balanced 모델로 자동 선택.
+    model: str = "auto"
     fast_model: str = "claude-haiku-4-5-20251001"
     max_tokens: int = 2048
     log_level: str = "INFO"

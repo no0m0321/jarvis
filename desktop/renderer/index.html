@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src https: http:; font-src 'self' data:;" />
+  <title>JARVIS Live Command HUD</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body data-state="booting">
+  <div class="ambient ambient-a"></div>
+  <div class="ambient ambient-b"></div>
+  <div class="grid-floor" aria-hidden="true"></div>
+
+  <main class="hud-shell">
+    <aside class="command-rail">
+      <section class="brand-card panel">
+        <div class="brand-mark" aria-hidden="true"><span></span></div>
+        <div>
+          <p class="eyebrow">LIVE AI EXECUTION HUD</p>
+          <h1>JARVIS</h1>
+          <p class="rail-copy">음성, 명령, Claude 추론, 실행 로그를 하나로 묶은 프리미엄 데스크톱 조종실</p>
+        </div>
+      </section>
+
+      <section class="operator panel">
+        <div class="operator-top">
+          <span class="pulse-dot"></span>
+          <span id="liveBadge">BOOTING</span>
+        </div>
+        <strong id="sideState">시스템 기동 중</strong>
+        <p id="sideDetail">자비스 런타임과 HUD 상태를 연결하고 있습니다.</p>
+      </section>
+
+      <nav class="rail-nav" aria-label="JARVIS HUD sections">
+        <a class="active" href="#live">Live Core</a>
+        <a href="#mission">Command</a>
+        <a href="#daemon">Daemon</a>
+        <a href="#intel">Intelligence</a>
+        <a href="#engine">Claude Engine</a>
+        <a href="#settings">Secure Setup</a>
+      </nav>
+
+      <section class="readiness panel">
+        <p class="eyebrow">READINESS SCORE</p>
+        <div class="score-ring" aria-label="제품 준비도">
+          <span id="readinessScore">0</span>
+          <small>/100</small>
+        </div>
+        <div class="mini-checks">
+          <span id="checkPython">Python</span>
+          <span id="checkClaude">Claude</span>
+          <span id="checkHud">HUD</span>
+          <span id="checkDaemon">Daemon</span>
+        </div>
+      </section>
+    </aside>
+
+    <section class="hud-workspace">
+      <header class="hud-topbar">
+        <div>
+          <p class="eyebrow">JARVIS REACTION WINDOW</p>
+          <h2>자비스가 듣고, 생각하고, 실행하는 순간을 보여주는 창</h2>
+        </div>
+        <div class="top-actions">
+          <button class="ghost" id="openProjectBtn">프로젝트 열기</button>
+          <button class="ghost" id="doctorBtn">시스템 진단</button>
+          <button class="ghost" id="exportBtn">세션 리포트</button>
+          <button class="ghost" id="refreshBtn">상태 새로고침</button>
+          <button class="primary" id="focusCommandBtn">명령 입력</button>
+        </div>
+      </header>
+
+      <section id="live" class="live-grid">
+        <article class="core-panel panel" aria-label="JARVIS live core">
+          <div class="core-copy">
+            <p class="eyebrow">CURRENT MODE</p>
+            <h3 id="coreTitle">Standby</h3>
+            <p id="coreSubtitle">자비스가 명령을 기다리고 있습니다. 직접 입력하거나 wake daemon을 연결해 음성 반응을 확인하세요.</p>
+          </div>
+
+          <div class="reactor-wrap" aria-hidden="true">
+            <div class="reactor-halo halo-1"></div>
+            <div class="reactor-halo halo-2"></div>
+            <div class="reactor-halo halo-3"></div>
+            <div class="reactor-scan"></div>
+            <div class="reactor-core">
+              <div class="core-eye"></div>
+              <span id="voiceLevelText">0%</span>
+            </div>
+            <div class="orbit orbit-a"></div>
+            <div class="orbit orbit-b"></div>
+          </div>
+
+          <div class="spectrum" aria-label="Voice input level">
+            <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+          </div>
+        </article>
+
+        <article class="state-panel panel">
+          <div class="section-title"><span></span>Execution Timeline</div>
+          <ol class="timeline" id="stateTimeline">
+            <li data-step="idle" class="active"><strong>Idle</strong><small>대기</small></li>
+            <li data-step="listening"><strong>Listening</strong><small>음성/명령 입력</small></li>
+            <li data-step="analyzing"><strong>Analyzing</strong><small>전사·의도 분석</small></li>
+            <li data-step="executing"><strong>Executing</strong><small>도구/작업 수행</small></li>
+            <li data-step="speaking"><strong>Speaking</strong><small>답변 출력</small></li>
+          </ol>
+          <div class="now-card">
+            <span>현재 상태</span>
+            <strong id="hudStatus">BOOTING</strong>
+            <small id="lastUpdated">업데이트 대기 중</small>
+          </div>
+        </article>
+      </section>
+
+      <section class="diagnostic-grid" aria-label="runtime diagnostics">
+        <article class="diag panel"><span>Python Runtime</span><strong id="pythonStatus">—</strong><small id="pythonDetail">확인 중</small></article>
+        <article class="diag panel"><span>Claude Key</span><strong id="keyStatus">—</strong><small>로컬 암호화 저장 지원</small></article>
+        <article class="diag panel"><span>Active Model</span><strong id="modelStatus">—</strong><small>스마트 라우팅 지원</small></article>
+        <article class="diag panel"><span>Package</span><strong id="packageStatus">—</strong><small>설치형 데스크톱 앱</small></article>
+      </section>
+
+      <section id="mission" class="mission-grid">
+        <article class="mission-panel panel">
+          <div class="section-title"><span></span>Command Console</div>
+          <p class="muted">자비스에게 명령을 내리면 중앙 코어가 실행 상태로 전환되고, Claude 응답과 로컬 CLI 출력이 실시간 스트림으로 표시됩니다.</p>
+
+          <div class="mode-switch" role="radiogroup" aria-label="실행 모드">
+            <button class="mode active" data-mode="ask">Quick Ask</button>
+            <button class="mode" data-mode="do">Agent Do</button>
+            <button class="mode" data-mode="wake">Wake Daemon</button>
+          </div>
+
+          <textarea id="promptInput" placeholder="예: 내 오늘 업무를 우선순위대로 정리하고, 바로 실행할 수 있는 3단계 계획을 만들어줘."></textarea>
+
+          <div class="quick-missions" aria-label="프리셋 명령">
+            <button data-prompt="오늘 할 일을 우선순위, 예상 시간, 바로 시작할 첫 행동으로 정리해줘.">업무 지휘</button>
+            <button data-prompt="이 프로젝트의 상용화 리스크를 기능, 디자인, 배포, 보안 기준으로 점검해줘.">제품 진단</button>
+            <button data-prompt="고객에게 100만원에 판매할 수 있도록 자비스의 핵심 가치 제안을 한 문단으로 정리해줘.">세일즈 카피</button>
+            <button data-prompt="현재 컴퓨터에서 자동화하면 좋은 반복 업무 5가지를 찾아 실행 계획을 세워줘.">자동화 설계</button>
+          </div>
+
+          <div class="console-actions">
+            <button class="primary" id="runBtn">자비스 실행</button>
+            <button class="danger" id="stopBtn">중지</button>
+          </div>
+        </article>
+
+        <article class="stream-panel panel">
+          <div class="section-title"><span></span>Conversation & Runtime Stream</div>
+          <div id="eventStream" class="event-stream" aria-live="polite"></div>
+          <pre id="output" class="raw-output">시스템 준비 중…</pre>
+        </article>
+
+        <article class="panel note-card">
+          <div class="section-title"><span></span>Operator Note</div>
+          <p class="muted">작업 중 발견한 인사이트나 고객 요구사항을 즉시 자비스 메모로 저장합니다.</p>
+          <textarea id="noteInput" placeholder="예: 다음 업데이트에서 음성 명령 성공률을 더 높여야 함."></textarea>
+          <div class="console-actions"><button class="ghost" id="saveNoteBtn">메모 저장</button></div>
+        </article>
+      </section>
+
+      <section id="daemon" class="daemon-grid">
+        <article class="panel daemon-card">
+          <div class="section-title"><span></span>Wake Daemon Control</div>
+          <p class="muted">자비스의 실제 실행 창은 wake → listening → transcribe → agent → speaking 흐름을 시각화합니다. 아래 제어로 데몬 상태와 로그를 확인합니다.</p>
+          <div class="daemon-actions">
+            <button class="primary" id="daemonStartBtn">Daemon 시작</button>
+            <button class="ghost" id="daemonRestartBtn">재시작</button>
+            <button class="danger" id="daemonStopBtn">중지</button>
+            <button class="ghost" id="daemonLogsBtn">로그 불러오기</button>
+          </div>
+        </article>
+        <article class="panel log-card">
+          <div class="section-title"><span></span>Live Daemon Log</div>
+          <pre id="daemonLog">daemon 로그를 기다리는 중…</pre>
+        </article>
+      </section>
+
+      <section id="intel" class="intel-grid">
+        <article class="panel usage-card">
+          <div class="section-title"><span></span>Claude Telemetry</div>
+          <div class="metric-row"><span>최근 호출</span><strong id="usageCalls">0</strong></div>
+          <div class="metric-row"><span>평균 지연</span><strong id="usageLatency">0ms</strong></div>
+          <div class="metric-row"><span>Input / Output</span><strong id="usageTokens">0 / 0</strong></div>
+          <div class="metric-row"><span>Cache Read</span><strong id="usageCache">0</strong></div>
+        </article>
+        <article class="panel history-card">
+          <div class="section-title"><span></span>Recent Memory</div>
+          <div id="historyList" class="history-list">대화 기록을 불러오는 중…</div>
+        </article>
+        <article class="panel toolbox-card">
+          <div class="section-title"><span></span>Toolbox & Diagnostics</div>
+          <div class="utility-actions">
+            <button class="ghost" data-utility="stats">Stats</button>
+            <button class="ghost" data-utility="tools">Tools</button>
+            <button class="ghost" data-utility="history">HUD History</button>
+          </div>
+          <pre id="utilityOutput">운영 도구 결과가 여기에 표시됩니다.</pre>
+        </article>
+      </section>
+
+      <section id="engine" class="panel model-section">
+        <div class="section-title"><span></span>Claude Engine Upgrade</div>
+        <div class="model-grid">
+          <button class="model-card selected" data-model="claude-sonnet-4-6"><strong>Sonnet 4.6</strong><span>기본 추천 · 속도/품질 균형</span></button>
+          <button class="model-card" data-model="claude-opus-4-7"><strong>Opus 4.7</strong><span>고난도 추론 · 프리미엄 모드</span></button>
+          <button class="model-card" data-model="claude-haiku-4-5-20251001"><strong>Haiku 4.5</strong><span>초고속 응답 · 비용 최적화</span></button>
+          <button class="model-card" data-model="auto"><strong>Auto Router</strong><span>작업 난이도에 따라 자동 선택</span></button>
+        </div>
+      </section>
+
+      <section id="settings" class="panel settings-section">
+        <div class="section-title"><span></span>Secure Setup</div>
+        <div class="settings-grid">
+          <label>JARVIS_APP_URL<input id="appUrlInput" placeholder="https://your-jarvis-site.vercel.app" /></label>
+          <label>ANTHROPIC_API_KEY<input id="apiKeyInput" type="password" placeholder="sk-ant-... (로컬 암호화 저장)" /></label>
+          <label>Preferred Model<input id="modelInput" placeholder="auto 또는 claude-sonnet-4-6" /></label>
+          <label>Health Port<input id="healthPortInput" inputmode="numeric" placeholder="41418" /></label>
+        </div>
+        <div class="console-actions">
+          <button class="primary" id="saveBtn">설정 저장</button>
+          <button class="ghost" id="openWebBtn">웹 계정 열기</button>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+  <script src="renderer.js"></script>
+</body>
+</html>

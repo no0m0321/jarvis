@@ -1,0 +1,89 @@
+{
+  "name": "jarvis-desktop",
+  "version": "1.0.0",
+  "description": "JARVIS Desktop Command Center — premium desktop shell for Jarvis AI assistant",
+  "author": {
+    "name": "Jarvis Team",
+    "email": "support@jarvis.local"
+  },
+  "homepage": "https://github.com/kardonh/jarvis",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kardonh/jarvis.git"
+  },
+  "private": true,
+  "main": "src/main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder --linux AppImage zip",
+    "build:dir": "electron-builder --dir",
+    "build:deb": "electron-builder --linux deb",
+    "dist:all": "electron-builder -mwl"
+  },
+  "dependencies": {
+    "electron-store": "^10.0.0"
+  },
+  "devDependencies": {
+    "electron": "^35.7.5",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "ai.jarvis.desktop",
+    "productName": "JARVIS Command Center",
+    "artifactName": "JARVIS-Command-Center-${version}-${os}-${arch}.${ext}",
+    "icon": "assets/icon.png",
+    "directories": {
+      "output": "../dist/desktop"
+    },
+    "files": [
+      "src/**/*",
+      "renderer/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../src",
+        "to": "jarvis-src/src"
+      },
+      {
+        "from": "../pyproject.toml",
+        "to": "jarvis-src/pyproject.toml"
+      },
+      {
+        "from": "../README.md",
+        "to": "jarvis-src/README.md"
+      },
+      {
+        "from": "../install.sh",
+        "to": "jarvis-src/install.sh"
+      },
+      {
+        "from": "../install.ps1",
+        "to": "jarvis-src/install.ps1"
+      }
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": ["dmg", "zip"],
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false
+    },
+    "win": {
+      "target": ["nsis", "zip"],
+      "requestedExecutionLevel": "asInvoker"
+    },
+    "linux": {
+      "target": ["AppImage", "zip"],
+      "category": "Utility",
+      "maintainer": "Jarvis Team <support@jarvis.local>"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  }
+}
