@@ -11,6 +11,7 @@ const api = {
   stop: () => ipcRenderer.invoke('jarvis:stop'),
   openExternal: (url) => ipcRenderer.invoke('jarvis:open-external', url),
   openProject: () => ipcRenderer.invoke('jarvis:open-project'),
+  voiceListen: () => ipcRenderer.invoke('jarvis:listen'),
   onProcessOutput: (callback) => {
     const listener = (_event, data) => callback(data);
     ipcRenderer.on('jarvis:process-output', listener);

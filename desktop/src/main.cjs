@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell, dialog, nativeTheme, safeStorage, Menu } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, dialog, nativeTheme, safeStorage, Menu, screen } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -295,11 +295,17 @@ function createMenu() {
 async function createWindow() {
   await loadStore();
   nativeTheme.themeSource = 'dark';
+  const _wa = (() => {
+    try { return screen.getPrimaryDisplay().workArea; }
+    catch (e) { return { x: 0, y: 0, width: 1440, height: 860 }; }
+  })();
   mainWindow = new BrowserWindow({
-    width: 1520,
-    height: 980,
-    minWidth: 1120,
-    minHeight: 760,
+    x: _wa.x,
+    y: _wa.y,
+    width: _wa.width,
+    height: _wa.height,
+    minWidth: 900,
+    minHeight: 600,
     title: 'JARVIS Live Command HUD',
     backgroundColor: '#030610',
     show: false,
@@ -313,7 +319,14 @@ async function createWindow() {
     },
   });
   setHudState('idle', 'JARVIS Live Command HUD ready');
-  mainWindow.once('ready-to-show', () => mainWindow.show());
+  try {
+    mainWindow.webContents.session.setPermissionRequestHandler((_wc, _permission, callback) => callback(true));
+    mainWindow.webContents.session.setPermissionCheckHandler(() => true);
+  } catch (e) {}
+  mainWindow.once('ready-to-show', () => {
+    try { mainWindow.setBounds(screen.getPrimaryDisplay().workArea); } catch (e) {}
+    mainWindow.show();
+  });
   await mainWindow.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
 }
 
@@ -478,6 +491,20 @@ ipcMain.handle('jarvis:run-utility', async (_event, payload) => {
   } catch (err) {
     setHudState('error', err.message);
     return { ok: false, action, error: err.message };
+  }
+});
+
+ipcMain.handle('jarvis:listen', async () => {
+  const s = await loadStore();
+  const { env, projectRoot } = createRuntimeEnv(s);
+  setHudState('listening', '음성 입력 — 말씀하세요');
+  try {
+    const result = await spawnWithFallback(['-m', 'jarvis', 'listen', '--model', 'base'], { cwd: projectRoot, env });
+    setHudState('idle', '');
+    return { ok: result.code === 0, code: result.code, command: result.command, stdout: result.stdout, stderr: result.stderr };
+  } catch (err) {
+    setHudState('error', err.message);
+    return { ok: false, error: err.message };
   }
 });
 
