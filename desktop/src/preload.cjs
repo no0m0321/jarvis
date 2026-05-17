@@ -12,6 +12,9 @@ const api = {
   openExternal: (url) => ipcRenderer.invoke('jarvis:open-external', url),
   openProject: () => ipcRenderer.invoke('jarvis:open-project'),
   voiceListen: () => ipcRenderer.invoke('jarvis:listen'),
+  getWeather: () => ipcRenderer.invoke('jarvis:get-weather'),
+  getGeo: () => ipcRenderer.invoke('jarvis:get-geo'),
+  stopListen: () => ipcRenderer.invoke('jarvis:stop-listen'),
   onProcessOutput: (callback) => {
     const listener = (_event, data) => callback(data);
     ipcRenderer.on('jarvis:process-output', listener);

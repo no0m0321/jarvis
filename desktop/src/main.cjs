@@ -8,6 +8,7 @@ let Store;
 let store;
 let mainWindow;
 let activeProcess = null;
+let activeListenProcess = null;
 
 async function loadStore() {
   if (!Store) {
@@ -77,6 +78,7 @@ function setHudState(state, message = '') {
 }
 
 function spawnWithFallback(args, options = {}) {
+  const { onSpawn, ...spawnOptions } = options;
   return new Promise((resolve, reject) => {
     const candidates = getPythonCandidates();
     let index = 0;
@@ -87,7 +89,8 @@ function spawnWithFallback(args, options = {}) {
         return;
       }
       const command = candidates[index++];
-      const child = spawn(command, args, { ...options, stdio: ['ignore', 'pipe', 'pipe'] });
+      const child = spawn(command, args, { ...spawnOptions, stdio: ['ignore', 'pipe', 'pipe'] });
+      if (typeof onSpawn === 'function') { try { onSpawn(child); } catch (e) {} }
       let stdout = '';
       let stderr = '';
       let settled = false;
@@ -306,7 +309,7 @@ async function createWindow() {
     height: _wa.height,
     minWidth: 900,
     minHeight: 600,
-    title: 'JARVIS Live Command HUD',
+    title: 'JARVIS',
     backgroundColor: '#030610',
     show: false,
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
@@ -480,9 +483,11 @@ ipcMain.handle('jarvis:run-utility', async (_event, payload) => {
     init: ['init'],
     history: ['hud', 'history', '--n', '20'],
     note: note ? ['note', note] : null,
+    'memory-add': note ? ['memory', '--add', note] : null,
+    'memory-show': ['memory', '--show'],
   };
   const args = allowed[action];
-  if (!args) return { ok: false, error: action === 'note' ? '저장할 메모가 비어 있습니다.' : `지원하지 않는 utility action: ${action}` };
+  if (!args) return { ok: false, error: (action === 'note' || action === 'memory-add') ? '저장할 내용이 비어 있습니다.' : `지원하지 않는 utility action: ${action}` };
   setHudState('executing', `utility ${action}`);
   try {
     const result = await runJarvisUtility(s, args);
@@ -499,10 +504,15 @@ ipcMain.handle('jarvis:listen', async () => {
   const { env, projectRoot } = createRuntimeEnv(s);
   setHudState('listening', '음성 입력 — 말씀하세요');
   try {
-    const result = await spawnWithFallback(['-m', 'jarvis', 'listen', '--model', 'base'], { cwd: projectRoot, env });
+    const result = await spawnWithFallback(['-m', 'jarvis', 'listen', '--model', 'base'], {
+      cwd: projectRoot, env,
+      onSpawn: (child) => { activeListenProcess = child; },
+    });
+    activeListenProcess = null;
     setHudState('idle', '');
     return { ok: result.code === 0, code: result.code, command: result.command, stdout: result.stdout, stderr: result.stderr };
   } catch (err) {
+    activeListenProcess = null;
     setHudState('error', err.message);
     return { ok: false, error: err.message };
   }
@@ -529,6 +539,14 @@ ipcMain.handle('jarvis:stop', async () => {
   return { ok: true, stopped: true };
 });
 
+ipcMain.handle('jarvis:stop-listen', async () => {
+  if (!activeListenProcess) return { ok: true, stopped: false };
+  try { activeListenProcess.kill('SIGTERM'); } catch (e) {}
+  activeListenProcess = null;
+  setHudState('idle', '');
+  return { ok: true, stopped: true };
+});
+
 ipcMain.handle('jarvis:open-external', async (_event, url) => {
   if (typeof url !== 'string') return { ok: false };
   if (!/^https?:\/\//i.test(url)) return { ok: false, error: '허용되지 않은 URL입니다.' };
@@ -539,6 +557,96 @@ ipcMain.handle('jarvis:open-external', async (_event, url) => {
 ipcMain.handle('jarvis:open-project', async () => {
   await shell.openPath(getProjectRoot());
   return { ok: true };
+});
+
+// ────── Weather — Open-Meteo (API 키 불필요) + IP 지오로케이션 ──────
+const WEATHER_WMO = {
+  0: 'Clear Sky', 1: 'Mainly Clear', 2: 'Partly Cloudy', 3: 'Overcast',
+  45: 'Fog', 48: 'Rime Fog',
+  51: 'Light Drizzle', 53: 'Drizzle', 55: 'Dense Drizzle',
+  56: 'Freezing Drizzle', 57: 'Freezing Drizzle',
+  61: 'Light Rain', 63: 'Rain', 65: 'Heavy Rain',
+  66: 'Freezing Rain', 67: 'Freezing Rain',
+  71: 'Light Snow', 73: 'Snow', 75: 'Heavy Snow', 77: 'Snow Grains',
+  80: 'Light Showers', 81: 'Showers', 82: 'Violent Showers',
+  85: 'Snow Showers', 86: 'Heavy Snow Showers',
+  95: 'Thunderstorm', 96: 'Thunderstorm', 99: 'Severe Thunderstorm',
+};
+let weatherGeo = null;
+let weatherCache = null;
+
+async function resolveWeatherGeo() {
+  if (weatherGeo) return weatherGeo;
+  try {
+    const res = await fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout(6000) });
+    if (res.ok) {
+      const j = await res.json();
+      if (Number.isFinite(j.latitude) && Number.isFinite(j.longitude)) {
+        weatherGeo = {
+          lat: j.latitude, lon: j.longitude,
+          city: j.city || j.region || 'Unknown',
+          country: j.country_code || j.country || '',
+          timezone: j.timezone || '',
+        };
+        return weatherGeo;
+      }
+    }
+  } catch (e) { /* fall through to default */ }
+  weatherGeo = { lat: 37.5665, lon: 126.9780, city: 'Seoul', country: 'KR', timezone: 'Asia/Seoul' };
+  return weatherGeo;
+}
+
+ipcMain.handle('jarvis:get-weather', async () => {
+  if (weatherCache && Date.now() - weatherCache.at < 5 * 60 * 1000) return weatherCache.data;
+  try {
+    const geo = await resolveWeatherGeo();
+    const url = 'https://api.open-meteo.com/v1/forecast'
+      + `?latitude=${geo.lat}&longitude=${geo.lon}`
+      + '&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,weather_code,pressure_msl,wind_speed_10m'
+      + '&daily=temperature_2m_max,temperature_2m_min&hourly=visibility'
+      + '&wind_speed_unit=kmh&timezone=auto&forecast_days=1';
+    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) return { ok: false, error: `open-meteo ${res.status}` };
+    const j = await res.json();
+    const c = j.current || {};
+    let visKm = null;
+    if (j.hourly && Array.isArray(j.hourly.time) && Array.isArray(j.hourly.visibility)) {
+      const hour = typeof c.time === 'string' ? c.time.slice(0, 13) : null;
+      let idx = hour ? j.hourly.time.findIndex((t) => String(t).slice(0, 13) === hour) : -1;
+      if (idx < 0) idx = 0;
+      const m = j.hourly.visibility[idx];
+      if (Number.isFinite(m)) visKm = m / 1000;
+    }
+    const code = Number(c.weather_code ?? 0);
+    const data = {
+      ok: true,
+      city: geo.city,
+      temp: c.temperature_2m ?? null,
+      feelsLike: c.apparent_temperature ?? null,
+      hi: j.daily?.temperature_2m_max?.[0] ?? null,
+      lo: j.daily?.temperature_2m_min?.[0] ?? null,
+      code,
+      isDay: c.is_day !== 0,
+      condition: WEATHER_WMO[code] || 'Unknown',
+      humidity: c.relative_humidity_2m ?? null,
+      wind: c.wind_speed_10m ?? null,
+      pressure: c.pressure_msl ?? null,
+      visibility: visKm,
+    };
+    weatherCache = { data, at: Date.now() };
+    return data;
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle('jarvis:get-geo', async () => {
+  try {
+    const geo = await resolveWeatherGeo();
+    return { ok: true, lat: geo.lat, lon: geo.lon, city: geo.city, country: geo.country || '', timezone: geo.timezone || '' };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
 });
 
 const gotLock = app.requestSingleInstanceLock();

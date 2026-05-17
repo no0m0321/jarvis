@@ -30,8 +30,8 @@
   },
   "build": {
     "appId": "ai.jarvis.desktop",
-    "productName": "JARVIS Command Center",
-    "artifactName": "JARVIS-Command-Center-${version}-${os}-${arch}.${ext}",
+    "productName": "JARVIS",
+    "artifactName": "JARVIS-${version}-${os}-${arch}.${ext}",
     "icon": "assets/icon.png",
     "directories": {
       "output": "../dist/desktop"

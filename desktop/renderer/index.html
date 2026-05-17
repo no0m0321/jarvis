@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>J.A.R.V.I.S — OS Dashboard</title>
+<title>JARVIS</title>
 <meta name="description" content="JARVIS OS — Stark-grade voice AI dashboard with full sci-fi HUD." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -551,66 +551,235 @@ aside.left {
 
 /* Environment + Map */
 .environment {
-  border: 1px solid var(--line);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
   border-radius: 4px;
-  padding: 14px;
-  background: linear-gradient(145deg, var(--bg-2) 0%, var(--bg-1) 100%);
+  padding: 13px 14px 14px;
   margin-top: 12px;
+  background:
+    radial-gradient(ellipse 130% 64% at 50% 0%, rgba(76,201,255,0.12), transparent 72%),
+    linear-gradient(158deg, var(--bg-2) 0%, var(--bg-0) 100%);
+  box-shadow: inset 0 1px 0 rgba(76,201,255,0.09), 0 10px 28px rgba(0,0,0,0.45);
+}
+.environment::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--cyan-bright), transparent);
+  animation: teleScan 3.6s ease-in-out infinite;
+  z-index: 2;
+}
+.environment::after {
+  content: '';
+  position: absolute;
+  top: 8px; right: 8px;
+  width: 9px; height: 9px;
+  border-top: 1px solid var(--cyan-dim);
+  border-right: 1px solid var(--cyan-dim);
+  opacity: 0.6;
 }
 
-.env-temp {
+/* header */
+.env-head {
   display: flex;
   align-items: center;
-  gap: 14px;
-  margin-bottom: 12px;
+  justify-content: space-between;
+  margin-bottom: 11px;
+}
+.env-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+}
+.env-loc {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 52%;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 1.2px;
+  color: var(--cyan-dim);
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: rgba(76,201,255,0.05);
+  box-shadow: 0 0 10px rgba(76,201,255,0.12);
+}
+.env-loc span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.env-loc-dot {
+  flex: none;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--cyan-bright);
+  box-shadow: 0 0 6px var(--cyan-bright);
+  animation: teleLiveBlink 1.4s ease-in-out infinite;
 }
 
-.env-temp .big {
+/* hero */
+.env-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+.env-hero-main { min-width: 0; }
+.env-temp-row {
+  display: flex;
+  align-items: flex-start;
+  line-height: 0.95;
+}
+.env-temp-big {
   font-family: 'Orbitron', sans-serif;
-  font-size: 32px;
+  font-size: 40px;
   font-weight: 700;
   color: var(--cyan-bright);
   letter-spacing: -1px;
+  text-shadow:
+    0 0 12px var(--cyan-bright),
+    0 0 30px var(--cyan-glow),
+    0 0 60px rgba(76,201,255,0.32);
+  animation: envTempBreath 5s ease-in-out infinite;
 }
-
-.env-temp .cond {
+.env-temp-unit {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--cyan-dim);
+  margin-top: 5px;
+  margin-left: 2px;
+}
+.env-cond {
   font-family: 'JetBrains Mono', monospace;
   font-size: 9px;
-  color: var(--text-dim);
-  letter-spacing: 1px;
+  letter-spacing: 1.4px;
   text-transform: uppercase;
-  flex: 1;
+  color: var(--text);
+  margin-top: 6px;
 }
-
-.cloud-icon {
-  width: 36px;
-  height: 36px;
-  margin-left: auto;
-  position: relative;
-  filter: drop-shadow(0 0 4px var(--cyan-glow));
+.env-sub {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px 12px;
+  margin-top: 7px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8.5px;
+  letter-spacing: 0.6px;
+  color: var(--text-faint);
 }
+.env-sub b { font-weight: 600; color: var(--text-dim); }
+.env-hilo i { font-style: normal; font-size: 7px; }
+.env-hilo .hi { color: var(--gold); }
+.env-hilo .lo { color: var(--cyan); }
 
-.env-stats {
+/* animated weather icon */
+.env-icon {
+  flex: none;
+  width: 64px; height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 0 7px var(--cyan-glow));
+}
+.env-icon svg { width: 100%; height: 100%; overflow: visible; }
+
+/* metric mini-cards */
+.env-metrics {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 6px 10px;
+  gap: 8px;
+}
+.env-metric {
+  position: relative;
+  overflow: hidden;
+  padding: 8px 9px 9px;
+  border: 1px solid rgba(76,201,255,0.16);
+  border-radius: 3px;
+  background: linear-gradient(162deg, rgba(76,201,255,0.07), var(--bg-3) 64%);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.env-metric::after {
+  content: '';
+  position: absolute;
+  top: 4px; left: 4px;
+  width: 7px; height: 7px;
+  border-top: 1px solid var(--cyan-dim);
+  border-left: 1px solid var(--cyan-dim);
+  opacity: 0.55;
+}
+.env-metric:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(76,201,255,0.2);
+  border-color: var(--cyan);
+}
+.env-metric-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.env-metric-ico {
+  width: 13px; height: 13px;
+  flex: none;
+  fill: none;
+  stroke: var(--cyan-dim);
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 3px rgba(76,201,255,0.4));
+}
+.env-metric-key {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  padding-top: 12px;
-  border-top: 1px solid var(--line);
-}
-
-.env-stats .key {
-  color: var(--text-dim);
+  font-size: 8px;
   letter-spacing: 1px;
-  font-size: 9px;
+  color: var(--cyan-dim);
+  text-shadow: 0 0 6px rgba(76,201,255,0.3);
+}
+.env-metric-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--cyan-bright);
+  margin: 0 0 7px;
+}
+.env-gauge {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--bg-1);
+  box-shadow: inset 0 0 3px rgba(0,0,0,0.6);
+  overflow: hidden;
+}
+.env-gauge-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--cyan-deep), var(--cyan-bright));
+  box-shadow: 0 0 7px var(--cyan-glow);
+  transition: width 0.85s cubic-bezier(0.3,0.85,0.3,1);
 }
 
-.env-stats .val {
-  color: var(--cyan-bright);
-  text-align: right;
-  font-weight: 500;
+@keyframes envTempBreath {
+  0%,100% { text-shadow: 0 0 12px var(--cyan-bright), 0 0 30px var(--cyan-glow), 0 0 60px rgba(76,201,255,0.32); }
+  50% { text-shadow: 0 0 17px var(--cyan-bright), 0 0 44px var(--cyan-glow), 0 0 82px rgba(76,201,255,0.44); }
 }
+@keyframes envCloudDrift { 0%,100% { transform: translateX(-1.3px); } 50% { transform: translateX(1.3px); } }
+@keyframes envSunSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes envSunPulse { 0%,100% { opacity: 0.82; } 50% { opacity: 1; } }
+@keyframes envRainFall { 0% { transform: translateY(-4px); opacity: 0; } 30% { opacity: 1; } 100% { transform: translateY(8px); opacity: 0; } }
+@keyframes envSnowFall { 0% { transform: translateY(-4px); opacity: 0; } 30% { opacity: 1; } 100% { transform: translateY(9px); opacity: 0; } }
+@keyframes envBolt { 0%,70%,100% { opacity: 0.12; } 74%,86% { opacity: 1; } 80% { opacity: 0.3; } }
+@keyframes envFog { 0%,100% { transform: translateX(-1.6px); opacity: 0.45; } 50% { transform: translateX(1.6px); opacity: 0.85; } }
 
 .world-map {
   margin-top: 12px;
@@ -815,11 +984,14 @@ main.center {
   font-size: 56px;
   letter-spacing: 14px;
   color: #fff;
+  --logo-c: var(--cyan-bright);
+  --logo-glow: var(--cyan-glow);
+  --logo-deep: var(--cyan);
   text-shadow:
-    0 0 10px var(--cyan-bright),
-    0 0 25px var(--cyan-glow),
-    0 0 50px var(--cyan-glow),
-    0 0 100px var(--cyan);
+    0 0 10px var(--logo-c),
+    0 0 25px var(--logo-glow),
+    0 0 50px var(--logo-glow),
+    0 0 100px var(--logo-deep);
   opacity: 0;
   animation:
     logoIn 1.2s ease-out 4.6s forwards,
@@ -834,17 +1006,17 @@ main.center {
 @keyframes logoBreath {
   0%, 100% {
     text-shadow:
-      0 0 10px var(--cyan-bright),
-      0 0 25px var(--cyan-glow),
-      0 0 50px var(--cyan-glow),
-      0 0 100px var(--cyan);
+      0 0 10px var(--logo-c),
+      0 0 25px var(--logo-glow),
+      0 0 50px var(--logo-glow),
+      0 0 100px var(--logo-deep);
   }
   50% {
     text-shadow:
-      0 0 20px var(--cyan-bright),
-      0 0 50px var(--cyan-glow),
-      0 0 100px var(--cyan-glow),
-      0 0 200px var(--cyan);
+      0 0 20px var(--logo-c),
+      0 0 50px var(--logo-glow),
+      0 0 100px var(--logo-glow),
+      0 0 200px var(--logo-deep);
   }
 }
 
@@ -2526,7 +2698,8 @@ aside.left > *, aside.right > * { flex-shrink: 0; }
   fill: none;
   stroke: var(--cyan-bright);
   stroke-width: 0.9;
-  transform-origin: 236px 44px;
+  transform-box: fill-box;
+  transform-origin: center;
   animation: geoHomeRing 2.4s ease-out infinite;
 }
 @keyframes geoHomeRing {
@@ -2774,6 +2947,626 @@ body[data-state="speaking"] .activity-card {
   height: 1px;
   background: linear-gradient(90deg, transparent, var(--state-c, var(--cyan)) 50%, transparent);
 }
+
+/* ════════ JARVIS ONLINE — 마이크 ON 시 로고 하단 표시 ════════ */
+.jarvis-online {
+  position: absolute;
+  left: 0; right: 0;
+  top: 50%;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 5px;
+  color: var(--green);
+  text-shadow: 0 0 12px rgba(40,201,59,0.75);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(64px) scale(0.9);
+  transition: opacity 0.4s ease, transform 0.45s cubic-bezier(0.3,0.85,0.3,1);
+  pointer-events: none;
+}
+.jarvis-online i {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green), 0 0 18px rgba(40,201,59,0.55);
+  animation: teleLiveBlink 1.4s ease-in-out infinite;
+}
+.jarvis-online span { padding-top: 1px; }
+body.voice-on .jarvis-online {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(64px) scale(1);
+}
+
+/* ════════ VOICE RECOGNITION — 초고퀄 업그레이드 ════════ */
+.voice-card {
+  position: relative;
+  overflow: hidden;
+  border-color: var(--line-strong);
+  background:
+    radial-gradient(ellipse 130% 60% at 50% 0%, rgba(76,201,255,0.10), transparent 72%),
+    linear-gradient(158deg, var(--bg-2) 0%, var(--bg-0) 100%);
+  box-shadow: inset 0 1px 0 rgba(76,201,255,0.09), 0 10px 28px rgba(0,0,0,0.45);
+}
+.voice-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--cyan-bright), transparent);
+  animation: teleScan 3.6s ease-in-out infinite;
+  z-index: 3;
+}
+.voice-card::after {
+  content: '';
+  position: absolute;
+  top: 8px; right: 8px;
+  width: 9px; height: 9px;
+  border-top: 1px solid var(--cyan-dim);
+  border-right: 1px solid var(--cyan-dim);
+  opacity: 0.6;
+  z-index: 2;
+}
+.voice-card .voice-label .name {
+  color: var(--cyan-dim);
+  text-shadow: 0 0 8px rgba(76,201,255,0.3);
+}
+.voice-card .waveform {
+  background: linear-gradient(180deg, rgba(76,201,255,0.06), transparent);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+.voice-card .wave-bar {
+  background: linear-gradient(180deg, var(--cyan-bright), var(--cyan-deep));
+}
+.voice-card .voice-metrics .vm {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(162deg, rgba(76,201,255,0.07), var(--bg-3) 64%);
+  border-color: rgba(76,201,255,0.16);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.voice-card .voice-metrics .vm::after {
+  content: '';
+  position: absolute;
+  top: 3px; left: 3px;
+  width: 6px; height: 6px;
+  border-top: 1px solid var(--cyan-dim);
+  border-left: 1px solid var(--cyan-dim);
+  opacity: 0.5;
+}
+.voice-card .voice-metrics .vm:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(76,201,255,0.18);
+  border-color: var(--cyan);
+}
+.voice-card .voice-metrics .vm .num {
+  text-shadow: 0 0 8px rgba(76,201,255,0.35);
+}
+.voice-card .listening-text {
+  text-shadow: 0 0 9px rgba(76,201,255,0.4);
+}
+body.voice-on .voice-card .voice-label .name {
+  color: var(--cyan-bright);
+}
+
+/* ════════ JARVIS ACTIVITY — 초고퀄 업그레이드 ════════ */
+.activity-card {
+  background:
+    radial-gradient(ellipse 130% 60% at 50% 0%, rgba(76,201,255,0.10), transparent 72%),
+    linear-gradient(158deg, var(--bg-2) 0%, var(--bg-0) 100%);
+  box-shadow: inset 0 1px 0 rgba(76,201,255,0.09), 0 10px 28px rgba(0,0,0,0.45);
+}
+.activity-card::after {
+  content: '';
+  position: absolute;
+  top: 8px; right: 8px;
+  width: 9px; height: 9px;
+  border-top: 1px solid var(--cyan-dim);
+  border-right: 1px solid var(--cyan-dim);
+  opacity: 0.6;
+  z-index: 2;
+}
+.activity-card .title {
+  text-shadow: 0 0 12px var(--cyan-glow);
+}
+.activity-card .status-tag {
+  box-shadow: 0 0 10px rgba(40,201,59,0.2);
+}
+.activity-card .status-tag.busy {
+  box-shadow: 0 0 12px rgba(255,213,106,0.25);
+}
+.activity-card .op-line {
+  transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+.activity-card .op-line:hover {
+  background: rgba(76,201,255,0.08);
+  border-left-color: var(--cyan);
+}
+.activity-card .op-progress {
+  box-shadow: inset 0 0 4px rgba(0,0,0,0.55);
+}
+
+/* ════════ JARVIS COMMAND — 초고퀄 업그레이드 ════════ */
+#convo-strip {
+  border-color: var(--line-strong);
+  background:
+    radial-gradient(ellipse 120% 72% at 50% 0%, rgba(76,201,255,0.11), transparent 70%),
+    linear-gradient(158deg, rgba(10,19,32,0.97) 0%, rgba(2,6,13,0.98) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(76,201,255,0.10),
+    0 16px 40px rgba(0,0,0,0.6),
+    0 0 22px rgba(76,201,255,0.06);
+  padding: 11px 16px 13px;
+}
+#convo-strip::before {
+  height: 2px;
+  opacity: 1;
+  background: linear-gradient(90deg, transparent, var(--cyan-bright), transparent);
+  animation: teleScan 3.6s ease-in-out infinite;
+}
+#convo-strip::after {
+  display: block;
+  content: '';
+  position: absolute;
+  top: 9px; right: 11px;
+  bottom: auto; left: auto;
+  width: 10px; height: 10px;
+  background: none;
+  border-top: 1px solid var(--cyan-dim);
+  border-right: 1px solid var(--cyan-dim);
+  opacity: 0.65;
+}
+#convo-strip .convo-head {
+  font-size: 8.5px;
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+#convo-strip .convo-head > span:first-child {
+  color: var(--cyan-bright);
+  font-weight: 700;
+  text-shadow: 0 0 10px var(--cyan-glow);
+}
+#convo-strip .convo-head #convo-ts { color: var(--text-faint); }
+#convo-strip .convo-row .who.jarvis {
+  box-shadow: 0 0 12px color-mix(in srgb, var(--state-c) 38%, transparent);
+}
+#convo-strip .cmd-dock {
+  margin-top: 9px;
+  padding-top: 10px;
+}
+#convo-strip .cmd-dock textarea {
+  background: linear-gradient(180deg, rgba(76,201,255,0.05), var(--bg-3));
+  border: 1px solid rgba(76,201,255,0.18);
+  border-radius: 4px;
+  font-size: 12.5px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+#convo-strip .cmd-dock textarea:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 14px rgba(76,201,255,0.28), inset 0 0 14px rgba(76,201,255,0.06);
+}
+#convo-strip .cmd-mode {
+  font-size: 8.5px;
+  letter-spacing: 1.2px;
+  padding: 3px 10px;
+  border-radius: 3px;
+  background: var(--bg-3);
+  transition: transform 0.2s ease, color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+#convo-strip .cmd-mode:hover {
+  color: var(--cyan-bright);
+  border-color: var(--cyan-dim);
+  transform: translateY(-1px);
+}
+#convo-strip .cmd-mode.active {
+  color: var(--bg-0);
+  background: linear-gradient(135deg, var(--cyan), var(--cyan-bright));
+  border-color: var(--cyan-bright);
+  box-shadow: 0 0 13px var(--cyan-glow);
+}
+#convo-strip .cmd-run {
+  box-shadow: 0 0 14px rgba(76,201,255,0.3);
+}
+#convo-strip .cmd-run:hover:not(:disabled) {
+  box-shadow: 0 0 22px var(--cyan-glow);
+  transform: translateY(-1px);
+}
+#convo-strip .cmd-stop {
+  background: linear-gradient(135deg, rgba(255,95,87,0.14), var(--bg-3));
+}
+
+/* ════════ SYSTEM TELEMETRY — 날씨 위젯과 통일 ════════ */
+.telemetry-card::after {
+  content: '';
+  position: absolute;
+  top: 8px; right: 8px;
+  width: 9px; height: 9px;
+  border-top: 1px solid var(--cyan-dim);
+  border-right: 1px solid var(--cyan-dim);
+  opacity: 0.6;
+  z-index: 2;
+}
+.telemetry-card .header .stat-tag {
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 3px 9px;
+  background: rgba(76,201,255,0.05);
+  letter-spacing: 1px;
+}
+.wifi-widget, .temp-widget, .net-widget, .storage-widget {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(76,201,255,0.16);
+  border-radius: 3px;
+  background: linear-gradient(162deg, rgba(76,201,255,0.07), var(--bg-3) 64%);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.wifi-widget::after, .temp-widget::after, .net-widget::after, .storage-widget::after {
+  content: '';
+  position: absolute;
+  top: 4px; left: 4px;
+  width: 7px; height: 7px;
+  border-top: 1px solid var(--cyan-dim);
+  border-left: 1px solid var(--cyan-dim);
+  opacity: 0.55;
+}
+.wifi-widget:hover, .temp-widget:hover, .net-widget:hover, .storage-widget:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(76,201,255,0.2);
+  border-color: var(--cyan);
+}
+.net-widget {
+  margin-top: 8px;
+  padding: 8px;
+}
+.net-widget .network-graph {
+  margin-top: 6px;
+  border: none;
+  background: none;
+  padding: 0;
+}
+.storage-widget {
+  margin-top: 8px;
+  padding: 8px 9px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ════════ 우측 사이드바 통일 — SYSTEM LOG · POWER · BATTERY · GEO GRID ════════ */
+.syslog-card, .world-map.geo-grid-card {
+  border-color: var(--line-strong);
+  background:
+    radial-gradient(ellipse 130% 64% at 50% 0%, rgba(76,201,255,0.11), transparent 72%),
+    linear-gradient(158deg, var(--bg-2) 0%, var(--bg-0) 100%);
+  box-shadow: inset 0 1px 0 rgba(76,201,255,0.09), 0 10px 28px rgba(0,0,0,0.45);
+}
+/* SYSTEM LOG — 로그는 9줄로 캡되므로 스크롤 제거, 스캔바 + 코너 브래킷 */
+.syslog-card {
+  overflow: hidden;
+  max-height: none;
+}
+.syslog-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--cyan-bright), transparent);
+  animation: teleScan 3.6s ease-in-out infinite;
+  z-index: 3;
+}
+.syslog-card::after, .world-map.geo-grid-card::after {
+  content: '';
+  position: absolute;
+  top: 8px; right: 8px;
+  width: 9px; height: 9px;
+  border-top: 1px solid var(--cyan-dim);
+  border-right: 1px solid var(--cyan-dim);
+  opacity: 0.6;
+  z-index: 3;
+}
+.syslog-card .syslog-header {
+  color: var(--cyan-dim);
+  text-shadow: 0 0 8px rgba(76,201,255,0.3);
+}
+/* GEO GRID — 스캔바 + 라벨 글로우 */
+.geo-scan {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--cyan-bright), transparent);
+  animation: teleScan 3.6s ease-in-out infinite;
+  z-index: 3;
+}
+.world-map.geo-grid-card::before {
+  color: var(--cyan-dim);
+  text-shadow: 0 0 8px rgba(76,201,255,0.3);
+}
+/* POWER · BATTERY — mini-stat과 동일한 프리미엄 카드 */
+.power-card {
+  overflow: hidden;
+  border-color: rgba(76,201,255,0.16);
+  background: linear-gradient(162deg, rgba(76,201,255,0.07), var(--bg-3) 64%);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.power-card::after {
+  content: '';
+  position: absolute;
+  top: 4px; left: 4px;
+  width: 7px; height: 7px;
+  border-top: 1px solid var(--cyan-dim);
+  border-left: 1px solid var(--cyan-dim);
+  opacity: 0.55;
+}
+.power-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(76,201,255,0.2);
+  border-color: var(--cyan);
+}
+.power-card .label {
+  color: var(--cyan-dim);
+  text-shadow: 0 0 6px rgba(76,201,255,0.3);
+}
+
+/* ════════ FOCUS MODE — 마이크 ON + 5초 마우스 미사용 시 몰입 화면 (복귀 버튼으로만 해제) ════════ */
+.os {
+  transition: grid-template-columns 0.6s cubic-bezier(0.4,0,0.2,1) 0.35s;
+}
+aside.left, aside.right {
+  transition: opacity 0.6s ease 0.8s, transform 0.6s cubic-bezier(0.5,0,0.2,1) 0.8s;
+}
+#convo-strip {
+  transition: opacity 0.5s ease 0.8s, transform 0.5s cubic-bezier(0.4,0,0.2,1) 0.8s;
+}
+main.center {
+  transition: padding-top 0.85s cubic-bezier(0.34,1.05,0.4,1);
+}
+.jarvis-logo {
+  transition: transform 0.85s cubic-bezier(0.34,1.12,0.4,1);
+}
+.focus-exit {
+  position: absolute;
+  bottom: 46px;
+  left: 50%;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 22px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2.5px;
+  color: var(--cyan-bright);
+  background: linear-gradient(160deg, rgba(76,201,255,0.14), rgba(5,11,22,0.92));
+  border: 1px solid var(--line-strong);
+  border-radius: 22px;
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateX(-50%) translateY(18px);
+  box-shadow: 0 0 18px rgba(76,201,255,0.22), inset 0 1px 0 rgba(76,201,255,0.14);
+  transition: opacity 0.45s ease, transform 0.5s cubic-bezier(0.34,1.1,0.4,1), border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.focus-exit:hover {
+  border-color: var(--cyan);
+  color: #fff;
+  box-shadow: 0 0 28px var(--cyan-glow), inset 0 1px 0 rgba(76,201,255,0.25);
+}
+body.focus-mode .os {
+  grid-template-columns: 0px minmax(0, 1fr) 0px;
+  transition-delay: 0.25s;
+}
+body.focus-mode aside.left {
+  opacity: 0 !important;
+  transform: translateX(-340px) !important;
+  pointer-events: none;
+  transition-delay: 0s;
+}
+body.focus-mode aside.right {
+  opacity: 0 !important;
+  transform: translateX(340px) !important;
+  pointer-events: none;
+  transition-delay: 0s;
+}
+body.focus-mode #convo-strip {
+  opacity: 0;
+  transform: translateX(-50%) translateY(40px);
+  pointer-events: none;
+  transition-delay: 0s;
+}
+body.focus-mode main.center {
+  padding-top: calc(50vh - 300px);
+  transition-delay: 0.7s;
+}
+body.focus-mode .jarvis-logo {
+  transform: scale(1.85) !important;
+  transition-delay: 0.7s;
+}
+body.focus-mode .focus-exit {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+  transition-delay: 1.5s;
+}
+/* 명령 수행 중(executing/responding) — J.A.R.V.I.S 로고 주황색 */
+body[data-state="analyzing"] .jarvis-logo,
+body[data-state="speaking"] .jarvis-logo {
+  --logo-c: #ffa64d;
+  --logo-glow: rgba(255,140,60,0.6);
+  --logo-deep: #ff7b00;
+}
+
+/* ════════ 명령 콘솔 유틸리티 행 — Doctor/Daemon/Project/Export ════════ */
+.cmd-tools {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+.tool-btn {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8.5px;
+  letter-spacing: 1.2px;
+  padding: 4px 9px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--bg-3);
+  color: var(--cyan-dim);
+  cursor: pointer;
+  transition: transform 0.2s ease, color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.tool-btn:hover {
+  color: var(--cyan-bright);
+  border-color: var(--cyan-dim);
+  background: rgba(76, 201, 255, 0.08);
+  box-shadow: 0 0 12px var(--cyan-glow);
+  transform: translateY(-1px);
+}
+.tool-btn:active { transform: translateY(1px); }
+.tool-btn.on {
+  color: var(--bg-0);
+  background: linear-gradient(135deg, var(--cyan), var(--cyan-bright));
+  border-color: var(--cyan-bright);
+}
+.cmd-readout {
+  margin-left: auto;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8.5px;
+  letter-spacing: 0.5px;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+.cmd-readout .dot { margin: 0 5px; opacity: 0.5; }
+
+/* ════════ MEMORY 카드 — cross-session 기억 (~/.jarvis/memory.md) ════════ */
+.memory-view {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px;
+  line-height: 1.55;
+  color: var(--text-dim);
+  background: var(--bg-0);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 8px 10px;
+  max-height: 104px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.memory-view.empty { color: var(--text-faint); font-style: italic; }
+.memory-input-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+#memory-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  padding: 6px 8px;
+  background: var(--bg-0);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--text);
+  outline: none;
+}
+#memory-input:focus { border-color: var(--cyan); box-shadow: 0 0 10px var(--cyan-soft); }
+#memory-input::placeholder { color: var(--text-faint); }
+.memory-input-row .tool-btn { flex: 0 0 auto; }
+
+/* ════════ SETTINGS 오버레이 — API 키 / 모델 / 포트 ════════ */
+.settings-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(2, 6, 13, 0.78);
+  backdrop-filter: blur(3px);
+}
+.settings-overlay[hidden] { display: none; }
+.settings-panel {
+  width: 340px;
+  max-width: 86vw;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: linear-gradient(145deg, rgba(76, 201, 255, 0.05), var(--bg-1));
+  padding: 18px;
+  box-shadow: 0 0 40px rgba(76, 201, 255, 0.18);
+}
+.settings-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  padding-bottom: 9px;
+  border-bottom: 1px solid var(--line);
+}
+.settings-head .title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 12px;
+  color: var(--cyan-bright);
+  letter-spacing: 3px;
+  font-weight: 700;
+}
+.settings-close {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 2px 6px;
+}
+.settings-close:hover { color: var(--cyan-bright); }
+.settings-field { display: block; margin-bottom: 11px; }
+.settings-field > span {
+  display: block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8.5px;
+  letter-spacing: 1.5px;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+.settings-field input {
+  width: 100%;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 7px 9px;
+  background: var(--bg-0);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--text);
+  outline: none;
+}
+.settings-field input:focus { border-color: var(--cyan); box-shadow: 0 0 10px var(--cyan-soft); }
+.settings-field input::placeholder { color: var(--text-faint); }
+.settings-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 6px;
+}
+.settings-msg {
+  margin-right: auto;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: var(--green);
+}
 </style>
 </head>
 <body>
@@ -2909,7 +3702,7 @@ body[data-state="speaking"] .activity-card {
       </div>
 
       <!-- Network UL/DL graph -->
-      <div style="margin-top: 8px;">
+      <div class="net-widget">
         <div style="font-family: 'JetBrains Mono', monospace; font-size: 8px; color: var(--text-dim); letter-spacing: 1px; display: flex; justify-content: space-between;">
           <span>NET <span style="color: var(--green);">▲</span> <span id="ul-rate">2.7</span></span>
           <span><span style="color: var(--cyan);">▼</span> <span id="dl-rate">3.6</span> MB/s</span>
@@ -2918,7 +3711,7 @@ body[data-state="speaking"] .activity-card {
       </div>
 
       <!-- Storage compact -->
-      <div style="margin-top: 8px; padding: 8px; border: 1px solid var(--line); border-radius: 3px; background: var(--bg-3); display: flex; align-items: center; gap: 10px;">
+      <div class="storage-widget">
         <div class="donut" style="width: 38px; height: 38px;">
           <svg viewBox="0 0 100 100">
             <circle class="bg" cx="50" cy="50" r="42" />
@@ -2934,19 +3727,56 @@ body[data-state="speaking"] .activity-card {
     </div>
 
     <div class="environment">
-      <div class="label" style="font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--text-dim); letter-spacing:2px; margin-bottom:8px;">ENVIRONMENT</div>
-      <div class="env-temp">
-        <div class="big" id="temp-val">25°C</div>
-        <div class="cond">Scattered Clouds</div>
-        <svg class="cloud-icon" viewBox="0 0 36 36" fill="none" stroke="var(--cyan)" stroke-width="1.5">
-          <path d="M9 20 Q5 20 5 16 Q5 12 9 12 Q10 8 15 8 Q22 8 23 14 Q28 14 28 18 Q28 22 23 22 L9 22 Z" stroke-linejoin="round"/>
-        </svg>
+      <div class="env-head">
+        <span class="env-label">ENVIRONMENT</span>
+        <span class="env-loc"><i class="env-loc-dot"></i><span id="env-city">LOCATING</span></span>
       </div>
-      <div class="env-stats">
-        <span class="key">HUMIDITY</span><span class="val" id="hum-val">45 %</span>
-        <span class="key">WIND</span><span class="val" id="wind-val">6.3 km/h</span>
-        <span class="key">PRESSURE</span><span class="val">1012 hPa</span>
-        <span class="key">VISIBILITY</span><span class="val">16.1 km</span>
+      <div class="env-hero">
+        <div class="env-hero-main">
+          <div class="env-temp-row">
+            <span class="env-temp-big" id="temp-val">--</span><span class="env-temp-unit">&deg;C</span>
+          </div>
+          <div class="env-cond" id="env-cond">Awaiting Data</div>
+          <div class="env-sub">
+            <span>FEELS&nbsp;<b id="env-feels">--&deg;</b></span>
+            <span class="env-hilo"><i class="hi">&#9650;</i><b id="env-hi">--&deg;</b>&nbsp;&nbsp;<i class="lo">&#9660;</i><b id="env-lo">--&deg;</b></span>
+          </div>
+        </div>
+        <div class="env-icon" id="env-icon"></div>
+      </div>
+      <div class="env-metrics">
+        <div class="env-metric">
+          <div class="env-metric-top">
+            <svg class="env-metric-ico" viewBox="0 0 24 24"><path d="M12 3.5C12 3.5 5.5 11 5.5 15.5a6.5 6.5 0 0 0 13 0C18.5 11 12 3.5 12 3.5Z"/></svg>
+            <span class="env-metric-key">HUMIDITY</span>
+          </div>
+          <div class="env-metric-val" id="hum-val">--</div>
+          <div class="env-gauge"><div class="env-gauge-fill" id="hum-gauge"></div></div>
+        </div>
+        <div class="env-metric">
+          <div class="env-metric-top">
+            <svg class="env-metric-ico" viewBox="0 0 24 24"><path d="M2 8h11a3 3 0 1 0-3-3"/><path d="M2 12h15a3 3 0 1 0-3-3"/><path d="M2 16h7a3 3 0 1 1-3 3"/></svg>
+            <span class="env-metric-key">WIND</span>
+          </div>
+          <div class="env-metric-val" id="wind-val">--</div>
+          <div class="env-gauge"><div class="env-gauge-fill" id="wind-gauge"></div></div>
+        </div>
+        <div class="env-metric">
+          <div class="env-metric-top">
+            <svg class="env-metric-ico" viewBox="0 0 24 24"><path d="M4 18a8 8 0 1 1 16 0"/><line x1="12" y1="18" x2="15.6" y2="10.4"/></svg>
+            <span class="env-metric-key">PRESSURE</span>
+          </div>
+          <div class="env-metric-val" id="press-val">--</div>
+          <div class="env-gauge"><div class="env-gauge-fill" id="press-gauge"></div></div>
+        </div>
+        <div class="env-metric">
+          <div class="env-metric-top">
+            <svg class="env-metric-ico" viewBox="0 0 24 24"><path d="M2 12C5 6 8.5 4 12 4s7 2 10 8c-3 6-6.5 8-10 8S5 18 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+            <span class="env-metric-key">VISIBILITY</span>
+          </div>
+          <div class="env-metric-val" id="vis-val">--</div>
+          <div class="env-gauge"><div class="env-gauge-fill" id="vis-gauge"></div></div>
+        </div>
       </div>
     </div>
 
@@ -3016,6 +3846,7 @@ body[data-state="speaking"] .activity-card {
 
       <div class="core-pulse"></div>
       <div class="jarvis-logo">J.A.R.V.I.S</div>
+      <div class="jarvis-online" id="jarvis-online"><i></i><span>ONLINE</span></div>
       <div class="particles" id="particles"></div>
       <div class="ripples" id="ripples"></div>
       <div class="spectrum" id="spectrum"></div>
@@ -3027,8 +3858,8 @@ body[data-state="speaking"] .activity-card {
       <div class="convo-head">
         <span><span class="pulse"></span>JARVIS COMMAND</span>
         <span class="cmd-modes">
-          <button class="cmd-mode active" data-mode="ask" type="button">ASK</button>
-          <button class="cmd-mode" data-mode="do" type="button">DO</button>
+          <button class="cmd-mode active" data-mode="ask" type="button" title="ASK — J.A.R.V.I.S에게 질문하고 답변을 받습니다 (단발 응답)">ASK</button>
+          <button class="cmd-mode" data-mode="do" type="button" title="DO — J.A.R.V.I.S가 도구를 사용해 다단계로 작업을 수행합니다 (최대 12턴)">DO</button>
         </span>
         <span id="convo-ts">—</span>
       </div>
@@ -3045,11 +3876,20 @@ body[data-state="speaking"] .activity-card {
           <span class="icon"></span>
           <span id="mic-btn-text">ACTIVATE MIC</span>
         </button>
-        <textarea id="cmd-input" rows="1" placeholder="J.A.R.V.I.S에게 명령…  (Enter 실행 · Shift+Enter 줄바꿈)"></textarea>
+        <textarea id="cmd-input" rows="1" placeholder="명령을 입력하거나 마이크 활성화 후 말씀해주세요."></textarea>
         <button class="cmd-run" id="cmd-run" type="button">실행</button>
         <button class="cmd-stop" id="cmd-stop" type="button" disabled>중지</button>
       </div>
+      <div class="cmd-tools">
+        <button class="tool-btn" id="ctl-doctor" type="button" title="진단 실행 — jarvis doctor">진단</button>
+        <button class="tool-btn" id="ctl-daemon" type="button" title="wake 데몬 시작 / 정지">데몬</button>
+        <button class="tool-btn" id="ctl-project" type="button" title="프로젝트 폴더 열기">폴더</button>
+        <button class="tool-btn" id="ctl-export" type="button" title="세션 리포트 JSON 내보내기">내보내기</button>
+        <button class="tool-btn" id="ctl-settings" type="button" title="설정 — API 키 · 모델 · 포트">설정</button>
+        <span class="cmd-readout"><span id="hud-model">—</span><span class="dot">·</span><span id="hud-tools">—</span></span>
+      </div>
     </div>
+    <button class="focus-exit" id="focus-exit" type="button">↩ RETURN</button>
   </main>
 
   <!-- ─────── RIGHT SIDEBAR ─────── -->
@@ -3102,6 +3942,19 @@ body[data-state="speaking"] .activity-card {
       <div class="log-line"><span class="key">&gt; DIAGNOSTICS</span><span class="val done">[COMPLETE]</span></div>
     </div>
 
+    <!-- MEMORY — cross-session 기억 (~/.jarvis/memory.md) -->
+    <div class="activity-card memory-card" id="memory-card">
+      <div class="head">
+        <span class="title">MEMORY</span>
+        <span class="status-tag" id="memory-status">memory.md</span>
+      </div>
+      <div class="memory-view empty" id="memory-view">메모리를 불러오는 중…</div>
+      <div class="memory-input-row">
+        <input type="text" id="memory-input" maxlength="280" placeholder="자비스가 기억할 내용…" />
+        <button class="tool-btn" id="memory-save" type="button" title="memory.md에 한 줄 저장">저장</button>
+      </div>
+    </div>
+
     <div class="power-grid">
       <div class="power-card">
         <div class="label">POWER</div>
@@ -3130,6 +3983,7 @@ body[data-state="speaking"] .activity-card {
     </div>
 
     <div class="world-map geo-grid-card">
+      <div class="geo-scan"></div>
       <div class="globe">
         <svg viewBox="0 0 300 150" preserveAspectRatio="xMidYMid meet" class="geo-svg">
           <g class="geo-grid">
@@ -3142,41 +3996,22 @@ body[data-state="speaking"] .activity-card {
             <line x1="240" y1="0" x2="240" y2="150"/>
           </g>
           <g class="geo-land">
-            <path d="M30,35 L60,28 L78,40 L72,62 L50,72 L34,58 Z"/>
-            <path d="M62,80 L78,76 L84,100 L74,128 L62,122 L58,98 Z"/>
-            <path d="M135,32 L160,28 L168,42 L155,50 L138,46 Z"/>
-            <path d="M138,58 L165,55 L175,85 L160,115 L142,108 L134,78 Z"/>
-            <path d="M170,28 L240,24 L258,44 L242,64 L195,58 L172,44 Z"/>
-            <path d="M235,98 L262,96 L270,112 L255,122 L238,116 Z"/>
+            <path d="M13,24 L72,15 L101,27 L92,41 L83,53 L85,68 L70,57 L60,53 L47,44 L45,33 Z"/>
+            <path d="M88,65 L100,68 L122,80 L117,93 L108,103 L94,122 L89,101 L82,80 Z"/>
+            <path d="M142,43 L142,28 L155,20 L170,18 L184,28 L175,38 L170,44 L158,43 Z"/>
+            <path d="M137,48 L160,46 L180,49 L194,66 L185,90 L168,105 L159,88 L155,70 L139,62 Z"/>
+            <path d="M184,28 L210,15 L255,13 L293,21 L284,33 L266,40 L242,67 L218,69 L200,66 L189,48 Z"/>
+            <path d="M244,91 L262,86 L279,96 L274,108 L252,106 L246,98 Z"/>
           </g>
-          <g class="geo-links">
-            <path class="link" d="M236,44 Q150,8 62,44"/>
-            <path class="link" d="M236,44 Q192,14 148,38"/>
-            <path class="link" d="M236,44 Q262,76 256,110"/>
-            <path class="link" d="M236,44 Q196,30 158,70"/>
-            <path class="link" d="M236,44 Q150,138 74,102"/>
-          </g>
-          <g class="geo-pulses">
-            <circle r="1.4"><animateMotion dur="3.2s" repeatCount="indefinite" path="M236,44 Q150,8 62,44"/></circle>
-            <circle r="1.4"><animateMotion dur="2.6s" repeatCount="indefinite" path="M236,44 Q192,14 148,38"/></circle>
-            <circle r="1.4"><animateMotion dur="3.7s" repeatCount="indefinite" path="M236,44 Q262,76 256,110"/></circle>
-            <circle r="1.4"><animateMotion dur="3.0s" repeatCount="indefinite" path="M236,44 Q196,30 158,70"/></circle>
-            <circle r="1.4"><animateMotion dur="4.1s" repeatCount="indefinite" path="M236,44 Q150,138 74,102"/></circle>
-          </g>
-          <g class="geo-cities">
-            <circle class="city" cx="62" cy="44" r="1.8"/>
-            <circle class="city" cx="148" cy="38" r="1.8"/>
-            <circle class="city" cx="244" cy="46" r="1.8"/>
-            <circle class="city" cx="256" cy="110" r="1.8"/>
-            <circle class="city" cx="158" cy="70" r="1.8"/>
-            <circle class="city" cx="74" cy="102" r="1.8"/>
-          </g>
-          <circle class="city-home-ring" cx="236" cy="44" r="5"/>
-          <circle class="city-home" cx="236" cy="44" r="2.6"/>
+          <g class="geo-links" id="geo-links"></g>
+          <g class="geo-pulses" id="geo-pulses"></g>
+          <g class="geo-cities" id="geo-cities"></g>
+          <circle class="city-home-ring" id="geo-home-ring" cx="256" cy="44" r="5"/>
+          <circle class="city-home" id="geo-home" cx="256" cy="44" r="2.6"/>
         </svg>
       </div>
       <div class="geo-meta">
-        <span>SEOUL · KR</span>
+        <span id="geo-loc">SEOUL · KR</span>
         <span class="v" id="geo-time">—</span>
       </div>
     </div>
@@ -3184,8 +4019,58 @@ body[data-state="speaking"] .activity-card {
   </aside>
 </div>
 
+<!-- SETTINGS — API 키 / 모델 / 헬스포트 (오버레이) -->
+<div class="settings-overlay" id="settings-overlay" hidden>
+  <div class="settings-panel">
+    <div class="settings-head">
+      <span class="title">SETTINGS</span>
+      <button class="settings-close" id="settings-close" type="button" title="닫기">✕</button>
+    </div>
+    <label class="settings-field">
+      <span>ANTHROPIC API KEY</span>
+      <input type="password" id="set-apikey" autocomplete="off" placeholder="변경할 때만 입력" />
+    </label>
+    <label class="settings-field">
+      <span>선호 모델</span>
+      <input type="text" id="set-model" autocomplete="off" placeholder="auto / claude-opus-4-7 …" />
+    </label>
+    <label class="settings-field">
+      <span>웹 대시보드 URL</span>
+      <input type="text" id="set-appurl" autocomplete="off" placeholder="https://… (선택)" />
+    </label>
+    <label class="settings-field">
+      <span>헬스 서버 포트</span>
+      <input type="text" id="set-healthport" autocomplete="off" placeholder="41418" />
+    </label>
+    <div class="settings-actions">
+      <span class="settings-msg" id="settings-msg"></span>
+      <button class="tool-btn" id="settings-save" type="button">저장</button>
+    </div>
+  </div>
+</div>
+
 <script>
 'use strict';
+
+// ────── 전역 에러 가시화 — 조용한 실패를 막고 syslog에 노출 ──────
+(function () {
+  function report(label, detail) {
+    try { console.error('[JARVIS][' + label + ']', detail); } catch (e) {}
+    try {
+      if (typeof appendSyslog === 'function') {
+        appendSyslog('> ' + label, '[' + String(detail || 'unknown').slice(0, 40) + ']', 'warn');
+      }
+    } catch (e) {}
+  }
+  window.addEventListener('error', function (e) {
+    report('RUNTIME ERROR', (e && (e.message || (e.error && e.error.message)))
+      + (e && e.lineno ? ' @' + e.lineno : ''));
+  });
+  window.addEventListener('unhandledrejection', function (e) {
+    var r = e && e.reason;
+    report('PROMISE REJECT', r && (r.message || r.stack || r) || 'unknown');
+  });
+})();
 
 // ════════════════════════════════════════════════════════════
 // JARVIS OS — Reactive Dashboard v3.0
@@ -3233,6 +4118,18 @@ const D = {
   tempVal: document.getElementById('temp-val'),
   humVal: document.getElementById('hum-val'),
   windVal: document.getElementById('wind-val'),
+  pressVal: document.getElementById('press-val'),
+  visVal: document.getElementById('vis-val'),
+  humGauge: document.getElementById('hum-gauge'),
+  windGauge: document.getElementById('wind-gauge'),
+  pressGauge: document.getElementById('press-gauge'),
+  visGauge: document.getElementById('vis-gauge'),
+  envCity: document.getElementById('env-city'),
+  envCond: document.getElementById('env-cond'),
+  envFeels: document.getElementById('env-feels'),
+  envHi: document.getElementById('env-hi'),
+  envLo: document.getElementById('env-lo'),
+  envIcon: document.getElementById('env-icon'),
   ring4: document.querySelector('.ring-4'),
   jarvisLogo: document.querySelector('.jarvis-logo'),
   corePulse: document.querySelector('.core-pulse'),
@@ -3580,9 +4477,9 @@ async function pollBackend() {
         if (t.ok) {
           const data = await t.json().catch(() => null);
           if (data && data.count) {
-            // SYSTEM PROCESS sub label에 tools count 반영
-            const proc = document.querySelectorAll('.menu-item')[3];
-            if (proc) proc.querySelector('.sub').textContent = `${data.count} tools`;
+            // HUD readout에 tools count 반영
+            const ht = document.getElementById('hud-tools');
+            if (ht) ht.textContent = `${data.count} tools`;
           }
         }
       } catch (e) {}
@@ -3639,7 +4536,7 @@ setTimeout(() => {
 }, 4000);
 
 // ────── 7. CPU/MEM/Battery/Env mock 변동 (백엔드 OFFLINE 시) ──────
-let cpu = 21, mem = 67, bat = 92, temp = 25;
+let cpu = 21, mem = 67, bat = 92;
 function updateMockStats() {
   if (backendOnline) return;  // 실제 metrics가 있으면 mock skip
   cpu = Math.max(15, Math.min(40, cpu + (Math.random() - 0.5) * 4));
@@ -3652,8 +4549,8 @@ function updateMockStats() {
   D.cpuMeta.textContent = `${ghz} GHZ / 2.7 GHZ`;
   const memGB = (10 + Math.random() * 1.5).toFixed(1);
   D.memMeta.textContent = `${memGB} GB / 16 GB`;
-  D.ulRate.textContent = (2 + Math.random() * 3).toFixed(1) + ' MB/s';
-  D.dlRate.textContent = (3 + Math.random() * 4).toFixed(1) + ' MB/s';
+  D.ulRate.textContent = (2 + Math.random() * 3).toFixed(1);
+  D.dlRate.textContent = (3 + Math.random() * 4).toFixed(1);
 }
 setInterval(updateMockStats, 1500);
 
@@ -3664,13 +4561,140 @@ function updateBattery() {
 }
 setInterval(updateBattery, 3000);
 
-function updateEnv() {
-  temp = Math.max(20, Math.min(28, temp + (Math.random() - 0.5) * 0.3));
-  D.tempVal.textContent = temp.toFixed(1) + '°C';
-  D.humVal.textContent = (40 + Math.random() * 12).toFixed(0) + ' %';
-  D.windVal.textContent = (5 + Math.random() * 3).toFixed(1) + ' km/h';
+// ────── 7b. Environment / Weather (Open-Meteo 실시간 + mock 폴백) ──────
+const WMO_TEXT = {
+  0:'Clear Sky',1:'Mainly Clear',2:'Partly Cloudy',3:'Overcast',45:'Fog',48:'Rime Fog',
+  51:'Light Drizzle',53:'Drizzle',55:'Dense Drizzle',56:'Freezing Drizzle',57:'Freezing Drizzle',
+  61:'Light Rain',63:'Rain',65:'Heavy Rain',66:'Freezing Rain',67:'Freezing Rain',
+  71:'Light Snow',73:'Snow',75:'Heavy Snow',77:'Snow Grains',
+  80:'Light Showers',81:'Showers',82:'Violent Showers',85:'Snow Showers',86:'Heavy Snow Showers',
+  95:'Thunderstorm',96:'Thunderstorm',99:'Severe Thunderstorm',
+};
+
+function envWeatherState(code) {
+  if (code <= 1) return 'clear';
+  if (code === 2) return 'partly';
+  if (code === 3) return 'cloudy';
+  if (code === 45 || code === 48) return 'fog';
+  if (code >= 51 && code <= 57) return 'drizzle';
+  if ((code >= 61 && code <= 67) || (code >= 80 && code <= 82)) return 'rain';
+  if ((code >= 71 && code <= 77) || code === 85 || code === 86) return 'snow';
+  if (code >= 95) return 'thunder';
+  return 'cloudy';
 }
-setInterval(updateEnv, 4000);
+
+function weatherIcon(code, isDay) {
+  const state = envWeatherState(code);
+  const C = 'var(--cyan-bright)';
+  const sunFull =
+    `<g stroke="${C}" stroke-width="2.6" stroke-linecap="round" style="transform-box:fill-box;transform-origin:center;animation:envSunSpin 26s linear infinite">` +
+    `<line x1="32" y1="3" x2="32" y2="12"/><line x1="32" y1="52" x2="32" y2="61"/>` +
+    `<line x1="3" y1="32" x2="12" y2="32"/><line x1="52" y1="32" x2="61" y2="32"/>` +
+    `<line x1="11.5" y1="11.5" x2="17.7" y2="17.7"/><line x1="46.3" y1="46.3" x2="52.5" y2="52.5"/>` +
+    `<line x1="11.5" y1="52.5" x2="17.7" y2="46.3"/><line x1="46.3" y1="17.7" x2="52.5" y2="11.5"/></g>` +
+    `<circle cx="32" cy="32" r="13" fill="rgba(76,201,255,0.22)" stroke="${C}" stroke-width="2.8" style="animation:envSunPulse 3s ease-in-out infinite"/>`;
+  const moonFull =
+    `<path d="M40 7 A25 25 0 1 0 40 57 A20 20 0 0 1 40 7 Z" fill="rgba(76,201,255,0.3)" stroke="${C}" stroke-width="2.6" stroke-linejoin="round" style="animation:envSunPulse 4.5s ease-in-out infinite"/>` +
+    `<circle cx="19" cy="14" r="1.8" fill="${C}"/><circle cx="13" cy="27" r="1.3" fill="var(--cyan)"/><circle cx="21" cy="40" r="1.1" fill="var(--cyan)"/>`;
+  const sunSmall =
+    `<g stroke="${C}" stroke-width="2.1" stroke-linecap="round" style="transform-box:fill-box;transform-origin:center;animation:envSunSpin 24s linear infinite">` +
+    `<line x1="21" y1="2" x2="21" y2="8"/><line x1="21" y1="34" x2="21" y2="40"/>` +
+    `<line x1="2" y1="21" x2="8" y2="21"/><line x1="34" y1="21" x2="40" y2="21"/>` +
+    `<line x1="7.5" y1="7.5" x2="11.5" y2="11.5"/><line x1="30.5" y1="30.5" x2="34.5" y2="34.5"/>` +
+    `<line x1="7.5" y1="34.5" x2="11.5" y2="30.5"/><line x1="30.5" y1="7.5" x2="34.5" y2="3.5"/></g>` +
+    `<circle cx="21" cy="21" r="8.5" fill="rgba(76,201,255,0.22)" stroke="${C}" stroke-width="2.4" style="animation:envSunPulse 3s ease-in-out infinite"/>`;
+  const moonSmall =
+    `<path d="M26 5 A16 16 0 1 0 26 37 A13 13 0 0 1 26 5 Z" fill="rgba(76,201,255,0.3)" stroke="${C}" stroke-width="2.2" stroke-linejoin="round" style="animation:envSunPulse 4.5s ease-in-out infinite"/>`;
+  const cloud =
+    `<path d="M13 42 a10 10 0 0 1 2.5 -18.5 a13 13 0 0 1 25 -4 a9.5 9.5 0 0 1 8 22.5 Z" fill="rgba(76,201,255,0.16)" stroke="${C}" stroke-width="2.5" stroke-linejoin="round" style="animation:envCloudDrift 6s ease-in-out infinite"/>`;
+  const rainDrops = (xs) => `<g stroke="${C}" stroke-width="2.6" stroke-linecap="round">` +
+    xs.map((x, i) => `<line x1="${x}" y1="46" x2="${x - 2}" y2="53" style="animation:envRainFall 1.25s linear infinite ${(i * 0.32).toFixed(2)}s"/>`).join('') + '</g>';
+  const snowFlakes = (xs) => xs.map((x, i) =>
+    `<circle cx="${x}" cy="50" r="2.4" fill="${C}" style="animation:envSnowFall ${(1.8 + i * 0.3).toFixed(1)}s linear infinite ${(i * 0.4).toFixed(1)}s"/>`).join('');
+  const fogLines =
+    `<g stroke="${C}" stroke-width="2.6" stroke-linecap="round">` +
+    `<line x1="13" y1="49" x2="41" y2="49" style="animation:envFog 3.4s ease-in-out infinite"/>` +
+    `<line x1="19" y1="55" x2="53" y2="55" style="animation:envFog 3.4s ease-in-out infinite 0.5s"/>` +
+    `<line x1="15" y1="61" x2="45" y2="61" style="animation:envFog 3.4s ease-in-out infinite 1s"/></g>`;
+  const bolt =
+    `<path d="M34 41 L24 55 L31 55 L27 63 L42 47 L34 47 Z" fill="${C}" stroke="${C}" stroke-width="1" stroke-linejoin="round" style="animation:envBolt 3.4s ease-in-out infinite"/>`;
+
+  let body;
+  switch (state) {
+    case 'clear':   body = isDay ? sunFull : moonFull; break;
+    case 'partly':  body = (isDay ? sunSmall : moonSmall) + cloud; break;
+    case 'cloudy':  body = cloud; break;
+    case 'fog':     body = cloud + fogLines; break;
+    case 'drizzle': body = cloud + rainDrops([24, 40]); break;
+    case 'rain':    body = cloud + rainDrops([19, 31, 43]); break;
+    case 'snow':    body = cloud + snowFlakes([20, 32, 44]); break;
+    case 'thunder': body = cloud + bolt; break;
+    default:        body = cloud;
+  }
+  return `<svg viewBox="0 0 64 64" fill="none">${body}</svg>`;
+}
+
+function applyWeather(w) {
+  const round = (n) => (n == null || Number.isNaN(n)) ? '--' : String(Math.round(n));
+  const fix1 = (n) => (n == null || Number.isNaN(n)) ? '--' : Number(n).toFixed(1);
+  D.tempVal.textContent = round(w.temp);
+  D.envCond.textContent = w.condition || '--';
+  D.envCity.textContent = String(w.city || 'Unknown').toUpperCase();
+  D.envFeels.textContent = round(w.feelsLike) + '°';
+  D.envHi.textContent = round(w.hi) + '°';
+  D.envLo.textContent = round(w.lo) + '°';
+  D.humVal.textContent = round(w.humidity) + '%';
+  D.windVal.textContent = fix1(w.wind) + ' km/h';
+  D.pressVal.textContent = round(w.pressure) + ' hPa';
+  D.visVal.textContent = fix1(w.visibility) + ' km';
+  const pct = (v, a, b) => Math.max(2, Math.min(100, ((v - a) / (b - a)) * 100));
+  if (w.humidity != null)   D.humGauge.style.width   = pct(w.humidity, 0, 100) + '%';
+  if (w.wind != null)       D.windGauge.style.width  = pct(w.wind, 0, 40) + '%';
+  if (w.pressure != null)   D.pressGauge.style.width = pct(w.pressure, 980, 1040) + '%';
+  if (w.visibility != null) D.visGauge.style.width   = pct(w.visibility, 0, 20) + '%';
+  D.envIcon.innerHTML = weatherIcon(Number(w.code) || 0, w.isDay !== false);
+}
+
+let envMockTemp = 21 + Math.random() * 5;
+let envMockTick = 0;
+const ENV_MOCK_CODES = [0, 2, 3, 80, 63, 95, 71, 45];
+function mockWeather() {
+  envMockTemp = Math.max(15, Math.min(32, envMockTemp + (Math.random() - 0.5) * 1.4));
+  const code = ENV_MOCK_CODES[Math.floor(envMockTick) % ENV_MOCK_CODES.length];
+  envMockTick += 0.5;
+  return {
+    ok: true, city: 'Sim Sector', code, isDay: true,
+    condition: WMO_TEXT[code] || 'Simulated',
+    temp: envMockTemp,
+    feelsLike: envMockTemp - 1.5 + Math.random() * 2.5,
+    hi: envMockTemp + 2.5 + Math.random() * 2.5,
+    lo: envMockTemp - 4 - Math.random() * 3,
+    humidity: 38 + Math.random() * 32,
+    wind: 3 + Math.random() * 15,
+    pressure: 1003 + Math.random() * 22,
+    visibility: 5 + Math.random() * 15,
+  };
+}
+
+async function refreshWeather() {
+  let nextMs = 10 * 60 * 1000;
+  try {
+    const w = (window.jarvisDesktop && window.jarvisDesktop.getWeather)
+      ? await window.jarvisDesktop.getWeather()
+      : null;
+    if (w && w.ok) {
+      applyWeather(w);
+    } else {
+      applyWeather(mockWeather());
+      nextMs = 60 * 1000;
+    }
+  } catch (e) {
+    applyWeather(mockWeather());
+    nextMs = 60 * 1000;
+  }
+  setTimeout(refreshWeather, nextMs);
+}
+setTimeout(refreshWeather, 600);
 
 // ────── 8. Particles ──────
 function spawnParticle() {
@@ -4225,17 +5249,150 @@ setTimeout(() => { pollConversation(); setInterval(pollConversation, 6000); }, 5
 // Refresh relative timestamp every 30s
 setInterval(() => { if (CONVO.ts && CONVO.lastSig) CONVO.ts.textContent = fmtRelTime(); }, 30000);
 
-// ────── Geo time (Seoul) ──────
-const geoTime = document.getElementById('geo-time');
-function updateGeoTime() {
-  if (!geoTime) return;
-  const d = new Date();
-  geoTime.textContent =
-    String(d.getHours()).padStart(2,'0') + ':' +
-    String(d.getMinutes()).padStart(2,'0') + ' KST';
+// ────── Geo Grid — IP 위치 기반 실제 세계지도 ──────
+const GEO_W = 300, GEO_H = 150;
+const geoX = (lon) => (lon + 180) / 360 * GEO_W;
+const geoY = (lat) => (90 - lat) / 180 * GEO_H;
+const GEO_NS = 'http://www.w3.org/2000/svg';
+const GEO_CITIES = [
+  { lat: 40.7, lon: -74.0 },   // New York
+  { lat: 51.5, lon: -0.1 },    // London
+  { lat: 35.7, lon: 139.7 },   // Tokyo
+  { lat: 25.2, lon: 55.3 },    // Dubai
+  { lat: -23.5, lon: -46.6 },  // São Paulo
+  { lat: -33.9, lon: 151.2 },  // Sydney
+];
+let geoTZ = null;
+
+function renderGeoGrid(geo) {
+  const home = document.getElementById('geo-home');
+  const ring = document.getElementById('geo-home-ring');
+  const linksG = document.getElementById('geo-links');
+  const pulsesG = document.getElementById('geo-pulses');
+  const citiesG = document.getElementById('geo-cities');
+  const locEl = document.getElementById('geo-loc');
+  if (!home || !linksG || !pulsesG || !citiesG) return;
+  const hx = geoX(geo.lon), hy = geoY(geo.lat);
+  home.setAttribute('cx', hx.toFixed(1));
+  home.setAttribute('cy', hy.toFixed(1));
+  if (ring) { ring.setAttribute('cx', hx.toFixed(1)); ring.setAttribute('cy', hy.toFixed(1)); }
+  linksG.textContent = ''; pulsesG.textContent = ''; citiesG.textContent = '';
+  GEO_CITIES.forEach((c, i) => {
+    const cx = geoX(c.lon), cy = geoY(c.lat);
+    if (Math.hypot(cx - hx, cy - hy) < 14) return;
+    const dot = document.createElementNS(GEO_NS, 'circle');
+    dot.setAttribute('class', 'city');
+    dot.setAttribute('cx', cx.toFixed(1));
+    dot.setAttribute('cy', cy.toFixed(1));
+    dot.setAttribute('r', '1.8');
+    citiesG.appendChild(dot);
+    const dist = Math.hypot(cx - hx, cy - hy);
+    const mx = (hx + cx) / 2, my = (hy + cy) / 2 - dist * 0.22;
+    const d = `M${hx.toFixed(1)},${hy.toFixed(1)} Q${mx.toFixed(1)},${my.toFixed(1)} ${cx.toFixed(1)},${cy.toFixed(1)}`;
+    const link = document.createElementNS(GEO_NS, 'path');
+    link.setAttribute('class', 'link');
+    link.setAttribute('d', d);
+    linksG.appendChild(link);
+    const pulse = document.createElementNS(GEO_NS, 'circle');
+    pulse.setAttribute('r', '1.4');
+    const motion = document.createElementNS(GEO_NS, 'animateMotion');
+    motion.setAttribute('dur', (2.6 + i * 0.4).toFixed(1) + 's');
+    motion.setAttribute('repeatCount', 'indefinite');
+    motion.setAttribute('path', d);
+    pulse.appendChild(motion);
+    pulsesG.appendChild(pulse);
+  });
+  if (locEl) {
+    const city = String(geo.city || 'Unknown').toUpperCase();
+    const country = String(geo.country || '').toUpperCase();
+    locEl.textContent = country ? (city + ' · ' + country) : city;
+  }
 }
-updateGeoTime();
+
+function updateGeoTime() {
+  const el = document.getElementById('geo-time');
+  if (!el) return;
+  const now = new Date();
+  const opts = { hour: '2-digit', minute: '2-digit', hour12: false };
+  if (geoTZ) opts.timeZone = geoTZ;
+  let timeStr;
+  try { timeStr = new Intl.DateTimeFormat('en-GB', opts).format(now); }
+  catch (e) { timeStr = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false }).format(now); }
+  let abbr = '';
+  try {
+    const tzOpts = { timeZoneName: 'short' };
+    if (geoTZ) tzOpts.timeZone = geoTZ;
+    const parts = new Intl.DateTimeFormat('en-US', tzOpts).formatToParts(now);
+    const p = parts.find((x) => x.type === 'timeZoneName');
+    abbr = p ? p.value : '';
+  } catch (e) {}
+  el.textContent = abbr ? (timeStr + ' ' + abbr) : timeStr;
+}
+
+async function refreshGeoGrid() {
+  let geo = { lat: 37.5665, lon: 126.9780, city: 'Seoul', country: 'KR', timezone: 'Asia/Seoul' };
+  try {
+    const g = (window.jarvisDesktop && window.jarvisDesktop.getGeo) ? await window.jarvisDesktop.getGeo() : null;
+    if (g && g.ok && Number.isFinite(g.lat) && Number.isFinite(g.lon)) geo = g;
+  } catch (e) {}
+  geoTZ = geo.timezone || null;
+  renderGeoGrid(geo);
+  updateGeoTime();
+}
+refreshGeoGrid();
 setInterval(updateGeoTime, 30000);
+
+// ────── Focus Mode — 마이크 ON + 5초 마우스 미사용 시 몰입 화면 (복귀 버튼으로만 해제) ──────
+let focusIdleTimer = null;
+let focusVoiceWas = false;
+let focusDismissed = false;
+let focusLastX = -1, focusLastY = -1;
+function armFocusTimer() {
+  clearTimeout(focusIdleTimer);
+  if (focusDismissed || !document.body.classList.contains('voice-on')) return;
+  focusIdleTimer = setTimeout(function () {
+    if (document.body.classList.contains('voice-on') && !focusDismissed) {
+      document.body.classList.add('focus-mode');
+      focusDismissed = true;
+    }
+  }, 5000);
+}
+function onFocusActivity() {
+  // 포커스 모드 진입 후엔 마우스/키 활동 무시 — 복귀 버튼으로만 해제
+  if (document.body.classList.contains('focus-mode')) return;
+  armFocusTimer();
+}
+function onFocusMove(e) {
+  // 실제 커서 이동(3px 이상)만 활동으로 인정
+  if (Math.abs(e.clientX - focusLastX) < 3 && Math.abs(e.clientY - focusLastY) < 3) return;
+  focusLastX = e.clientX;
+  focusLastY = e.clientY;
+  onFocusActivity();
+}
+window.addEventListener('mousemove', onFocusMove, { passive: true });
+['mousedown', 'wheel', 'keydown', 'touchstart'].forEach(function (ev) {
+  window.addEventListener(ev, onFocusActivity, { passive: true });
+});
+const focusExitBtn = document.getElementById('focus-exit');
+if (focusExitBtn) {
+  focusExitBtn.addEventListener('click', function () {
+    document.body.classList.remove('focus-mode');
+    clearTimeout(focusIdleTimer);
+  });
+}
+const focusVoiceObserver = new MutationObserver(function () {
+  const on = document.body.classList.contains('voice-on');
+  if (on === focusVoiceWas) return;
+  focusVoiceWas = on;
+  if (on) {
+    focusDismissed = false;
+    armFocusTimer();
+  } else {
+    clearTimeout(focusIdleTimer);
+    document.body.classList.remove('focus-mode');
+  }
+});
+focusVoiceObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
 
 // ────── 15. Console banner ──────
 console.log('%c J.A.R.V.I.S ', 'background: linear-gradient(90deg, #4cc9ff, #0084c7); color: white; font-size: 24px; font-weight: 900; padding: 12px 24px; letter-spacing: 8px;');
@@ -4297,7 +5454,7 @@ console.log('%c jarvis backend: ' + CFG.JARVIS_HOST, 'color: #7896a4; font-famil
     syslog('> COMMAND', '[' + cmdMode.toUpperCase() + ']', 'done');
     op(cmdMode.toUpperCase() + ' 명령 실행: ' + prompt.slice(0, 48));
     try {
-      const r = await api.runPrompt({ prompt: prompt, mode: cmdMode, model: 'auto' });
+      const r = await api.runPrompt({ prompt: prompt, mode: cmdMode });
       if (r && r.ok) {
         const text = cleanResponse(r.stdout) || '(출력 없음)';
         setSt('speaking');
@@ -4334,7 +5491,8 @@ console.log('%c jarvis backend: ' + CFG.JARVIS_HOST, 'color: #7896a4; font-famil
   // ── 마이크 버튼 → jarvis listen (실제 음성 인식 + 응답) ──
   const micBtn = byId('mic-btn');
   const micBtnText = byId('mic-btn-text');
-  let listening = false;
+  let voiceOn = false;
+  let voiceGen = 0;
   function parseListen(stdout) {
     const lines = String(stdout || '').split(/\r?\n/);
     let transcript = '', reply = '', inReply = false;
@@ -4347,48 +5505,65 @@ console.log('%c jarvis backend: ' + CFG.JARVIS_HOST, 'color: #7896a4; font-famil
     }
     return { transcript: transcript, reply: reply };
   }
-  async function runVoice() {
-    if (listening || running) return;
-    if (!api.voiceListen) { syslog('> VOICE', '[IPC 미연결]', 'warn'); return; }
-    listening = true;
-    document.body.classList.add('voice-on');
-    if (micBtn) micBtn.classList.add('active');
-    if (micBtnText) micBtnText.textContent = '● 듣는 중…';
+  function voiceUI(on) {
+    document.body.classList.toggle('voice-on', on);
+    if (micBtn) micBtn.classList.toggle('active', on);
+    if (micBtnText) micBtnText.textContent = on ? '● 듣는 중…' : 'ACTIVATE MIC';
+  }
+  async function voiceCycle(gen) {
     setSt('listening');
-    if (cu) cu.textContent = '(음성 입력 중…)';
     if (cj) cj.textContent = '말씀하세요 — 듣고 있습니다, 주인님.';
     if (cts) cts.textContent = '방금';
-    syslog('> VOICE', '[LISTENING]', 'done');
     op('음성 입력 — 마이크 녹음 중');
+    let r = null;
     try {
-      const r = await api.voiceListen();
-      if (r && r.ok) {
-        const p = parseListen(r.stdout);
-        if (cu) cu.textContent = p.transcript || '(음성 감지 실패)';
-        if (p.reply) {
-          setSt('speaking');
-          const reply = cleanResponse(p.reply) || p.reply;
-          if (cj) { try { typeInto(cj, reply.slice(0, 420), 13); } catch (e) { cj.textContent = reply.slice(0, 420); } }
-          syslog('> VOICE', '[RESPONSE]', 'done');
-          op('음성 응답 완료');
-        } else {
-          if (cj) cj.textContent = p.transcript ? '응답을 생성하지 못했습니다.' : '음성이 감지되지 않았습니다. 다시 시도해 주세요.';
-          syslog('> VOICE', '[빈 응답]', 'warn');
-        }
-      } else {
-        const err = (r && (r.error || r.stderr)) || '알 수 없는 오류';
-        if (cj) cj.textContent = '음성 인식 실패: ' + String(err).slice(0, 180);
-        syslog('> VOICE', '[FAILED]', 'warn');
-      }
+      r = await api.voiceListen();
     } catch (e) {
-      if (cj) cj.textContent = '오류: ' + (e.message || e);
-      syslog('> VOICE', '[ERROR]', 'warn');
-    } finally {
-      listening = false;
-      document.body.classList.remove('voice-on');
-      if (micBtn) micBtn.classList.remove('active');
-      if (micBtnText) micBtnText.textContent = 'ACTIVATE MIC';
-      setTimeout(() => setSt('idle'), 4000);
+      if (voiceOn && gen === voiceGen && cj) cj.textContent = '오류: ' + (e.message || e);
+      return;
+    }
+    if (!voiceOn || gen !== voiceGen) return;
+    if (r && r.ok) {
+      const p = parseListen(r.stdout);
+      if (cu && p.transcript) cu.textContent = p.transcript;
+      if (p.reply) {
+        setSt('speaking');
+        const reply = cleanResponse(p.reply) || p.reply;
+        if (cj) { try { typeInto(cj, reply.slice(0, 420), 13); } catch (e) { cj.textContent = reply.slice(0, 420); } }
+        syslog('> VOICE', '[RESPONSE]', 'done');
+        op('음성 응답 완료');
+      } else if (p.transcript) {
+        if (cj) cj.textContent = '응답을 생성하지 못했습니다.';
+        syslog('> VOICE', '[빈 응답]', 'warn');
+      }
+    } else if (r && (r.error || r.stderr)) {
+      syslog('> VOICE', '[FAILED]', 'warn');
+    }
+  }
+  async function runVoice() {
+    if (!api.voiceListen) { syslog('> VOICE', '[IPC 미연결]', 'warn'); return; }
+    if (voiceOn) {
+      // ── 토글 OFF — 다시 누를 때까지 켜져 있던 마이크를 끈다 ──
+      voiceOn = false;
+      voiceGen++;
+      voiceUI(false);
+      syslog('> VOICE', '[STANDBY]', '');
+      op('음성 입력 종료');
+      try { if (api.stopListen) await api.stopListen(); } catch (e) {}
+      setTimeout(() => { if (!voiceOn) setSt('idle'); }, 700);
+      return;
+    }
+    if (running) return;
+    // ── 토글 ON — 버튼을 다시 누를 때까지 연속 청취 ──
+    voiceOn = true;
+    const gen = ++voiceGen;
+    voiceUI(true);
+    if (cu) cu.textContent = '(음성 입력 중…)';
+    syslog('> VOICE', '[LISTENING]', 'done');
+    while (voiceOn && gen === voiceGen) {
+      await voiceCycle(gen);
+      if (!voiceOn || gen !== voiceGen) break;
+      await new Promise((res) => setTimeout(res, 700));
     }
   }
   if (micBtn) micBtn.addEventListener('click', runVoice);
@@ -4406,16 +5581,18 @@ console.log('%c jarvis backend: ' + CFG.JARVIS_HOST, 'color: #7896a4; font-famil
   async function pollStatus() {
     try {
       const s = await api.getStatus();
+      const on = !!(s.daemon && s.daemon.running);
       const bs = byId('backend-status');
       if (bs) {
-        const on = !!(s.daemon && s.daemon.running);
         bs.textContent = 'JARVIS: ' + (on ? 'ONLINE' : 'READY');
         bs.classList.toggle('online', on);
         bs.classList.remove('offline');
       }
+      const dBtn = byId('ctl-daemon');
+      if (dBtn) dBtn.classList.toggle('on', on);
       if (s.model) {
-        const ai = document.querySelectorAll('.menu-item')[4];
-        if (ai) { const sub = ai.querySelector('.sub'); if (sub) sub.textContent = String(s.model); }
+        const hm = byId('hud-model');
+        if (hm) hm.textContent = String(s.model);
       }
     } catch (e) {}
   }
@@ -4425,8 +5602,8 @@ console.log('%c jarvis backend: ' + CFG.JARVIS_HOST, 'color: #7896a4; font-famil
       if (r.ok) {
         const d = await r.json().catch(() => null);
         if (d && d.tools_count) {
-          const proc = document.querySelectorAll('.menu-item')[3];
-          if (proc) { const sub = proc.querySelector('.sub'); if (sub) sub.textContent = d.tools_count + ' tools'; }
+          const ht = byId('hud-tools');
+          if (ht) ht.textContent = d.tools_count + ' tools';
         }
       }
     } catch (e) {}
@@ -4437,14 +5614,28 @@ console.log('%c jarvis backend: ' + CFG.JARVIS_HOST, 'color: #7896a4; font-famil
     setInterval(pollIntel, 20000);
   }, 1200);
 
-  // bottom-controls 매핑: [0]Export [1]Mic(기존) [2]Doctor [3]Project [4]Daemon toggle
-  const ctrls = document.querySelectorAll('.bottom-controls .ctrl-btn');
-  if (ctrls[2]) ctrls[2].addEventListener('click', async () => {
+  // ── 유틸리티 컨트롤 — Doctor / Daemon / Project / Export (id 기반 배선) ──
+  const ctlDoctor = byId('ctl-doctor');
+  if (ctlDoctor) ctlDoctor.addEventListener('click', async () => {
     syslog('> DIAGNOSTICS', '[RUN]', '');
-    try { const r = await api.runUtility({ action: 'doctor' }); syslog('> DIAGNOSTICS', r && r.ok ? '[OK]' : '[WARN]', r && r.ok ? 'done' : 'warn'); } catch (e) {}
+    try {
+      const r = await api.runUtility({ action: 'doctor' });
+      syslog('> DIAGNOSTICS', r && r.ok ? '[OK]' : '[WARN]', r && r.ok ? 'done' : 'warn');
+    } catch (e) { syslog('> DIAGNOSTICS', '[ERR]', 'warn'); }
   });
-  if (ctrls[3]) ctrls[3].addEventListener('click', () => { try { api.openProject(); } catch (e) {} });
-  if (ctrls[4]) ctrls[4].addEventListener('click', async () => {
+  const ctlProject = byId('ctl-project');
+  if (ctlProject) ctlProject.addEventListener('click', () => { try { api.openProject(); } catch (e) {} });
+  const ctlExport = byId('ctl-export');
+  if (ctlExport) ctlExport.addEventListener('click', async () => {
+    syslog('> EXPORT', '[SESSION]', '');
+    try {
+      const r = await api.exportSession({});
+      syslog('> EXPORT', r && r.ok ? '[SAVED]' : '[CANCEL]', r && r.ok ? 'done' : '');
+    } catch (e) { syslog('> EXPORT', '[ERR]', 'warn'); }
+  });
+  const ctlDaemon = byId('ctl-daemon');
+  if (ctlDaemon) ctlDaemon.addEventListener('click', async () => {
+    ctlDaemon.disabled = true;
     try {
       const s = await api.getStatus();
       const action = (s.daemon && s.daemon.running) ? 'stop' : 'start';
@@ -4452,9 +5643,119 @@ console.log('%c jarvis backend: ' + CFG.JARVIS_HOST, 'color: #7896a4; font-famil
       const r = await api.daemonControl({ action: action });
       syslog('> DAEMON', r && r.ok ? '[OK]' : '[FAIL]', r && r.ok ? 'done' : 'warn');
       pollStatus();
-    } catch (e) {}
+    } catch (e) { syslog('> DAEMON', '[ERR]', 'warn'); }
+    finally { ctlDaemon.disabled = false; }
   });
-  if (ctrls[0]) ctrls[0].addEventListener('click', () => { try { api.exportSession({}); } catch (e) {} });
+
+  // ── MEMORY — cross-session 기억 (~/.jarvis/memory.md) ──
+  const memInput = byId('memory-input');
+  const memSave = byId('memory-save');
+  const memView = byId('memory-view');
+  function renderMemory(text) {
+    if (!memView) return;
+    const t = String(text || '').trim();
+    if (t) { memView.textContent = t; memView.classList.remove('empty'); }
+    else { memView.textContent = '(저장된 기억이 없습니다)'; memView.classList.add('empty'); }
+  }
+  async function loadMemory() {
+    if (!memView) return;
+    try {
+      const r = await api.runUtility({ action: 'memory-show' });
+      if (r && r.ok) {
+        let body = String(r.stdout || '').trim();
+        if (/no memory file/i.test(body) || body === '(empty)') body = '';
+        renderMemory(body);
+      } else {
+        memView.textContent = '메모리를 불러오지 못했습니다.';
+        memView.classList.add('empty');
+      }
+    } catch (e) {
+      memView.textContent = '메모리 로드 오류.';
+      memView.classList.add('empty');
+    }
+  }
+  async function saveMemory() {
+    if (!memInput || !memSave) return;
+    const text = (memInput.value || '').trim();
+    if (!text) { memInput.focus(); return; }
+    memSave.disabled = true;
+    syslog('> MEMORY', '[SAVE]', '');
+    try {
+      const r = await api.runUtility({ action: 'memory-add', note: text });
+      if (r && r.ok) {
+        memInput.value = '';
+        syslog('> MEMORY', '[저장됨]', 'done');
+        op('기억 저장: ' + text.slice(0, 40));
+        await loadMemory();
+      } else {
+        syslog('> MEMORY', '[실패]', 'warn');
+      }
+    } catch (e) {
+      syslog('> MEMORY', '[ERR]', 'warn');
+    } finally {
+      memSave.disabled = false;
+    }
+  }
+  if (memSave) memSave.addEventListener('click', saveMemory);
+  if (memInput) memInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); saveMemory(); }
+  });
+  loadMemory();
+
+  // ── SETTINGS — API 키 / 모델 / 헬스포트 ──
+  const setOverlay = byId('settings-overlay');
+  const setApiKey = byId('set-apikey');
+  const setModel = byId('set-model');
+  const setAppUrl = byId('set-appurl');
+  const setHealthPort = byId('set-healthport');
+  const setMsg = byId('settings-msg');
+  async function openSettings() {
+    if (!setOverlay) return;
+    if (setMsg) setMsg.textContent = '';
+    if (setApiKey) setApiKey.value = '';
+    try {
+      const s = await api.getStatus();
+      if (setModel) setModel.value = (s && s.model && s.model !== 'auto') ? s.model : '';
+      if (setAppUrl) setAppUrl.value = (s && s.appUrl) || '';
+      if (setHealthPort) setHealthPort.value = (s && s.healthPort) || '';
+      if (setApiKey) setApiKey.placeholder = (s && s.hasAnthropicKey)
+        ? '설정됨 — 변경할 때만 입력' : '미설정 — 키를 입력하세요';
+    } catch (e) {}
+    setOverlay.hidden = false;
+  }
+  function closeSettings() { if (setOverlay) setOverlay.hidden = true; }
+  async function submitSettings() {
+    const payload = {
+      preferredModel: setModel ? setModel.value.trim() : '',
+      appUrl: setAppUrl ? setAppUrl.value.trim() : '',
+      healthPort: setHealthPort ? setHealthPort.value.trim() : '',
+    };
+    if (setApiKey && setApiKey.value.trim()) payload.anthropicApiKey = setApiKey.value.trim();
+    try {
+      const r = await api.saveSettings(payload);
+      if (r && r.ok) {
+        if (setMsg) setMsg.textContent = '저장됨 ✓';
+        if (setApiKey) setApiKey.value = '';
+        syslog('> SETTINGS', '[저장됨]', 'done');
+        pollStatus();
+        setTimeout(closeSettings, 800);
+      } else if (setMsg) { setMsg.textContent = '저장 실패'; }
+    } catch (e) {
+      if (setMsg) setMsg.textContent = '오류';
+    }
+  }
+  const ctlSettings = byId('ctl-settings');
+  if (ctlSettings) ctlSettings.addEventListener('click', openSettings);
+  const setClose = byId('settings-close');
+  if (setClose) setClose.addEventListener('click', closeSettings);
+  if (setOverlay) setOverlay.addEventListener('click', (e) => {
+    if (e.target === setOverlay) closeSettings();
+  });
+  const setSaveBtn = byId('settings-save');
+  if (setSaveBtn) setSaveBtn.addEventListener('click', submitSettings);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && setOverlay && !setOverlay.hidden) closeSettings();
+  });
 
   syslog('> COMMAND HUD', '[LINKED]', 'done');
 })();
